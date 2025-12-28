@@ -1,0 +1,381 @@
+package com.aquila.ibm.mq.gui.ui;
+
+import com.aquila.ibm.mq.gui.config.AlertManager;
+import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.model.ConnectionConfig;
+import com.aquila.ibm.mq.gui.model.QueueInfo;
+import com.aquila.ibm.mq.gui.model.ThresholdConfig;
+import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
+import com.aquila.ibm.mq.gui.mq.MessageService;
+import com.aquila.ibm.mq.gui.mq.QueueMonitor;
+import com.aquila.ibm.mq.gui.mq.QueueService;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+
+public class MainWindow {
+    private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
+
+    private final Display display;
+    private final Shell shell;
+    private final ConfigManager configManager;
+    private final MQConnectionManager connectionManager;
+    private final QueueService queueService;
+    private final MessageService messageService;
+    private final AlertManager alertManager;
+    private QueueMonitor queueMonitor;
+
+    private QueueListViewer queueListViewer;
+    private TabFolder tabFolder;
+    private QueuePropertiesPanel propertiesPanel;
+    private MessageBrowserPanel messageBrowserPanel;
+    private SendMessageDialog sendMessageDialog;
+    private DepthChartPanel depthChartPanel;
+    private Label statusLabel;
+    private Label alertLabel;
+
+    private QueueInfo selectedQueue;
+
+    public MainWindow(Display display) {
+        this.display = display;
+        this.configManager = new ConfigManager();
+        this.connectionManager = new MQConnectionManager();
+        this.queueService = new QueueService(connectionManager);
+        this.messageService = new MessageService(connectionManager);
+        this.alertManager = new AlertManager(configManager);
+
+        shell = new Shell(display);
+        shell.setText("IBM MQ Queue Manager GUI");
+        shell.setSize(1200, 800);
+        shell.setLayout(new GridLayout());
+
+        createMenuBar();
+        createMainContent();
+        createStatusBar();
+
+        shell.addDisposeListener(e -> cleanup());
+    }
+
+    private void createMenuBar() {
+        Menu menuBar = new Menu(shell, SWT.BAR);
+        shell.setMenuBar(menuBar);
+
+        createFileMenu(menuBar);
+        createConnectionMenu(menuBar);
+        createViewMenu(menuBar);
+        createToolsMenu(menuBar);
+        createHelpMenu(menuBar);
+    }
+
+    private void createFileMenu(Menu menuBar) {
+        MenuItem fileItem = new MenuItem(menuBar, SWT.CASCADE);
+        fileItem.setText("&File");
+        Menu fileMenu = new Menu(shell, SWT.DROP_DOWN);
+        fileItem.setMenu(fileMenu);
+
+        MenuItem exitItem = new MenuItem(fileMenu, SWT.PUSH);
+        exitItem.setText("E&xit");
+        exitItem.addListener(SWT.Selection, e -> shell.close());
+    }
+
+    private void createConnectionMenu(Menu menuBar) {
+        MenuItem connItem = new MenuItem(menuBar, SWT.CASCADE);
+        connItem.setText("&Connection");
+        Menu connMenu = new Menu(shell, SWT.DROP_DOWN);
+        connItem.setMenu(connMenu);
+
+        MenuItem connectItem = new MenuItem(connMenu, SWT.PUSH);
+        connectItem.setText("&Connect...");
+        connectItem.addListener(SWT.Selection, e -> showConnectionDialog());
+
+        MenuItem disconnectItem = new MenuItem(connMenu, SWT.PUSH);
+        disconnectItem.setText("&Disconnect");
+        disconnectItem.addListener(SWT.Selection, e -> disconnect());
+    }
+
+    private void createViewMenu(Menu menuBar) {
+        MenuItem viewItem = new MenuItem(menuBar, SWT.CASCADE);
+        viewItem.setText("&View");
+        Menu viewMenu = new Menu(shell, SWT.DROP_DOWN);
+        viewItem.setMenu(viewMenu);
+
+        MenuItem refreshItem = new MenuItem(viewMenu, SWT.PUSH);
+        refreshItem.setText("&Refresh\tF5");
+        refreshItem.setAccelerator(SWT.F5);
+        refreshItem.addListener(SWT.Selection, e -> refreshQueues());
+
+        MenuItem autoRefreshItem = new MenuItem(viewMenu, SWT.CHECK);
+        autoRefreshItem.setText("&Auto-refresh");
+        autoRefreshItem.addListener(SWT.Selection, e -> toggleAutoRefresh(autoRefreshItem.getSelection()));
+    }
+
+    private void createToolsMenu(Menu menuBar) {
+        MenuItem toolsItem = new MenuItem(menuBar, SWT.CASCADE);
+        toolsItem.setText("&Tools");
+        Menu toolsMenu = new Menu(shell, SWT.DROP_DOWN);
+        toolsItem.setMenu(toolsMenu);
+
+        MenuItem thresholdsItem = new MenuItem(toolsMenu, SWT.PUSH);
+        thresholdsItem.setText("Configure &Thresholds...");
+        thresholdsItem.addListener(SWT.Selection, e -> showThresholdDialog());
+
+        MenuItem clearAlertsItem = new MenuItem(toolsMenu, SWT.PUSH);
+        clearAlertsItem.setText("Clear &Alerts");
+        clearAlertsItem.addListener(SWT.Selection, e -> clearAlerts());
+    }
+
+    private void createHelpMenu(Menu menuBar) {
+        MenuItem helpItem = new MenuItem(menuBar, SWT.CASCADE);
+        helpItem.setText("&Help");
+        Menu helpMenu = new Menu(shell, SWT.DROP_DOWN);
+        helpItem.setMenu(helpMenu);
+
+        MenuItem aboutItem = new MenuItem(helpMenu, SWT.PUSH);
+        aboutItem.setText("&About");
+        aboutItem.addListener(SWT.Selection, e -> showAbout());
+    }
+
+    private void createMainContent() {
+        SashForm sashForm = new SashForm(shell, SWT.HORIZONTAL);
+        sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        queueListViewer = new QueueListViewer(sashForm, SWT.BORDER, alertManager);
+        queueListViewer.addSelectionListener(this::onQueueSelected);
+
+        tabFolder = new TabFolder(sashForm, SWT.NONE);
+
+        createPropertiesTab();
+        createMessagesTab();
+        createSendMessageTab();
+        createChartTab();
+
+        sashForm.setWeights(new int[]{30, 70});
+    }
+
+    private void createPropertiesTab() {
+        TabItem propertiesTab = new TabItem(tabFolder, SWT.NONE);
+        propertiesTab.setText("Properties");
+        propertiesPanel = new QueuePropertiesPanel(tabFolder, SWT.NONE);
+        propertiesTab.setControl(propertiesPanel);
+    }
+
+    private void createMessagesTab() {
+        TabItem messagesTab = new TabItem(tabFolder, SWT.NONE);
+        messagesTab.setText("Messages");
+        messageBrowserPanel = new MessageBrowserPanel(tabFolder, SWT.NONE, messageService);
+        messagesTab.setControl(messageBrowserPanel);
+    }
+
+    private void createSendMessageTab() {
+        TabItem sendTab = new TabItem(tabFolder, SWT.NONE);
+        sendTab.setText("Send Message");
+
+        Composite sendComposite = new Composite(tabFolder, SWT.NONE);
+        sendComposite.setLayout(new FillLayout());
+
+        Label label = new Label(sendComposite, SWT.NONE);
+        label.setText("Use the Send Message button in the toolbar or Connection menu");
+
+        sendTab.setControl(sendComposite);
+    }
+
+    private void createChartTab() {
+        TabItem chartTab = new TabItem(tabFolder, SWT.NONE);
+        chartTab.setText("Depth Chart");
+        depthChartPanel = new DepthChartPanel(tabFolder, SWT.NONE);
+        chartTab.setControl(depthChartPanel);
+    }
+
+    private void createStatusBar() {
+        Composite statusBar = new Composite(shell, SWT.NONE);
+        statusBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        GridLayout layout = new GridLayout(2, false);
+        layout.marginHeight = 2;
+        statusBar.setLayout(layout);
+
+        statusLabel = new Label(statusBar, SWT.NONE);
+        statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        statusLabel.setText("Not connected");
+
+        alertLabel = new Label(statusBar, SWT.NONE);
+        alertLabel.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+        alertLabel.setText("");
+    }
+
+    private void showConnectionDialog() {
+        ConnectionDialog dialog = new ConnectionDialog(shell, configManager);
+        ConnectionConfig config = dialog.open();
+
+        if (config != null) {
+            connect(config);
+        }
+    }
+
+    private void connect(ConnectionConfig config) {
+        try {
+            connectionManager.connect(config);
+            updateStatus("Connected to " + config.getQueueManager());
+            loadQueues();
+        } catch (Exception e) {
+            logger.error("Connection failed", e);
+            showError("Connection Failed", "Failed to connect to queue manager: " + e.getMessage());
+        }
+    }
+
+    private void disconnect() {
+        stopMonitoring();
+        connectionManager.disconnect();
+        queueListViewer.clearQueues();
+        updateStatus("Disconnected");
+    }
+
+    private void loadQueues() {
+        try {
+            List<QueueInfo> queues = queueService.getAllQueues();
+            queueListViewer.setQueues(queues);
+            if (depthChartPanel != null) {
+                depthChartPanel.setQueues(queues);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to load queues", e);
+            showError("Error", "Failed to load queues: " + e.getMessage());
+        }
+    }
+
+    private void refreshQueues() {
+        if (!connectionManager.isConnected()) {
+            return;
+        }
+        loadQueues();
+    }
+
+    private void toggleAutoRefresh(boolean enabled) {
+        if (enabled) {
+            startMonitoring();
+        } else {
+            stopMonitoring();
+        }
+    }
+
+    private void startMonitoring() {
+        if (queueMonitor == null || !queueMonitor.isRunning()) {
+            queueMonitor = new QueueMonitor(queueService, alertManager);
+            queueMonitor.setMonitoredQueues(queueListViewer.getQueues());
+            queueMonitor.setListener(new QueueMonitor.QueueMonitorListener() {
+                @Override
+                public void onQueuesUpdated(List<QueueInfo> queues) {
+                    display.asyncExec(() -> {
+                        queueListViewer.refresh();
+                        if (depthChartPanel != null && selectedQueue != null) {
+                            depthChartPanel.updateData(selectedQueue);
+                        }
+                        updateAlertStatus();
+                    });
+                }
+
+                @Override
+                public void onMonitorError(Exception e) {
+                    display.asyncExec(() -> showError("Monitor Error", e.getMessage()));
+                }
+            });
+            queueMonitor.start();
+        }
+    }
+
+    private void stopMonitoring() {
+        if (queueMonitor != null) {
+            queueMonitor.stopMonitoring();
+            queueMonitor = null;
+        }
+    }
+
+    private void onQueueSelected(QueueInfo queue) {
+        this.selectedQueue = queue;
+        if (propertiesPanel != null) {
+            propertiesPanel.setQueue(queue);
+        }
+        if (messageBrowserPanel != null) {
+            messageBrowserPanel.setQueue(queue);
+        }
+        if (depthChartPanel != null) {
+            depthChartPanel.setSelectedQueue(queue);
+        }
+    }
+
+    private void showThresholdDialog() {
+        ThresholdConfigDialog dialog = new ThresholdConfigDialog(shell, configManager, queueListViewer.getQueues());
+        dialog.open();
+    }
+
+    private void clearAlerts() {
+        alertManager.clearAlertHistory();
+        updateAlertStatus();
+    }
+
+    private void updateAlertStatus() {
+        int criticalCount = 0;
+        int warningCount = 0;
+
+        for (String queueName : alertManager.getAllCurrentAlerts().keySet()) {
+            ThresholdConfig.AlertLevel level = alertManager.getCurrentAlertLevel(queueName);
+            if (level == ThresholdConfig.AlertLevel.CRITICAL) {
+                criticalCount++;
+            } else if (level == ThresholdConfig.AlertLevel.WARNING) {
+                warningCount++;
+            }
+        }
+
+        if (criticalCount > 0) {
+            alertLabel.setText(String.format("Alerts: %d critical, %d warning", criticalCount, warningCount));
+            alertLabel.setForeground(display.getSystemColor(SWT.COLOR_RED));
+        } else if (warningCount > 0) {
+            alertLabel.setText(String.format("Alerts: %d warning", warningCount));
+            alertLabel.setForeground(display.getSystemColor(SWT.COLOR_DARK_YELLOW));
+        } else {
+            alertLabel.setText("");
+        }
+    }
+
+    private void updateStatus(String message) {
+        statusLabel.setText(message);
+    }
+
+    private void showError(String title, String message) {
+        MessageBox box = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
+        box.setText(title);
+        box.setMessage(message);
+        box.open();
+    }
+
+    private void showAbout() {
+        MessageBox box = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
+        box.setText("About");
+        box.setMessage("IBM MQ Queue Manager GUI\nVersion 1.0\n\nA comprehensive tool for managing IBM MQ queues.");
+        box.open();
+    }
+
+    private void cleanup() {
+        stopMonitoring();
+        disconnect();
+    }
+
+    public void open() {
+        shell.open();
+        while (!shell.isDisposed()) {
+            if (!display.readAndDispatch()) {
+                display.sleep();
+            }
+        }
+    }
+
+    public Shell getShell() {
+        return shell;
+    }
+}
