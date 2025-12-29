@@ -1,0 +1,11 @@
+# setup for the MQ dev server
+
+# admin is the user by default if no user is given
+setmqaut -m QM1 -t qmgr -p admin +dsp
+setmqaut -m QM1 -t qmgr -p admin +inq +connect
+dspmqaut -m QM1 -t qmgr -p admin
+
+# Setup for the building of the native image on windows
+add to native-image.cmd (located on <JAVA_HOME of graalvm)/bin
+@echo off
+call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat" > null
