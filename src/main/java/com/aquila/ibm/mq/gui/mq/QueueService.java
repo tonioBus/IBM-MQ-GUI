@@ -5,13 +5,16 @@ import com.ibm.mq.*;
 import com.ibm.mq.constants.MQConstants;
 import com.ibm.mq.pcf.PCFMessage;
 import com.ibm.mq.pcf.PCFMessageAgent;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 public class QueueService {
     private static final Logger logger = LoggerFactory.getLogger(QueueService.class);
     private final MQConnectionManager connectionManager;
@@ -28,35 +31,58 @@ public class QueueService {
         List<QueueInfo> queues = new ArrayList<>();
         MQQueueManager qm = connectionManager.getQueueManager();
 
-        PCFMessageAgent agent = new PCFMessageAgent(qm);
+        // Open command queue for putting request
+        MQQueue commandQueue = qm.accessQueue("SYSTEM.ADMIN.COMMAND.QUEUE",
+                MQConstants.MQOO_OUTPUT | MQConstants.MQOO_FAIL_IF_QUIESCING);
+
+        // Open reply queue (temporary dynamic queue)
+        MQQueue replyQueue = qm.accessQueue("SYSTEM.DEFAULT.MODEL.QUEUE",
+                MQConstants.MQOO_INPUT_EXCLUSIVE | MQConstants.MQOO_FAIL_IF_QUIESCING);
+
         try {
+            // Build PCF request message
             PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
             request.addParameter(MQConstants.MQCA_Q_NAME, "*");
             request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL);
 
-            PCFMessage[] responses = agent.send(request);
+            // Set reply queue in message descriptor
+            MQMessage mqRequest = new MQMessage();
+            mqRequest.format = MQConstants.MQFMT_ADMIN;
+            mqRequest.replyToQueueName = replyQueue.name;
+            request.write(mqRequest);
 
-            for (PCFMessage response : responses) {
-                String queueName = response.getStringParameterValue(MQConstants.MQCA_Q_NAME).trim();
+            // Send request
+            MQPutMessageOptions pmo = new MQPutMessageOptions();
+            commandQueue.put(mqRequest, pmo);
 
-                if (!includeSystemQueues && queueName.startsWith("SYSTEM.")) {
-                    continue;
+            // Read replies
+            MQGetMessageOptions gmo = new MQGetMessageOptions();
+            gmo.waitInterval = 5000; // 5 seconds
+            gmo.options = MQConstants.MQGMO_WAIT | MQConstants.MQGMO_CONVERT;
+
+            while (true) {
+                try {
+                    MQMessage replyMsg = new MQMessage();
+                    replyQueue.get(replyMsg, gmo);
+
+                    PCFMessage response = new PCFMessage(replyMsg);
+                    log.info("Received response from command queue: {}", response.toString());
+                    // Process response...
+
+                } catch (MQException e) {
+                    logger.error("Error while processing command queue.", e);
+                    log.error("Error while processing command queue.", e);
+                    if (e.getReason() == MQConstants.MQRC_NO_MSG_AVAILABLE) {
+                        break; // No more messages
+                    }
+                    throw e;
                 }
-
-                if (!includeSystemQueues && (queueName.startsWith("AMQ.") || queueName.startsWith("MQAI."))) {
-                    continue;
-                }
-
-                QueueInfo queueInfo = new QueueInfo(queueName);
-                populateQueueInfo(queueInfo, response);
-                queues.add(queueInfo);
             }
-
-            logger.info("Retrieved {} queues", queues.size());
         } finally {
-            agent.disconnect();
+            commandQueue.close();
+            replyQueue.close();
         }
-
+        logger.info("queues: {}", queues.stream().map(queueInfo -> queueInfo.getName()).collect(Collectors.joining(",")));
         return queues;
     }
 
