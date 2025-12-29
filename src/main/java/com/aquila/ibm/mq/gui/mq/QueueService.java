@@ -1,7 +1,11 @@
 package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.model.QueueInfo;
-import com.ibm.mq.*;
+import com.ibm.mq.MQException;
+import com.ibm.mq.MQQueue;
+import com.ibm.mq.MQQueueManager;
+import com.ibm.mq.constants.CMQC;
+import com.ibm.mq.constants.CMQCFC;
 import com.ibm.mq.constants.MQConstants;
 import com.ibm.mq.pcf.PCFMessage;
 import com.ibm.mq.pcf.PCFMessageAgent;
@@ -31,56 +35,43 @@ public class QueueService {
         List<QueueInfo> queues = new ArrayList<>();
         MQQueueManager qm = connectionManager.getQueueManager();
 
-        // Open command queue for putting request
-        MQQueue commandQueue = qm.accessQueue("SYSTEM.ADMIN.COMMAND.QUEUE",
-                MQConstants.MQOO_OUTPUT | MQConstants.MQOO_FAIL_IF_QUIESCING);
+        // Create PCF Message Agent
+        PCFMessageAgent agent = new PCFMessageAgent(qm);
 
-        // Open reply queue (temporary dynamic queue)
-        MQQueue replyQueue = qm.accessQueue("SYSTEM.DEFAULT.MODEL.QUEUE",
-                MQConstants.MQOO_INPUT_EXCLUSIVE | MQConstants.MQOO_FAIL_IF_QUIESCING);
+        // Create PCF request to inquire queues
+        PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
 
-        try {
-            // Build PCF request message
-            PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-            request.addParameter(MQConstants.MQCA_Q_NAME, "*");
-            request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL);
+        // Request all queues (use wildcard)
+        request.addParameter(CMQC.MQCA_Q_NAME, "*");
+        request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL);
 
-            // Set reply queue in message descriptor
-            MQMessage mqRequest = new MQMessage();
-            mqRequest.format = MQConstants.MQFMT_ADMIN;
-            mqRequest.replyToQueueName = replyQueue.name;
-            request.write(mqRequest);
+        // Specify which attributes to retrieve
+        request.addParameter(CMQCFC.MQIACF_Q_ATTRS, new int[]{
+                CMQC.MQCA_Q_NAME,
+                CMQC.MQIA_Q_TYPE,
+                CMQC.MQIA_CURRENT_Q_DEPTH,
+                CMQC.MQIA_MAX_Q_DEPTH
+        });
+        // Send request and get responses
+        PCFMessage[] responses = agent.send(request);
+        System.out.println("\nFound " + responses.length + " queues:\n");
+        for (PCFMessage response : responses) {
+            try {
+                String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
+                int queueType = response.getIntParameterValue(CMQC.MQIA_Q_TYPE);
+                int currentDepth = response.getIntParameterValue(CMQC.MQIA_CURRENT_Q_DEPTH);
+                int maxDepth = response.getIntParameterValue(CMQC.MQIA_MAX_Q_DEPTH);
 
-            // Send request
-            MQPutMessageOptions pmo = new MQPutMessageOptions();
-            commandQueue.put(mqRequest, pmo);
+                String queueTypeStr = getQueueTypeString(queueType);
 
-            // Read replies
-            MQGetMessageOptions gmo = new MQGetMessageOptions();
-            gmo.waitInterval = 5000; // 5 seconds
-            gmo.options = MQConstants.MQGMO_WAIT | MQConstants.MQGMO_CONVERT;
-
-            while (true) {
-                try {
-                    MQMessage replyMsg = new MQMessage();
-                    replyQueue.get(replyMsg, gmo);
-
-                    PCFMessage response = new PCFMessage(replyMsg);
-                    log.info("Received response from command queue: {}", response.toString());
-                    // Process response...
-
-                } catch (MQException e) {
-                    logger.error("Error while processing command queue.", e);
-                    log.error("Error while processing command queue.", e);
-                    if (e.getReason() == MQConstants.MQRC_NO_MSG_AVAILABLE) {
-                        break; // No more messages
-                    }
-                    throw e;
-                }
+                System.out.println(String.format("%-50s %-15s %-10d %-10d",
+                        queueName, queueTypeStr, currentDepth, maxDepth));
+                QueueInfo queueInfo = new QueueInfo(queueName);
+                populateQueueInfo(queueInfo, responses[0]);
+                queues.add(queueInfo);
+            } catch (Exception e) {
+                log.error("Error", e);
             }
-        } finally {
-            commandQueue.close();
-            replyQueue.close();
         }
         logger.info("queues: {}", queues.stream().map(queueInfo -> queueInfo.getName()).collect(Collectors.joining(",")));
         return queues;
@@ -183,4 +174,22 @@ public class QueueService {
 
         return queues;
     }
+
+    private static String getQueueTypeString(int queueType) {
+        switch (queueType) {
+            case CMQC.MQQT_LOCAL:
+                return "LOCAL";
+            case CMQC.MQQT_REMOTE:
+                return "REMOTE";
+            case CMQC.MQQT_ALIAS:
+                return "ALIAS";
+            case CMQC.MQQT_MODEL:
+                return "MODEL";
+            case CMQC.MQQT_CLUSTER:
+                return "CLUSTER";
+            default:
+                return "UNKNOWN";
+        }
+    }
+
 }

@@ -1,0 +1,4 @@
+setmqaut -m QM1 -t qmgr -p admin +dsp
+setmqaut -m QM1 -t qmgr -p admin +inq +connect
+
+dspmqaut -m QM1 -t qmgr -p admin
