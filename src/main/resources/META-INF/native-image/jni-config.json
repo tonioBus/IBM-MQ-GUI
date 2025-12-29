@@ -26,6 +26,21 @@
   "methods":[{"name":"asList","parameterTypes":["java.lang.Object[]"] }]
 },
 {
+  "name":"org.eclipse.swt.accessibility.Accessible$1"
+},
+{
+  "name":"org.eclipse.swt.internal.ole.win32.COMObject",
+  "methods":[{"name":"callback0","parameterTypes":["long[]"] }, {"name":"callback1","parameterTypes":["long[]"] }, {"name":"callback10","parameterTypes":["long[]"] }, {"name":"callback11","parameterTypes":["long[]"] }, {"name":"callback12","parameterTypes":["long[]"] }, {"name":"callback13","parameterTypes":["long[]"] }, {"name":"callback14","parameterTypes":["long[]"] }, {"name":"callback15","parameterTypes":["long[]"] }, {"name":"callback16","parameterTypes":["long[]"] }, {"name":"callback17","parameterTypes":["long[]"] }, {"name":"callback18","parameterTypes":["long[]"] }, {"name":"callback19","parameterTypes":["long[]"] }, {"name":"callback2","parameterTypes":["long[]"] }, {"name":"callback20","parameterTypes":["long[]"] }, {"name":"callback21","parameterTypes":["long[]"] }, {"name":"callback22","parameterTypes":["long[]"] }, {"name":"callback23","parameterTypes":["long[]"] }, {"name":"callback24","parameterTypes":["long[]"] }, {"name":"callback25","parameterTypes":["long[]"] }, {"name":"callback26","parameterTypes":["long[]"] }, {"name":"callback27","parameterTypes":["long[]"] }, {"name":"callback3","parameterTypes":["long[]"] }, {"name":"callback4","parameterTypes":["long[]"] }, {"name":"callback5","parameterTypes":["long[]"] }, {"name":"callback6","parameterTypes":["long[]"] }, {"name":"callback7","parameterTypes":["long[]"] }, {"name":"callback8","parameterTypes":["long[]"] }, {"name":"callback9","parameterTypes":["long[]"] }]
+},
+{
+  "name":"org.eclipse.swt.internal.ole.win32.GUID",
+  "fields":[{"name":"Data1"}, {"name":"Data2"}, {"name":"Data3"}, {"name":"Data4"}]
+},
+{
+  "name":"org.eclipse.swt.internal.ole.win32.VARIANT",
+  "fields":[{"name":"lVal"}, {"name":"vt"}, {"name":"wReserved1"}, {"name":"wReserved2"}, {"name":"wReserved3"}]
+},
+{
   "name":"org.eclipse.swt.internal.win32.ACTCTX",
   "fields":[{"name":"cbSize"}, {"name":"dwFlags"}, {"name":"hModule"}, {"name":"lpApplicationName"}, {"name":"lpAssemblyDirectory"}, {"name":"lpResourceName"}, {"name":"lpSource"}, {"name":"wLangId"}, {"name":"wProcessorArchitecture"}]
 },
