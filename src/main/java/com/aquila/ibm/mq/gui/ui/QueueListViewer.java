@@ -12,6 +12,9 @@ import org.eclipse.swt.widgets.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
 public class QueueListViewer extends Composite {
 
@@ -23,6 +26,7 @@ public class QueueListViewer extends Composite {
     }
     private final Table table;
     private final List<QueueInfo> queues;
+    private final List<QueueInfo> filteredQueues;
     private final AlertManager alertManager;
     private Consumer<QueueInfo> selectionListener;
     private ContextMenuActionListener contextMenuActionListener;
@@ -34,9 +38,14 @@ public class QueueListViewer extends Composite {
     private ProgressBar progressBar;
     private Label progressLabel;
 
+    private Text regexFilterText;
+    private Spinner depthFilterSpinner;
+    private Label filterStatusLabel;
+
     public QueueListViewer(Composite parent, int style, AlertManager alertManager) {
         super(parent, style);
         this.queues = new ArrayList<>();
+        this.filteredQueues = new ArrayList<>();
         this.alertManager = alertManager;
 
         setLayout(new GridLayout());
@@ -47,6 +56,9 @@ public class QueueListViewer extends Composite {
 
         Label label = new Label(this, SWT.NONE);
         label.setText("Queues:");
+
+        // Create filter panel
+        createFilterPanel(this);
 
         // Create progress panel (hidden by default)
         progressPanel = new Composite(this, SWT.NONE);
@@ -102,24 +114,65 @@ public class QueueListViewer extends Composite {
         });
     }
 
+    private Composite createFilterPanel(Composite parent) {
+        Composite panel = new Composite(parent, SWT.NONE);
+        GridLayout layout = new GridLayout(5, false);
+        layout.marginHeight = 5;
+        layout.marginWidth = 0;
+        panel.setLayout(layout);
+        panel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        // Regex filter
+        Label nameLabel = new Label(panel, SWT.NONE);
+        nameLabel.setText("Name:");
+
+        regexFilterText = new Text(panel, SWT.BORDER | SWT.SEARCH);
+        regexFilterText.setMessage("Filter pattern...");
+        GridData textData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        textData.widthHint = 150;
+        regexFilterText.setLayoutData(textData);
+        regexFilterText.addListener(SWT.Modify, e -> applyFilters());
+
+        // Depth filter
+        Label depthLabel = new Label(panel, SWT.NONE);
+        depthLabel.setText("Depth >=");
+
+        depthFilterSpinner = new Spinner(panel, SWT.BORDER);
+        depthFilterSpinner.setMinimum(0);
+        depthFilterSpinner.setMaximum(999999);
+        depthFilterSpinner.setIncrement(1);
+        depthFilterSpinner.setPageIncrement(10);
+        depthFilterSpinner.setSelection(0);
+        depthFilterSpinner.setLayoutData(new GridData(50, SWT.DEFAULT));
+        depthFilterSpinner.addListener(SWT.Selection, e -> applyFilters());
+
+        // Status label
+        filterStatusLabel = new Label(panel, SWT.NONE);
+        filterStatusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        return panel;
+    }
+
     public void setQueues(List<QueueInfo> queues) {
         this.queues.clear();
         this.queues.addAll(queues);
-        refresh();
+        applyFilters();
     }
 
     public void refresh() {
         table.removeAll();
 
-        for (QueueInfo queue : queues) {
+        for (QueueInfo queue : filteredQueues) {
             TableItem item = new TableItem(table, SWT.NONE);
             updateTableItem(item, queue);
         }
 
-        if (!queues.isEmpty() && table.getSelectionIndex() < 0) {
+        updateFilterStatus();
+
+        if (!filteredQueues.isEmpty() && table.getSelectionIndex() < 0) {
             table.select(0);
             if (selectionListener != null) {
-                selectionListener.accept(queues.get(0));
+                selectionListener.accept(filteredQueues.get(0));
             }
         }
     }
@@ -151,7 +204,9 @@ public class QueueListViewer extends Composite {
 
     public void clearQueues() {
         queues.clear();
+        filteredQueues.clear();
         table.removeAll();
+        updateFilterStatus();
     }
 
     public List<QueueInfo> getQueues() {
@@ -223,20 +278,16 @@ public class QueueListViewer extends Composite {
     }
 
     public void refreshQueue(QueueInfo queue) {
-        // Find the queue in the list and update its table item
+        // Find and update the queue in the master list
         for (int i = 0; i < queues.size(); i++) {
             if (queues.get(i).getName().equals(queue.getName())) {
-                // Update the queue object
                 queues.set(i, queue);
-
-                // Update the corresponding table item
-                if (i < table.getItemCount()) {
-                    TableItem item = table.getItem(i);
-                    updateTableItem(item, queue);
-                }
                 break;
             }
         }
+
+        // Reapply filters to update display
+        applyFilters();
     }
 
     public void showProgress(String message) {
@@ -257,5 +308,53 @@ public class QueueListViewer extends Composite {
 
     public void updateProgress(String message) {
         progressLabel.setText(message);
+    }
+
+    private void applyFilters() {
+        filteredQueues.clear();
+
+        String regexPattern = regexFilterText.getText().trim();
+        int minDepth = depthFilterSpinner.getSelection();
+
+        // Compile regex pattern
+        Pattern pattern = null;
+        if (!regexPattern.isEmpty()) {
+            try {
+                pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
+                regexFilterText.setBackground(null);  // Clear error indicator
+            } catch (PatternSyntaxException e) {
+                // Invalid regex - show error and display all queues
+                regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
+                filteredQueues.addAll(queues);
+                refresh();
+                return;
+            }
+        }
+
+        // Apply filters using streams
+        final Pattern finalPattern = pattern;
+        filteredQueues.addAll(
+            queues.stream()
+                .filter(q -> finalPattern == null || finalPattern.matcher(q.getName()).find())
+                .filter(q -> minDepth == 0 || q.getCurrentDepth() >= minDepth)
+                .collect(Collectors.toList())
+        );
+
+        refresh();
+    }
+
+    private void updateFilterStatus() {
+        if (filteredQueues.size() == queues.size()) {
+            filterStatusLabel.setText(String.format("%d queues", queues.size()));
+        } else {
+            filterStatusLabel.setText(String.format("%d of %d queues",
+                filteredQueues.size(), queues.size()));
+        }
+    }
+
+    public void clearFilters() {
+        regexFilterText.setText("");
+        depthFilterSpinner.setSelection(0);
+        // applyFilters() will be called automatically via listeners
     }
 }
