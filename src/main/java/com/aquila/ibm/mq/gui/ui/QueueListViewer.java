@@ -14,10 +14,18 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class QueueListViewer extends Composite {
+
+    public interface ContextMenuActionListener {
+        void onSendMessage(QueueInfo queue);
+        void onBrowseMessages(QueueInfo queue);
+        void onRefreshQueue(QueueInfo queue);
+        void onCopyQueueName(QueueInfo queue);
+    }
     private final Table table;
     private final List<QueueInfo> queues;
     private final AlertManager alertManager;
     private Consumer<QueueInfo> selectionListener;
+    private ContextMenuActionListener contextMenuActionListener;
     private Color greenColor;
     private Color yellowColor;
     private Color redColor;
@@ -63,6 +71,8 @@ public class QueueListViewer extends Composite {
                 selectionListener.accept(queues.get(index));
             }
         });
+
+        createContextMenu();
 
         addDisposeListener(e -> {
             greenColor.dispose();
@@ -131,11 +141,80 @@ public class QueueListViewer extends Composite {
         this.selectionListener = listener;
     }
 
+    public void setContextMenuActionListener(ContextMenuActionListener listener) {
+        this.contextMenuActionListener = listener;
+    }
+
     public QueueInfo getSelectedQueue() {
         int index = table.getSelectionIndex();
         if (index >= 0 && index < queues.size()) {
             return queues.get(index);
         }
         return null;
+    }
+
+    private void createContextMenu() {
+        Menu menu = new Menu(table);
+        table.setMenu(menu);
+
+        // Dynamically build menu based on selection
+        menu.addListener(SWT.Show, e -> {
+            // Clear existing items
+            for (MenuItem item : menu.getItems()) {
+                item.dispose();
+            }
+
+            // Get selected queue
+            QueueInfo selectedQueue = getSelectedQueue();
+
+            if (selectedQueue != null && contextMenuActionListener != null) {
+                // Send Message action
+                MenuItem sendMessageItem = new MenuItem(menu, SWT.PUSH);
+                sendMessageItem.setText("Send Message...");
+                sendMessageItem.addListener(SWT.Selection, ev ->
+                    contextMenuActionListener.onSendMessage(selectedQueue));
+
+                // Browse Messages action
+                MenuItem browseMessagesItem = new MenuItem(menu, SWT.PUSH);
+                browseMessagesItem.setText("Browse Messages...");
+                browseMessagesItem.addListener(SWT.Selection, ev ->
+                    contextMenuActionListener.onBrowseMessages(selectedQueue));
+
+                // Separator
+                new MenuItem(menu, SWT.SEPARATOR);
+
+                // Refresh Queue Info action
+                MenuItem refreshItem = new MenuItem(menu, SWT.PUSH);
+                refreshItem.setText("Refresh Queue Info");
+                refreshItem.addListener(SWT.Selection, ev ->
+                    contextMenuActionListener.onRefreshQueue(selectedQueue));
+
+                // Separator
+                new MenuItem(menu, SWT.SEPARATOR);
+
+                // Copy Queue Name action
+                MenuItem copyNameItem = new MenuItem(menu, SWT.PUSH);
+                copyNameItem.setText("Copy Queue Name");
+                copyNameItem.addListener(SWT.Selection, ev ->
+                    contextMenuActionListener.onCopyQueueName(selectedQueue));
+            }
+        });
+    }
+
+    public void refreshQueue(QueueInfo queue) {
+        // Find the queue in the list and update its table item
+        for (int i = 0; i < queues.size(); i++) {
+            if (queues.get(i).getName().equals(queue.getName())) {
+                // Update the queue object
+                queues.set(i, queue);
+
+                // Update the corresponding table item
+                if (i < table.getItemCount()) {
+                    TableItem item = table.getItem(i);
+                    updateTableItem(item, queue);
+                }
+                break;
+            }
+        }
     }
 }

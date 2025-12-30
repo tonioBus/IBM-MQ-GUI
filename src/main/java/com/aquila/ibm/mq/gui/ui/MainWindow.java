@@ -11,6 +11,9 @@ import com.aquila.ibm.mq.gui.mq.QueueMonitor;
 import com.aquila.ibm.mq.gui.mq.QueueService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -32,6 +35,7 @@ public class MainWindow {
     private final AlertManager alertManager;
     private QueueMonitor queueMonitor;
 
+    private QueueManagerTreeViewer queueManagerTreeViewer;
     private QueueListViewer queueListViewer;
     private TabFolder tabFolder;
     private QueuePropertiesPanel propertiesPanel;
@@ -61,6 +65,9 @@ public class MainWindow {
         createStatusBar();
 
         shell.addDisposeListener(e -> cleanup());
+
+        // Load hierarchy on startup
+        loadHierarchy();
     }
 
     private void createMenuBar() {
@@ -151,17 +158,45 @@ public class MainWindow {
         SashForm sashForm = new SashForm(shell, SWT.HORIZONTAL);
         sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
+        // NEW: Queue Manager Tree (20%)
+        queueManagerTreeViewer = new QueueManagerTreeViewer(
+            sashForm, SWT.BORDER, connectionManager, configManager);
+        queueManagerTreeViewer.addSelectionListener(this::onTreeSelection);
+
+        // EXISTING: Queue List (30%)
         queueListViewer = new QueueListViewer(sashForm, SWT.BORDER, alertManager);
         queueListViewer.addSelectionListener(this::onQueueSelected);
+        queueListViewer.setContextMenuActionListener(new QueueListViewer.ContextMenuActionListener() {
+            @Override
+            public void onSendMessage(QueueInfo queue) {
+                handleSendMessage(queue);
+            }
 
+            @Override
+            public void onBrowseMessages(QueueInfo queue) {
+                handleBrowseMessages(queue);
+            }
+
+            @Override
+            public void onRefreshQueue(QueueInfo queue) {
+                handleRefreshQueue(queue);
+            }
+
+            @Override
+            public void onCopyQueueName(QueueInfo queue) {
+                handleCopyQueueName(queue);
+            }
+        });
+
+        // EXISTING: Tab Folder (50%)
         tabFolder = new TabFolder(sashForm, SWT.NONE);
 
         createPropertiesTab();
         createMessagesTab();
-        createSendMessageTab();
         createChartTab();
 
-        sashForm.setWeights(new int[]{30, 70});
+        // UPDATED: Three-panel weights (was: 30, 70)
+        sashForm.setWeights(new int[]{20, 30, 50});
     }
 
     private void createPropertiesTab() {
@@ -176,19 +211,6 @@ public class MainWindow {
         messagesTab.setText("Messages");
         messageBrowserPanel = new MessageBrowserPanel(tabFolder, SWT.NONE, messageService);
         messagesTab.setControl(messageBrowserPanel);
-    }
-
-    private void createSendMessageTab() {
-        TabItem sendTab = new TabItem(tabFolder, SWT.NONE);
-        sendTab.setText("Send Message");
-
-        Composite sendComposite = new Composite(tabFolder, SWT.NONE);
-        sendComposite.setLayout(new FillLayout());
-
-        Label label = new Label(sendComposite, SWT.NONE);
-        label.setText("Use the Send Message button in the toolbar or Connection menu");
-
-        sendTab.setControl(sendComposite);
     }
 
     private void createChartTab() {
@@ -314,14 +336,138 @@ public class MainWindow {
         }
     }
 
+    private void onTreeSelection(QueueManagerTreeViewer.SelectionEvent event) {
+        if (event.type == QueueManagerTreeViewer.SelectionType.FOLDER) {
+            // Clear queue list and disable detail panels
+            queueListViewer.clearQueues();
+            if (propertiesPanel != null) {
+                propertiesPanel.setQueue(null);
+            }
+            if (messageBrowserPanel != null) {
+                messageBrowserPanel.setQueue(null);
+            }
+            if (depthChartPanel != null) {
+                depthChartPanel.setSelectedQueue(null);
+            }
+            updateStatus("Folder selected: " + event.node.getName());
+
+        } else if (event.type == QueueManagerTreeViewer.SelectionType.QUEUE_MANAGER) {
+            String connectionId = event.node.getConnectionConfigId();
+
+            // Connect if not already connected
+            if (!connectionManager.isConnected(connectionId)) {
+                ConnectionConfig config = findConnectionConfig(connectionId);
+                if (config != null) {
+                    try {
+                        connectionManager.connect(connectionId, config);
+                        queueManagerTreeViewer.updateNodeIcon(event.node.getId());
+                    } catch (Exception e) {
+                        showError("Connection Failed", e.getMessage());
+                        return;
+                    }
+                } else {
+                    showError("Configuration Not Found",
+                        "Connection configuration not found for: " + connectionId);
+                    return;
+                }
+            }
+
+            // Set active connection and load queues
+            connectionManager.setActiveConnection(connectionId);
+            loadQueues();
+            updateStatus("Connected to " + event.node.getName());
+        }
+    }
+
+    private ConnectionConfig findConnectionConfig(String name) {
+        return configManager.loadConnections().stream()
+            .filter(c -> name.equals(c.getName()))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private void loadHierarchy() {
+        com.aquila.ibm.mq.gui.model.HierarchyConfig hierarchy = configManager.loadHierarchy();
+        if (hierarchy == null) {
+            // First time: create default hierarchy from existing connections
+            List<ConnectionConfig> connections = configManager.loadConnections();
+            hierarchy = configManager.createDefaultHierarchy(connections);
+            configManager.saveHierarchy(hierarchy);
+        }
+        queueManagerTreeViewer.setHierarchy(hierarchy);
+    }
+
     private void showThresholdDialog() {
         ThresholdConfigDialog dialog = new ThresholdConfigDialog(shell, configManager, queueListViewer.getQueues());
         dialog.open();
     }
 
     private void showSendMessageDialog() {
-        SendMessageDialog sendMessageDialog = new SendMessageDialog(shell, messageService);
-        sendMessageDialog.open("DEV.QUEUE.1");
+        if (selectedQueue != null) {
+            handleSendMessage(selectedQueue);
+        } else {
+            showError("No Queue Selected", "Please select a queue first");
+        }
+    }
+
+    private void handleSendMessage(QueueInfo queue) {
+        SendMessageDialog dialog = new SendMessageDialog(shell, messageService);
+        dialog.open(queue.getName());
+    }
+
+    private void handleBrowseMessages(QueueInfo queue) {
+        // Update selected queue to ensure consistency
+        this.selectedQueue = queue;
+
+        // Update the message browser panel with the selected queue
+        if (messageBrowserPanel != null) {
+            messageBrowserPanel.setQueue(queue);
+        }
+
+        // Switch to Messages tab (index 1)
+        if (tabFolder != null) {
+            tabFolder.setSelection(1);
+        }
+    }
+
+    private void handleRefreshQueue(QueueInfo queue) {
+        try {
+            // Refresh the queue info from the queue manager
+            queueService.refreshQueueInfo(queue);
+
+            // Update the display
+            queueListViewer.refreshQueue(queue);
+
+            // If this is the currently selected queue, update the properties panel
+            if (selectedQueue != null && selectedQueue.getName().equals(queue.getName())) {
+                this.selectedQueue = queue;
+                if (propertiesPanel != null) {
+                    propertiesPanel.setQueue(queue);
+                }
+                if (depthChartPanel != null) {
+                    depthChartPanel.updateData(queue);
+                }
+            }
+
+            updateStatus("Queue " + queue.getName() + " refreshed");
+        } catch (Exception e) {
+            logger.error("Failed to refresh queue: " + queue.getName(), e);
+            showError("Refresh Failed", "Failed to refresh queue: " + e.getMessage());
+        }
+    }
+
+    private void handleCopyQueueName(QueueInfo queue) {
+        Clipboard clipboard = new Clipboard(display);
+        try {
+            TextTransfer textTransfer = TextTransfer.getInstance();
+            clipboard.setContents(
+                new Object[]{queue.getName()},
+                new Transfer[]{textTransfer}
+            );
+            updateStatus("Queue name copied: " + queue.getName());
+        } finally {
+            clipboard.dispose();
+        }
     }
 
 
@@ -373,8 +519,13 @@ public class MainWindow {
     }
 
     private void cleanup() {
+        // Save hierarchy state (expansion, selection)
+        if (queueManagerTreeViewer != null) {
+            configManager.saveHierarchy(queueManagerTreeViewer.getHierarchy());
+        }
+
         stopMonitoring();
-        disconnect();
+        connectionManager.disconnectAll();  // Disconnect all connections
     }
 
     public void open() {

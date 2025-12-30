@@ -27,13 +27,36 @@ public class QueueService {
         this.connectionManager = connectionManager;
     }
 
+    /**
+     * Get all queues for the active connection.
+     */
     public List<QueueInfo> getAllQueues() throws MQException, IOException {
         return getAllQueues(false);
     }
 
+    /**
+     * Get all queues for the active connection.
+     */
     public List<QueueInfo> getAllQueues(boolean includeSystemQueues) throws MQException, IOException {
-        List<QueueInfo> queues = new ArrayList<>();
         MQQueueManager qm = connectionManager.getQueueManager();
+        return getAllQueuesForManager(qm, includeSystemQueues);
+    }
+
+    /**
+     * Get all queues for a specific connection.
+     * @param connectionId The connection ID
+     * @param includeSystemQueues Whether to include system queues
+     */
+    public List<QueueInfo> getAllQueues(String connectionId, boolean includeSystemQueues) throws MQException, IOException {
+        MQQueueManager qm = connectionManager.getQueueManager(connectionId);
+        return getAllQueuesForManager(qm, includeSystemQueues);
+    }
+
+    /**
+     * Internal method to get all queues for a given queue manager.
+     */
+    private List<QueueInfo> getAllQueuesForManager(MQQueueManager qm, boolean includeSystemQueues) throws MQException, IOException {
+        List<QueueInfo> queues = new ArrayList<>();
 
         // Create PCF Message Agent
         PCFMessageAgent agent = new PCFMessageAgent(qm);
@@ -107,8 +130,8 @@ public class QueueService {
             queueInfo.setCurrentDepth(response.getIntParameterValue(MQConstants.MQIA_CURRENT_Q_DEPTH));
             queueInfo.setMaxDepth(response.getIntParameterValue(MQConstants.MQIA_MAX_Q_DEPTH));
             queueInfo.setQueueType(response.getIntParameterValue(MQConstants.MQIA_Q_TYPE));
-//            queueInfo.setOpenInputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_INPUT_COUNT));
-//            queueInfo.setOpenOutputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_OUTPUT_COUNT));
+            queueInfo.setOpenInputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_INPUT_COUNT));
+            queueInfo.setOpenOutputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_OUTPUT_COUNT));
 
             String desc = response.getStringParameterValue(MQConstants.MQCA_Q_DESC);
             queueInfo.setDescription(desc != null ? desc.trim() : "");

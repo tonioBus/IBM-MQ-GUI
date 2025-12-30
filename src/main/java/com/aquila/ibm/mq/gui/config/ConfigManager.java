@@ -1,6 +1,8 @@
 package com.aquila.ibm.mq.gui.config;
 
 import com.aquila.ibm.mq.gui.model.ConnectionConfig;
+import com.aquila.ibm.mq.gui.model.HierarchyConfig;
+import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -23,6 +25,7 @@ public class ConfigManager {
     private static final String CONFIG_DIR = System.getProperty("user.home") + File.separator + ".ibmmqgui";
     private static final String CONNECTIONS_FILE = "connections.json";
     private static final String THRESHOLDS_FILE = "thresholds.json";
+    private static final String HIERARCHY_FILE = "hierarchy.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public ConfigManager() {
@@ -136,5 +139,88 @@ public class ConfigManager {
 
     public String getConfigDirectory() {
         return CONFIG_DIR;
+    }
+
+    // Hierarchy management
+
+    /**
+     * Load the queue manager hierarchy from JSON file.
+     * @return HierarchyConfig object, or null if file doesn't exist
+     */
+    public HierarchyConfig loadHierarchy() {
+        File file = new File(CONFIG_DIR, HIERARCHY_FILE);
+        if (!file.exists()) {
+            logger.info("No hierarchy file found");
+            return null;
+        }
+
+        try (Reader reader = new FileReader(file)) {
+            HierarchyConfig hierarchy = gson.fromJson(reader, HierarchyConfig.class);
+            logger.info("Loaded hierarchy with {} nodes", hierarchy != null ? hierarchy.getNodes().size() : 0);
+            return hierarchy;
+        } catch (IOException e) {
+            logger.error("Failed to load hierarchy", e);
+            return null;
+        }
+    }
+
+    /**
+     * Save the queue manager hierarchy to JSON file.
+     * @param hierarchy The hierarchy configuration to save
+     */
+    public void saveHierarchy(HierarchyConfig hierarchy) {
+        if (hierarchy == null) {
+            logger.warn("Attempted to save null hierarchy");
+            return;
+        }
+
+        File file = new File(CONFIG_DIR, HIERARCHY_FILE);
+
+        // Create backup of existing file
+        if (file.exists()) {
+            File backup = new File(CONFIG_DIR, HIERARCHY_FILE + ".bak");
+            try {
+                Files.copy(file.toPath(), backup.toPath(),
+                          java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                logger.warn("Failed to create backup of hierarchy file", e);
+            }
+        }
+
+        try (Writer writer = new FileWriter(file)) {
+            gson.toJson(hierarchy, writer);
+            logger.info("Saved hierarchy with {} nodes", hierarchy.getNodes().size());
+        } catch (IOException e) {
+            logger.error("Failed to save hierarchy", e);
+        }
+    }
+
+    /**
+     * Create a default hierarchy from existing connections.
+     * All connections are placed at root level (no folders).
+     * @param connections List of connection configurations
+     * @return New HierarchyConfig with all connections at root
+     */
+    public HierarchyConfig createDefaultHierarchy(List<ConnectionConfig> connections) {
+        HierarchyConfig hierarchy = new HierarchyConfig();
+
+        logger.info("Creating default hierarchy from {} connections", connections.size());
+
+        for (ConnectionConfig config : connections) {
+            String displayName = config.getName() != null && !config.getName().isEmpty()
+                ? config.getName()
+                : config.getQueueManager() + "@" + config.getHost();
+
+            HierarchyNode node = new HierarchyNode(
+                HierarchyNode.NodeType.QUEUE_MANAGER,
+                displayName,
+                config.getName()
+            );
+
+            hierarchy.addNode(node, null);  // Add to root level
+        }
+
+        logger.info("Created default hierarchy with {} queue managers", connections.size());
+        return hierarchy;
     }
 }
