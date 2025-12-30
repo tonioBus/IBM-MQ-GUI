@@ -30,6 +30,10 @@ public class QueueListViewer extends Composite {
     private Color yellowColor;
     private Color redColor;
 
+    private Composite progressPanel;
+    private ProgressBar progressBar;
+    private Label progressLabel;
+
     public QueueListViewer(Composite parent, int style, AlertManager alertManager) {
         super(parent, style);
         this.queues = new ArrayList<>();
@@ -43,6 +47,23 @@ public class QueueListViewer extends Composite {
 
         Label label = new Label(this, SWT.NONE);
         label.setText("Queues:");
+
+        // Create progress panel (hidden by default)
+        progressPanel = new Composite(this, SWT.NONE);
+        GridLayout progressLayout = new GridLayout(1, false);
+        progressLayout.marginHeight = 5;
+        progressLayout.marginWidth = 0;
+        progressPanel.setLayout(progressLayout);
+        GridData progressPanelData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        progressPanelData.exclude = true; // Hidden by default
+        progressPanel.setLayoutData(progressPanelData);
+        progressPanel.setVisible(false);
+
+        progressBar = new ProgressBar(progressPanel, SWT.INDETERMINATE);
+        progressBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        progressLabel = new Label(progressPanel, SWT.NONE);
+        progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION);
         table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -216,5 +237,25 @@ public class QueueListViewer extends Composite {
                 break;
             }
         }
+    }
+
+    public void showProgress(String message) {
+        GridData progressPanelData = (GridData) progressPanel.getLayoutData();
+        progressPanelData.exclude = false;
+        progressPanel.setVisible(true);
+        progressLabel.setText(message);
+        layout(true);
+    }
+
+    public void hideProgress() {
+        GridData progressPanelData = (GridData) progressPanel.getLayoutData();
+        progressPanelData.exclude = true;
+        progressPanel.setVisible(false);
+        progressLabel.setText("");
+        layout(true);
+    }
+
+    public void updateProgress(String message) {
+        progressLabel.setText(message);
     }
 }

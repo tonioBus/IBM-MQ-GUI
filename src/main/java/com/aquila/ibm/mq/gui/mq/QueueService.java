@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 public class QueueService {
     private static final Logger logger = LoggerFactory.getLogger(QueueService.class);
     private final MQConnectionManager connectionManager;
@@ -87,15 +86,13 @@ public class QueueService {
 
                 String queueTypeStr = getQueueTypeString(queueType);
 
-                System.out.println(String.format("%-50s %-15s %-10d %-10d",
-                        queueName, queueTypeStr, currentDepth, maxDepth));
                 QueueInfo queueInfo = new QueueInfo(queueName);
                 queueInfo.setQueueType(queueType);
                 queueInfo.setCurrentDepth(currentDepth);
                 queueInfo.setMaxDepth(maxDepth);
                 queues.add(queueInfo);
             } catch (Exception e) {
-                log.error("Error", e);
+                logger.error("Error", e);
             }
         }
         logger.info("queues: {}", queues.stream().map(QueueInfo::getName).collect(Collectors.joining(",")));
@@ -185,13 +182,13 @@ public class QueueService {
     public List<QueueInfo> refreshAllQueues(List<QueueInfo> queues) throws MQException, IOException {
         List<QueueInfo> refreshed = getAllQueues();
 
-        for (QueueInfo existing : queues) {
+        for (QueueInfo queueInfo : queues) {
             for (QueueInfo updated : refreshed) {
-                if (existing.getName().equals(updated.getName())) {
-                    existing.setCurrentDepth(updated.getCurrentDepth());
-                    existing.setMaxDepth(updated.getMaxDepth());
-                    existing.setOpenInputCount(updated.getOpenInputCount());
-                    existing.setOpenOutputCount(updated.getOpenOutputCount());
+                if (queueInfo.getName().equals(updated.getName())) {
+                    queueInfo.setCurrentDepth(updated.getCurrentDepth());
+                    queueInfo.setMaxDepth(updated.getMaxDepth());
+                    queueInfo.setOpenInputCount(updated.getOpenInputCount());
+                    queueInfo.setOpenOutputCount(updated.getOpenOutputCount());
                     break;
                 }
             }

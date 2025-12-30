@@ -9,6 +9,7 @@ import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.aquila.ibm.mq.gui.mq.QueueMonitor;
 import com.aquila.ibm.mq.gui.mq.QueueService;
+import com.ibm.mq.MQException;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
@@ -21,6 +22,7 @@ import org.eclipse.swt.widgets.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 public class MainWindow {
@@ -246,14 +248,34 @@ public class MainWindow {
     }
 
     private void connect(ConnectionConfig config) {
-        try {
-            connectionManager.connect(config);
-            updateStatus("Connected to " + config.getQueueManager());
-            loadQueues();
-        } catch (Exception e) {
-            logger.error("Connection failed", e);
-            showError("Connection Failed", "Failed to connect to queue manager: " + e.getMessage());
-        }
+        queueListViewer.showProgress("Connecting to " + config.getQueueManager() + "...");
+
+        new Thread(() -> {
+            try {
+                connectionManager.connect(config);
+
+                display.asyncExec(() -> {
+                    updateStatus("Connected to " + config.getQueueManager());
+                    queueListViewer.updateProgress("Loading queues...");
+                });
+
+                List<QueueInfo> queues = queueService.getAllQueues();
+
+                display.asyncExec(() -> {
+                    queueListViewer.setQueues(queues);
+                    queueListViewer.hideProgress();
+                    if (depthChartPanel != null) {
+                        depthChartPanel.setQueues(queues);
+                    }
+                });
+            } catch (Exception e) {
+                logger.error("Connection failed", e);
+                display.asyncExec(() -> {
+                    queueListViewer.hideProgress();
+                    showError("Connection Failed", "Failed to connect to queue manager: " + e.getMessage());
+                });
+            }
+        }).start();
     }
 
     private void disconnect() {
@@ -263,24 +285,32 @@ public class MainWindow {
         updateStatus("Disconnected");
     }
 
-    private void loadQueues() {
-        try {
-            List<QueueInfo> queues = queueService.getAllQueues();
-            queueListViewer.setQueues(queues);
-            if (depthChartPanel != null) {
-                depthChartPanel.setQueues(queues);
-            }
-        } catch (Exception e) {
-            logger.error("Failed to load queues", e);
-            showError("Error", "Failed to load queues: " + e.getMessage());
-        }
-    }
-
     private void refreshQueues() {
         if (!connectionManager.isConnected()) {
             return;
         }
-        loadQueues();
+
+        queueListViewer.showProgress("Refreshing queues...");
+
+        new Thread(() -> {
+            try {
+                List<QueueInfo> queues = queueService.getAllQueues();
+
+                display.asyncExec(() -> {
+                    queueListViewer.setQueues(queues);
+                    queueListViewer.hideProgress();
+                    if (depthChartPanel != null) {
+                        depthChartPanel.setQueues(queues);
+                    }
+                });
+            } catch (Exception e) {
+                logger.error("Failed to refresh queues", e);
+                display.asyncExec(() -> {
+                    queueListViewer.hideProgress();
+                    showError("Error", "Failed to refresh queues: " + e.getMessage());
+                });
+            }
+        }).start();
     }
 
     private void toggleAutoRefresh(boolean enabled) {
@@ -326,6 +356,11 @@ public class MainWindow {
     private void onQueueSelected(QueueInfo queue) {
         this.selectedQueue = queue;
         if (propertiesPanel != null) {
+            try {
+                queueService.refreshQueueInfo(queue);
+            } catch (MQException | IOException e) {
+                throw new RuntimeException(e);
+            }
             propertiesPanel.setQueue(queue);
         }
         if (messageBrowserPanel != null) {
@@ -357,26 +392,86 @@ public class MainWindow {
             // Connect if not already connected
             if (!connectionManager.isConnected(connectionId)) {
                 ConnectionConfig config = findConnectionConfig(connectionId);
-                if (config != null) {
-                    try {
-                        connectionManager.connect(connectionId, config);
-                        queueManagerTreeViewer.updateNodeIcon(event.node.getId());
-                    } catch (Exception e) {
-                        showError("Connection Failed", e.getMessage());
-                        return;
-                    }
-                } else {
+                if (config == null) {
                     showError("Configuration Not Found",
                         "Connection configuration not found for: " + connectionId);
                     return;
                 }
+
+                // Show progress immediately
+                queueListViewer.showProgress("Connecting to " + event.node.getName() + "...");
+
+                // Run connection in background thread
+                String qmName = event.node.getName();
+                String nodeId = event.node.getId();
+                new Thread(() -> {
+                    try {
+                        // BLOCKING CALL - but on background thread
+                        connectionManager.connect(connectionId, config);
+
+                        // Update icon on UI thread
+                        display.asyncExec(() -> {
+                            queueManagerTreeViewer.updateNodeIcon(nodeId);
+                            queueListViewer.updateProgress("Loading queues...");
+                        });
+
+                        // Set active and load queues (BLOCKING)
+                        connectionManager.setActiveConnection(connectionId);
+                        List<QueueInfo> queues = queueService.getAllQueues();
+
+                        // Update UI on UI thread
+                        display.asyncExec(() -> {
+                            queueListViewer.setQueues(queues);
+                            queueListViewer.hideProgress();
+                            updateStatus("Connected to " + qmName);
+
+                            // Update panels
+                            if (depthChartPanel != null) {
+                                depthChartPanel.setQueues(queues);
+                            }
+                        });
+
+                    } catch (Exception e) {
+                        logger.error("Connection failed", e);
+                        display.asyncExec(() -> {
+                            queueListViewer.hideProgress();
+                            showError("Connection Failed", e.getMessage());
+                        });
+                    }
+                }).start();
+
+                return; // Don't continue with synchronous flow
             }
 
-            // Set active connection and load queues
+            // If already connected, just set active and load queues
             connectionManager.setActiveConnection(connectionId);
-            loadQueues();
-            updateStatus("Connected to " + event.node.getName());
+            loadQueuesAsync(event.node.getName());
         }
+    }
+
+    private void loadQueuesAsync(String queueManagerName) {
+        queueListViewer.showProgress("Loading queues from " + queueManagerName + "...");
+
+        new Thread(() -> {
+            try {
+                List<QueueInfo> queues = queueService.getAllQueues();
+
+                display.asyncExec(() -> {
+                    queueListViewer.setQueues(queues);
+                    queueListViewer.hideProgress();
+                    updateStatus("Loaded queues from " + queueManagerName);
+                    if (depthChartPanel != null) {
+                        depthChartPanel.setQueues(queues);
+                    }
+                });
+            } catch (Exception e) {
+                logger.error("Failed to load queues", e);
+                display.asyncExec(() -> {
+                    queueListViewer.hideProgress();
+                    showError("Error", "Failed to load queues: " + e.getMessage());
+                });
+            }
+        }).start();
     }
 
     private ConnectionConfig findConnectionConfig(String name) {
@@ -431,29 +526,39 @@ public class MainWindow {
     }
 
     private void handleRefreshQueue(QueueInfo queue) {
-        try {
-            // Refresh the queue info from the queue manager
-            queueService.refreshQueueInfo(queue);
+        queueListViewer.showProgress("Refreshing " + queue.getName() + "...");
 
-            // Update the display
-            queueListViewer.refreshQueue(queue);
+        new Thread(() -> {
+            try {
+                // Refresh the queue info from the queue manager
+                queueService.refreshQueueInfo(queue);
 
-            // If this is the currently selected queue, update the properties panel
-            if (selectedQueue != null && selectedQueue.getName().equals(queue.getName())) {
-                this.selectedQueue = queue;
-                if (propertiesPanel != null) {
-                    propertiesPanel.setQueue(queue);
-                }
-                if (depthChartPanel != null) {
-                    depthChartPanel.updateData(queue);
-                }
+                display.asyncExec(() -> {
+                    // Update the display
+                    queueListViewer.refreshQueue(queue);
+                    queueListViewer.hideProgress();
+
+                    // If this is the currently selected queue, update panels
+                    if (selectedQueue != null && selectedQueue.getName().equals(queue.getName())) {
+                        this.selectedQueue = queue;
+                        if (propertiesPanel != null) {
+                            propertiesPanel.setQueue(queue);
+                        }
+                        if (depthChartPanel != null) {
+                            depthChartPanel.updateData(queue);
+                        }
+                    }
+
+                    updateStatus("Queue " + queue.getName() + " refreshed");
+                });
+            } catch (Exception e) {
+                logger.error("Failed to refresh queue: " + queue.getName(), e);
+                display.asyncExec(() -> {
+                    queueListViewer.hideProgress();
+                    showError("Refresh Failed", "Failed to refresh queue: " + e.getMessage());
+                });
             }
-
-            updateStatus("Queue " + queue.getName() + " refreshed");
-        } catch (Exception e) {
-            logger.error("Failed to refresh queue: " + queue.getName(), e);
-            showError("Refresh Failed", "Failed to refresh queue: " + e.getMessage());
-        }
+        }).start();
     }
 
     private void handleCopyQueueName(QueueInfo queue) {

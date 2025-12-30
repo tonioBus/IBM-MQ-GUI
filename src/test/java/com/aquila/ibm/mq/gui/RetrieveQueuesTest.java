@@ -37,7 +37,7 @@ public class RetrieveQueuesTest {
         try {
             // Connect to Queue Manager
             queueManager = new MQQueueManager(queueManagerName, properties);
-            log.info("Connected to Queue Manager: " + queueManagerName);
+            log.info("Connected to Queue Manager: {}", queueManagerName);
 
             // Create PCF Message Agent
             agent = new PCFMessageAgent(queueManager);
@@ -47,7 +47,7 @@ public class RetrieveQueuesTest {
 
             // Request all queues (use wildcard)
             request.addParameter(CMQC.MQCA_Q_NAME, "*");
-            request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL);
+            request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL | MQConstants.MQQT_ALIAS);
 
             // Specify which attributes to retrieve
             request.addParameter(CMQCFC.MQIACF_Q_ATTRS, new int[]{

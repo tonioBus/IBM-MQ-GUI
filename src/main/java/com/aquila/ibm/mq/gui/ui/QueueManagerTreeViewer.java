@@ -4,6 +4,7 @@ import com.aquila.ibm.mq.gui.config.ConfigManager;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
+import com.aquila.ibm.mq.gui.mq.QueueService;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.*;
@@ -24,8 +25,8 @@ import java.util.function.Consumer;
  * Tree viewer for queue manager hierarchy with folders.
  * Supports selection, drag-drop, context menus, and toolbar operations.
  */
-@Slf4j
 public class QueueManagerTreeViewer extends Composite {
+    private static final Logger log = LoggerFactory.getLogger(QueueManagerTreeViewer.class);
 
     private Tree tree;
     private HierarchyConfig hierarchy;
