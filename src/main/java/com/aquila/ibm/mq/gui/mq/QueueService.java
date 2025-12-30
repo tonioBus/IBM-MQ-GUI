@@ -67,13 +67,15 @@ public class QueueService {
                 System.out.println(String.format("%-50s %-15s %-10d %-10d",
                         queueName, queueTypeStr, currentDepth, maxDepth));
                 QueueInfo queueInfo = new QueueInfo(queueName);
-                populateQueueInfo(queueInfo, responses[0]);
+                queueInfo.setQueueType(queueType);
+                queueInfo.setCurrentDepth(currentDepth);
+                queueInfo.setMaxDepth(maxDepth);
                 queues.add(queueInfo);
             } catch (Exception e) {
                 log.error("Error", e);
             }
         }
-        logger.info("queues: {}", queues.stream().map(queueInfo -> queueInfo.getName()).collect(Collectors.joining(",")));
+        logger.info("queues: {}", queues.stream().map(QueueInfo::getName).collect(Collectors.joining(",")));
         return queues;
     }
 
@@ -105,8 +107,8 @@ public class QueueService {
             queueInfo.setCurrentDepth(response.getIntParameterValue(MQConstants.MQIA_CURRENT_Q_DEPTH));
             queueInfo.setMaxDepth(response.getIntParameterValue(MQConstants.MQIA_MAX_Q_DEPTH));
             queueInfo.setQueueType(response.getIntParameterValue(MQConstants.MQIA_Q_TYPE));
-            queueInfo.setOpenInputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_INPUT_COUNT));
-            queueInfo.setOpenOutputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_OUTPUT_COUNT));
+//            queueInfo.setOpenInputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_INPUT_COUNT));
+//            queueInfo.setOpenOutputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_OUTPUT_COUNT));
 
             String desc = response.getStringParameterValue(MQConstants.MQCA_Q_DESC);
             queueInfo.setDescription(desc != null ? desc.trim() : "");
@@ -122,7 +124,7 @@ public class QueueService {
             queueInfo.setAttribute("MaxMsgLength", response.getIntParameterValue(MQConstants.MQIA_MAX_MSG_LENGTH));
 
         } catch (Exception e) {
-            logger.warn("Error populating queue info for {}: {}", queueInfo.getName(), e.getMessage());
+            logger.warn("Error populating queue info for {}", queueInfo.getName(), e);
         }
     }
 

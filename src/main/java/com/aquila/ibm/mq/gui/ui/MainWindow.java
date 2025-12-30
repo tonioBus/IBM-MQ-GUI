@@ -129,6 +129,11 @@ public class MainWindow {
         MenuItem clearAlertsItem = new MenuItem(toolsMenu, SWT.PUSH);
         clearAlertsItem.setText("Clear &Alerts");
         clearAlertsItem.addListener(SWT.Selection, e -> clearAlerts());
+
+        MenuItem sendMessageItem = new MenuItem(toolsMenu, SWT.PUSH);
+        sendMessageItem.setText("Send Message...");
+        sendMessageItem.addListener(SWT.Selection, e -> showSendMessageDialog());
+
     }
 
     private void createHelpMenu(Menu menuBar) {
@@ -314,6 +319,12 @@ public class MainWindow {
         dialog.open();
     }
 
+    private void showSendMessageDialog() {
+        SendMessageDialog sendMessageDialog = new SendMessageDialog(shell, messageService);
+        sendMessageDialog.open("DEV.QUEUE.1");
+    }
+
+
     private void clearAlerts() {
         alertManager.clearAlertHistory();
         updateAlertStatus();
@@ -357,7 +368,7 @@ public class MainWindow {
     private void showAbout() {
         MessageBox box = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
         box.setText("About");
-        box.setMessage("IBM MQ Queue Manager GUI\nVersion 1.0\n\nA comprehensive tool for managing IBM MQ queues.");
+        box.setMessage("IBM MQ Queue Visualizer GUI\nVersion 1.0\n\n(c) Aquila");
         box.open();
     }
 

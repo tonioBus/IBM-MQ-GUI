@@ -2,16 +2,21 @@ package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swtchart.Chart;
+import org.eclipse.swtchart.ILineSeries;
+import org.eclipse.swtchart.ISeries;
+import org.eclipse.swtchart.Range;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class DepthChartPanel extends Composite {
-//    private Chart chart;
+    private Chart chart;
     private QueueInfo selectedQueue;
     private List<QueueInfo> allQueues;
     private final Map<String, LinkedList<DataPoint>> queueDataHistory;
@@ -28,15 +33,15 @@ public class DepthChartPanel extends Composite {
         Label label = new Label(this, SWT.NONE);
         label.setText("Queue Depth Over Time:");
 
-//        chart = new Chart(this, SWT.NONE);
-//        chart.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-//
-//        chart.getTitle().setText("Queue Depth Monitoring");
-//        chart.getAxisSet().getXAxis(0).getTitle().setText("Time");
-//        chart.getAxisSet().getYAxis(0).getTitle().setText("Depth");
-//        chart.getAxisSet().getXAxis(0).enableCategory(true);
-//
-//        chart.getLegend().setPosition(SWT.RIGHT);
+        chart = new Chart(this, SWT.NONE);
+        chart.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        chart.getTitle().setText("Queue Depth Monitoring");
+        chart.getAxisSet().getXAxis(0).getTitle().setText("Time");
+        chart.getAxisSet().getYAxis(0).getTitle().setText("Depth");
+        chart.getAxisSet().getXAxis(0).enableCategory(true);
+
+        chart.getLegend().setPosition(SWT.RIGHT);
     }
 
     public void setQueues(List<QueueInfo> queues) {
@@ -87,9 +92,9 @@ public class DepthChartPanel extends Composite {
             return;
         }
 
-//        for (ISeries series : chart.getSeriesSet().getSeries()) {
-//            chart.getSeriesSet().deleteSeries(series.getId());
-//        }
+        for (ISeries series : chart.getSeriesSet().getSeries()) {
+            chart.getSeriesSet().deleteSeries(series.getId());
+        }
 
         String[] xLabels = new String[history.size()];
         double[] yValues = new double[history.size()];
@@ -101,34 +106,33 @@ public class DepthChartPanel extends Composite {
             i++;
         }
 
-//        chart.getAxisSet().getXAxis(0).setCategorySeries(xLabels);
-//
-//        ILineSeries lineSeries = (ILineSeries) chart.getSeriesSet().createSeries(
-//            ISeries.SeriesType.LINE, selectedQueue.getName());
-//        lineSeries.setYSeries(yValues);
-//        lineSeries.setLineColor(getDisplay().getSystemColor(SWT.COLOR_BLUE));
-//        lineSeries.setSymbolType(ILineSeries.PlotSymbolType.CIRCLE);
-//        lineSeries.setSymbolSize(4);
-//
-//        if (yValues.length > 0) {
-//            double maxDepth = selectedQueue.getMaxDepth();
-//            if (maxDepth > 0) {
-//                chart.getAxisSet().getYAxis(0).setRange(new Range(0, maxDepth * 1.1));
-//            } else {
-//                chart.getAxisSet().adjustRange();
-//            }
-//        }
-//
-//        chart.getAxisSet().getXAxis(0).adjustRange();
-//        chart.redraw();
+        chart.getAxisSet().getXAxis(0).setCategorySeries(xLabels);
+        ILineSeries lineSeries = (ILineSeries) chart.getSeriesSet().createSeries(
+            ISeries.SeriesType.LINE, selectedQueue.getName());
+        lineSeries.setYSeries(yValues);
+        lineSeries.setLineColor(getDisplay().getSystemColor(SWT.COLOR_BLUE));
+        lineSeries.setSymbolType(ILineSeries.PlotSymbolType.CIRCLE);
+        lineSeries.setSymbolSize(4);
+
+        if (yValues.length > 0) {
+            double maxDepth = selectedQueue.getMaxDepth();
+            if (maxDepth > 0) {
+                chart.getAxisSet().getYAxis(0).setRange(new Range(0, maxDepth * 1.1));
+            } else {
+                chart.getAxisSet().adjustRange();
+            }
+        }
+
+        chart.getAxisSet().getXAxis(0).adjustRange();
+        chart.redraw();
     }
 
     public void clearData() {
         queueDataHistory.clear();
-//        for (ISeries series : chart.getSeriesSet().getSeries()) {
-//            chart.getSeriesSet().deleteSeries(series.getId());
-//        }
-//        chart.redraw();
+        for (ISeries series : chart.getSeriesSet().getSeries()) {
+            chart.getSeriesSet().deleteSeries(series.getId());
+        }
+        chart.redraw();
     }
 
     private static class DataPoint {
