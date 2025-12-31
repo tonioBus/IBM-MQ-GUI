@@ -1,6 +1,7 @@
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.model.ConnectionConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
@@ -717,7 +718,7 @@ public class QueueManagerTreeViewer extends Composite {
 
         QueueManagerSelectionDialog dialog = new QueueManagerSelectionDialog(
             getShell(), configManager, hierarchy);
-        com.aquila.ibm.mq.gui.model.ConnectionConfig config = dialog.open();
+        ConnectionConfig config = dialog.open();
 
         if (config != null) {
             String displayName = config.getName() != null && !config.getName().isEmpty()

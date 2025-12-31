@@ -5,6 +5,10 @@ setmqaut -m QM1 -t qmgr -p admin +dsp
 setmqaut -m QM1 -t qmgr -p admin +inq +connect
 dspmqaut -m QM1 -t qmgr -p admin
 
+setmqaut -m QM2 -t qmgr -p app +dsp
+setmqaut -m QM2 -t qmgr -p app +inq +connect
+dspmqaut -m QM2 -t qmgr -p app
+
 # Setup for the building of the native image on windows
 add to native-image.cmd (located on <JAVA_HOME of graalvm)/bin
 @echo off
