@@ -38,6 +38,11 @@ public class QueueManagerTreeViewer extends Composite {
     // Selection listener
     private Consumer<SelectionEvent> selectionListener;
 
+    // Custom icons
+    private Image folderIcon;
+    private Image connectedIcon;
+    private Image errorIcon;
+
     /**
      * Event fired when a tree node is selected.
      */
@@ -66,12 +71,50 @@ public class QueueManagerTreeViewer extends Composite {
         this.treeItemToNodeId = new HashMap<>();
         this.nodeIdToTreeItem = new HashMap<>();
 
+        loadIcons();
         setLayout(new GridLayout());
         createToolbar();
         createTree();
         createContextMenu();
         setupDragAndDrop();
         setupKeyboardShortcuts();
+    }
+
+    /**
+     * Load custom icons from resources.
+     */
+    private void loadIcons() {
+        Display display = getDisplay();
+
+        try {
+            // Load folder icon
+            folderIcon = new Image(display,
+                getClass().getResourceAsStream("/icons/folder.png"));
+            log.debug("Loaded folder icon");
+        } catch (Exception e) {
+            log.warn("Failed to load folder icon, using system default", e);
+            folderIcon = display.getSystemImage(SWT.ICON_QUESTION);
+        }
+
+        try {
+            // Load connected icon
+            connectedIcon = new Image(display,
+                getClass().getResourceAsStream("/icons/connected.png"));
+            log.debug("Loaded connected icon");
+        } catch (Exception e) {
+            log.warn("Failed to load connected icon, using system default", e);
+            connectedIcon = display.getSystemImage(SWT.ICON_WORKING);
+        }
+
+        try {
+            // Load error icon
+            errorIcon = new Image(display,
+                getClass().getResourceAsStream("/icons/error.png"));
+            log.debug("Loaded error icon");
+        } catch (Exception e) {
+            log.warn("Failed to load error icon, using system default", e);
+            errorIcon = display.getSystemImage(SWT.ICON_ERROR);
+        }
     }
 
     private void createToolbar() {
@@ -558,20 +601,18 @@ public class QueueManagerTreeViewer extends Composite {
      * Get the appropriate icon for a node based on its type and connection status.
      */
     private Image getNodeIcon(HierarchyNode node) {
-        Display display = getDisplay();
-
         if (node.isFolder()) {
             // Use folder icon
-            return display.getSystemImage(SWT.ICON_INFORMATION);  // Placeholder
+            return folderIcon;
         } else {
             // Queue manager - check connection status
             String connectionId = node.getConnectionConfigId();
             if (connectionId != null && connectionManager.isConnected(connectionId)) {
-                // Connected - use green/active icon
-                return display.getSystemImage(SWT.ICON_INFORMATION);  // Placeholder
+                // Connected - use connected icon
+                return connectedIcon;
             } else {
-                // Disconnected - use gray/inactive icon
-                return display.getSystemImage(SWT.ICON_WARNING);  // Placeholder
+                // Disconnected or connection error - use error icon
+                return errorIcon;
             }
         }
     }
@@ -908,9 +949,22 @@ public class QueueManagerTreeViewer extends Composite {
 
     @Override
     public void dispose() {
+        // Dispose custom icons
+        if (folderIcon != null && !folderIcon.isDisposed()) {
+            folderIcon.dispose();
+        }
+        if (connectedIcon != null && !connectedIcon.isDisposed()) {
+            connectedIcon.dispose();
+        }
+        if (errorIcon != null && !errorIcon.isDisposed()) {
+            errorIcon.dispose();
+        }
+
+        // Dispose tree
         if (tree != null && !tree.isDisposed()) {
             tree.dispose();
         }
+
         super.dispose();
     }
 }

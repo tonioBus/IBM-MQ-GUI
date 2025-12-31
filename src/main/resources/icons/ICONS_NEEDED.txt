@@ -1,0 +1,13 @@
+Please add the following 16x16 PNG icon files to this directory:
+
+1. folder.png - A folder icon (yellow/blue folder)
+2. error.png - An error/warning icon (red X or warning triangle)
+3. connected.png - A success/connected icon (green checkmark or working indicator)
+
+You can:
+- Create them using an image editor
+- Download from icon libraries (e.g., https://icons8.com, https://www.flaticon.com)
+- Use system icons from your OS
+
+Recommended size: 16x16 pixels
+Format: PNG with transparency

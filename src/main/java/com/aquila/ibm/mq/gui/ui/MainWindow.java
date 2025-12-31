@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainWindow {
     private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
@@ -162,7 +163,7 @@ public class MainWindow {
 
         // NEW: Queue Manager Tree (20%)
         queueManagerTreeViewer = new QueueManagerTreeViewer(
-            sashForm, SWT.BORDER, connectionManager, configManager);
+                sashForm, SWT.BORDER, connectionManager, configManager);
         queueManagerTreeViewer.addSelectionListener(this::onTreeSelection);
 
         // EXISTING: Queue List (30%)
@@ -394,7 +395,7 @@ public class MainWindow {
                 ConnectionConfig config = findConnectionConfig(connectionId);
                 if (config == null) {
                     showError("Configuration Not Found",
-                        "Connection configuration not found for: " + connectionId);
+                            "Connection configuration not found for: " + connectionId);
                     return;
                 }
 
@@ -436,10 +437,11 @@ public class MainWindow {
                         display.asyncExec(() -> {
                             queueListViewer.hideProgress();
                             showError("Connection Failed", e.getMessage());
+                            queueManagerTreeViewer.disconnectSelected();
+                            queueManagerTreeViewer.updateNodeIcon(nodeId);
                         });
                     }
                 }).start();
-
                 return; // Don't continue with synchronous flow
             }
 
@@ -476,9 +478,9 @@ public class MainWindow {
 
     private ConnectionConfig findConnectionConfig(String name) {
         return configManager.loadConnections().stream()
-            .filter(c -> name.equals(c.getName()))
-            .findFirst()
-            .orElse(null);
+                .filter(c -> name.equals(c.getName()))
+                .findFirst()
+                .orElse(null);
     }
 
     private void loadHierarchy() {
@@ -566,8 +568,8 @@ public class MainWindow {
         try {
             TextTransfer textTransfer = TextTransfer.getInstance();
             clipboard.setContents(
-                new Object[]{queue.getName()},
-                new Transfer[]{textTransfer}
+                    new Object[]{queue.getName()},
+                    new Transfer[]{textTransfer}
             );
             updateStatus("Queue name copied: " + queue.getName());
         } finally {
