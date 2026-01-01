@@ -127,9 +127,9 @@ public class ConnectionDialog {
         testButton.addListener(SWT.Selection, e -> testConnection());
 
         Button connectButton = new Button(buttonBar, SWT.PUSH);
-        connectButton.setText("Connect");
+        connectButton.setText("Create");
         connectButton.setLayoutData(new GridData(SWT.END, SWT.CENTER, true, false));
-        connectButton.addListener(SWT.Selection, e -> connect());
+        connectButton.addListener(SWT.Selection, e -> create());
         shell.setDefaultButton(connectButton);
 
         Button cancelButton = new Button(buttonBar, SWT.PUSH);
@@ -185,7 +185,7 @@ public class ConnectionDialog {
     }
 
     private void saveProfile() {
-        ConnectionConfig config = getConnectionConfig();
+        final ConnectionConfig config = getConnectionConfig();
         if (config.getName() == null || config.getName().isEmpty()) {
             showError("Please enter a profile name");
             return;
@@ -237,7 +237,7 @@ public class ConnectionDialog {
         }
     }
 
-    private void connect() {
+    private void create() {
         ConnectionConfig config = getConnectionConfig();
         result = config;
         shell.close();

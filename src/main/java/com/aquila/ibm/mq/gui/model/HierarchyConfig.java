@@ -258,7 +258,7 @@ public class HierarchyConfig {
     public List<HierarchyNode> getAllQueueManagers() {
         List<HierarchyNode> queueManagers = new ArrayList<>();
         for (HierarchyNode node : nodes.values()) {
-            if (node.isQueueManager()) {
+            if (node.isQueueBrowser()) {
                 queueManagers.add(node);
             }
         }
@@ -270,7 +270,7 @@ public class HierarchyConfig {
      */
     public HierarchyNode findQueueManagerByConfigId(String connectionConfigId) {
         for (HierarchyNode node : nodes.values()) {
-            if (node.isQueueManager() && connectionConfigId.equals(node.getConnectionConfigId())) {
+            if (node.isQueueBrowser() && connectionConfigId.equals(node.getConnectionConfigId())) {
                 return node;
             }
         }

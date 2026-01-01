@@ -329,6 +329,48 @@
       ]
     },
     {
+      "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig",
+      "fields": [
+        {
+          "name": "descriptions"
+        },
+        {
+          "name": "inspect"
+        },
+        {
+          "name": "queueManager"
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig$QueueDescription",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "label",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfigTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSerDeser",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.ibm.mq.MQJavaComponent",
       "methods": [
         {
@@ -17019,12 +17061,7 @@
     },
     {
       "type": "com.ibm.mq.constants.MQConstants",
-      "allPublicFields": true,
-      "fields": [
-        {
-          "name": "sccsid"
-        }
-      ]
+      "allPublicFields": true
     },
     {
       "type": "com.ibm.mq.constants.MQPropertyIdentifiers",
@@ -17553,6 +17590,18 @@
       ]
     },
     {
+      "type": "com.intellij.junit6.JUnit6IdeaTestRunner",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.intellij.rt.debugger.agent.CaptureStorage"
+    },
+    {
       "type": "com.intellij.rt.execution.application.AppMainV2$Agent",
       "methods": [
         {
@@ -17560,6 +17609,18 @@
           "parameterTypes": [
             "java.lang.String",
             "java.lang.instrument.Instrumentation"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.intellij.rt.junit.JUnitStarter",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "main",
+          "parameterTypes": [
+            "java.lang.String[]"
           ]
         }
       ]
@@ -17782,6 +17843,9 @@
           "name": "TYPE"
         }
       ]
+    },
+    {
+      "type": "java.lang.Record"
     },
     {
       "type": "java.lang.RuntimePermission"
@@ -19476,6 +19540,9 @@
       "type": "org.junit.platform.commons.annotation.Testable"
     },
     {
+      "type": "org.junit.platform.engine.discovery.NestedClassSelector"
+    },
+    {
       "type": "org.junit.platform.launcher.LauncherSession",
       "methods": [
         {
@@ -19507,6 +19574,15 @@
           "name": "<init>",
           "parameterTypes": [
             "long",
+            "boolean",
+            "boolean"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "long",
+            "boolean",
             "boolean",
             "boolean"
           ]
@@ -19552,8 +19628,23 @@
       ],
       "methods": [
         {
+          "name": "checkAndLoadMain",
+          "parameterTypes": [
+            "boolean",
+            "int",
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "getApplicationClass",
           "parameterTypes": []
+        },
+        {
+          "name": "makePlatformString",
+          "parameterTypes": [
+            "boolean",
+            "byte[]"
+          ]
         }
       ]
     },
@@ -19612,6 +19703,22 @@
       ]
     },
     {
+      "type": "sun.misc.Unsafe",
+      "fields": [
+        {
+          "name": "theUnsafe"
+        }
+      ],
+      "methods": [
+        {
+          "name": "allocateInstance",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
       "type": "sun.security.provider.DRBG",
       "methods": [
         {
@@ -19645,6 +19752,13 @@
     },
     {
       "type": "sun.util.resources.cldr.CalendarData"
+    },
+    {
+      "type": {
+        "proxy": [
+          "java.lang.Runnable"
+        ]
+      }
     }
   ]
 }

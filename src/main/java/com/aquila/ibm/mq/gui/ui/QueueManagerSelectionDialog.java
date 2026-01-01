@@ -3,10 +3,13 @@ package com.aquila.ibm.mq.gui.ui;
 import com.aquila.ibm.mq.gui.config.ConfigManager;
 import com.aquila.ibm.mq.gui.model.ConnectionConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
+import com.aquila.ibm.mq.gui.mq.QueueService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +19,8 @@ import java.util.stream.Collectors;
  * Dialog for selecting a queue manager connection to add to the hierarchy.
  */
 public class QueueManagerSelectionDialog {
+    private static final Logger logger = LoggerFactory.getLogger(QueueManagerSelectionDialog.class);
+
     private final Shell parentShell;
     private final ConfigManager configManager;
     private final HierarchyConfig hierarchy;
@@ -40,7 +45,7 @@ public class QueueManagerSelectionDialog {
             // No connections available - offer to create one
             MessageBox box = new MessageBox(parentShell, SWT.ICON_INFORMATION | SWT.YES | SWT.NO);
             box.setText("No Connections Available");
-            box.setMessage("All connections are already in the hierarchy.\n\nWould you like to create a new connection?");
+            box.setMessage("No Queue Manager detected.\n\nWould you like to create a new connection first?");
 
             if (box.open() == SWT.YES) {
                 ConnectionDialog dialog = new ConnectionDialog(parentShell, configManager);
@@ -89,7 +94,7 @@ public class QueueManagerSelectionDialog {
 
     private void createShell() {
         shell = new Shell(parentShell, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE);
-        shell.setText("Add Queue Manager");
+        shell.setText("Add Queue Browser");
         shell.setLayout(new GridLayout());
     }
 
@@ -125,6 +130,11 @@ public class QueueManagerSelectionDialog {
         newButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
         newButton.addListener(SWT.Selection, e -> onNewConnection());
 
+        Button filterFileButton = new Button(buttonBar, SWT.PUSH);
+        filterFileButton.setText("New Filter Files...");
+        filterFileButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+        filterFileButton.addListener(SWT.Selection, e -> onNewFilterFiles());
+
         Button selectButton = new Button(buttonBar, SWT.PUSH);
         selectButton.setText("Select");
         selectButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
@@ -136,6 +146,17 @@ public class QueueManagerSelectionDialog {
         cancelButton.addListener(SWT.Selection, e -> onCancel());
 
         shell.setDefaultButton(selectButton);
+    }
+
+    private void onNewFilterFiles() {
+        DirectoryDialog dialog = new DirectoryDialog(parentShell);
+        dialog.setMessage("Select a filter files");
+        dialog.setFilterPath(System.getProperty("user.home")); // Windows specific
+        String file = dialog.open();
+        logger.info("RESULT={}", file);
+        if (file != null) {
+            shell.dispose();
+        }
     }
 
     private void onNewConnection() {

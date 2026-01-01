@@ -3,6 +3,7 @@ package com.aquila.ibm.mq.gui.ui;
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.config.ConfigManager;
 import com.aquila.ibm.mq.gui.model.ConnectionConfig;
+import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
@@ -15,7 +16,6 @@ import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainWindow {
     private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
@@ -387,7 +386,7 @@ public class MainWindow {
             }
             updateStatus("Folder selected: " + event.node.getName());
 
-        } else if (event.type == QueueManagerTreeViewer.SelectionType.QUEUE_MANAGER) {
+        } else if (event.type == QueueManagerTreeViewer.SelectionType.QUEUE_BROWSER) {
             String connectionId = event.node.getConnectionConfigId();
 
             // Connect if not already connected
@@ -484,14 +483,14 @@ public class MainWindow {
     }
 
     private void loadHierarchy() {
-        com.aquila.ibm.mq.gui.model.HierarchyConfig hierarchy = configManager.loadHierarchy();
+        HierarchyConfig hierarchy = configManager.loadHierarchy();
         if (hierarchy == null) {
             // First time: create default hierarchy from existing connections
             List<ConnectionConfig> connections = configManager.loadConnections();
             hierarchy = configManager.createDefaultHierarchy(connections);
             configManager.saveHierarchy(hierarchy);
         }
-        queueManagerTreeViewer.setHierarchy(hierarchy);
+        queueManagerTreeViewer.setHierarchyConfig(hierarchy);
     }
 
     private void showThresholdDialog() {
@@ -628,7 +627,7 @@ public class MainWindow {
     private void cleanup() {
         // Save hierarchy state (expansion, selection)
         if (queueManagerTreeViewer != null) {
-            configManager.saveHierarchy(queueManagerTreeViewer.getHierarchy());
+            configManager.saveHierarchy(queueManagerTreeViewer.getHierarchyConfig());
         }
 
         stopMonitoring();

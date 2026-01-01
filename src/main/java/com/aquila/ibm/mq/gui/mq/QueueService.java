@@ -76,7 +76,7 @@ public class QueueService {
         });
         // Send request and get responses
         PCFMessage[] responses = agent.send(request);
-        System.out.println("\nFound " + responses.length + " queues:\n");
+        logger.info("\nFound  {} queues.", responses.length);
         for (PCFMessage response : responses) {
             try {
                 String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
@@ -84,18 +84,16 @@ public class QueueService {
                 int currentDepth = response.getIntParameterValue(CMQC.MQIA_CURRENT_Q_DEPTH);
                 int maxDepth = response.getIntParameterValue(CMQC.MQIA_MAX_Q_DEPTH);
 
-                String queueTypeStr = getQueueTypeString(queueType);
-
                 QueueInfo queueInfo = new QueueInfo(queueName);
                 queueInfo.setQueueType(queueType);
                 queueInfo.setCurrentDepth(currentDepth);
                 queueInfo.setMaxDepth(maxDepth);
+                queueInfo.setQueueType(queueType);
                 queues.add(queueInfo);
             } catch (Exception e) {
                 logger.error("Error", e);
             }
         }
-        logger.info("queues: {}", queues.stream().map(QueueInfo::getName).collect(Collectors.joining(",")));
         return queues;
     }
 
