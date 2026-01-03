@@ -1,7 +1,6 @@
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.ConfigManager;
-import com.aquila.ibm.mq.gui.model.ConnectionConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
@@ -135,7 +134,7 @@ public class QueueManagerTreeViewer extends Composite {
         ToolItem addQMItem = new ToolItem(toolbar, SWT.PUSH);
         addQMItem.setText("Add Queue Browser");
         addQMItem.setToolTipText("Add a queue browser to the hierarchy");
-        addQMItem.addListener(SWT.Selection, e -> addQueueManager());
+        addQMItem.addListener(SWT.Selection, e -> addQueueBrowser());
 
         // Separator
         new ToolItem(toolbar, SWT.SEPARATOR);
@@ -157,21 +156,6 @@ public class QueueManagerTreeViewer extends Composite {
 
         // Separator
         new ToolItem(toolbar, SWT.SEPARATOR);
-
-        // Connect button
-        ToolItem connectItem = new ToolItem(toolbar, SWT.PUSH);
-        connectItem.setText("Connect");
-        connectItem.setToolTipText("Connect to selected queue manager");
-        connectItem.addListener(SWT.Selection, e -> connectSelected());
-
-        // Separator
-        new ToolItem(toolbar, SWT.SEPARATOR);
-
-        // Disconnect button
-        ToolItem disconnectItem = new ToolItem(toolbar, SWT.PUSH);
-        disconnectItem.setText("Disconnect");
-        disconnectItem.setToolTipText("Disconnect from selected queue manager");
-        disconnectItem.addListener(SWT.Selection, e -> disconnectSelected());
 
         // Separator
         new ToolItem(toolbar, SWT.SEPARATOR);
@@ -220,7 +204,7 @@ public class QueueManagerTreeViewer extends Composite {
             } else if (selected.isFolder()) {
                 createFolderContextMenu(menu, selected);
             } else {
-                createQueueManagerContextMenu(menu, selected);
+                createQueueBrowserContextMenu(menu, selected);
             }
         });
 
@@ -231,10 +215,6 @@ public class QueueManagerTreeViewer extends Composite {
         MenuItem addFolderItem = new MenuItem(menu, SWT.PUSH);
         addFolderItem.setText("Add Folder...");
         addFolderItem.addListener(SWT.Selection, e -> addFolder());
-
-        MenuItem addQMItem = new MenuItem(menu, SWT.PUSH);
-        addQMItem.setText("Add Queue Browser...");
-        addQMItem.addListener(SWT.Selection, e -> addQueueManager());
     }
 
     private void createFolderContextMenu(Menu menu, HierarchyNode folder) {
@@ -244,7 +224,7 @@ public class QueueManagerTreeViewer extends Composite {
 
         MenuItem addQMItem = new MenuItem(menu, SWT.PUSH);
         addQMItem.setText("Add Queue Browser...");
-        addQMItem.addListener(SWT.Selection, e -> addQueueManager());
+        addQMItem.addListener(SWT.Selection, e -> addQueueBrowser());
 
         new MenuItem(menu, SWT.SEPARATOR);
 
@@ -256,107 +236,18 @@ public class QueueManagerTreeViewer extends Composite {
         deleteItem.setText("Delete");
         deleteItem.addListener(SWT.Selection, e -> deleteSelected());
 
-        // Connect/Disconnect all (if folder has queue managers)
-        List<HierarchyNode> children = hierarchyConfig.getChildren(folder.getId());
-        boolean hasQueueManagers = children.stream().anyMatch(HierarchyNode::isQueueBrowser);
-
-        if (hasQueueManagers) {
-            new MenuItem(menu, SWT.SEPARATOR);
-
-            MenuItem connectAllItem = new MenuItem(menu, SWT.PUSH);
-            connectAllItem.setText("Connect All");
-            connectAllItem.addListener(SWT.Selection, e -> connectAllInFolder(folder));
-
-            MenuItem disconnectAllItem = new MenuItem(menu, SWT.PUSH);
-            disconnectAllItem.setText("Disconnect All");
-            disconnectAllItem.addListener(SWT.Selection, e -> disconnectAllInFolder(folder));
-        }
     }
 
-    private void createQueueManagerContextMenu(Menu menu, HierarchyNode qm) {
-        String connectionId = qm.getConnectionConfigId();
-        boolean isConnected = connectionManager.isConnected(connectionId);
-
-        if (isConnected) {
-            MenuItem disconnectItem = new MenuItem(menu, SWT.PUSH);
-            disconnectItem.setText("Disconnect");
-            disconnectItem.addListener(SWT.Selection, e -> disconnectSelected());
-        } else {
-            MenuItem connectItem = new MenuItem(menu, SWT.PUSH);
-            connectItem.setText("Connect");
-            connectItem.addListener(SWT.Selection, e -> connectSelected());
-        }
-
+    private void createQueueBrowserContextMenu(Menu menu, HierarchyNode hierarchyNode) {
         new MenuItem(menu, SWT.SEPARATOR);
 
         MenuItem editConnItem = new MenuItem(menu, SWT.PUSH);
-        editConnItem.setText("Edit Connection...");
-        editConnItem.addListener(SWT.Selection, e -> editConnectionConfig(qm));
+        editConnItem.setText("Edit Queue Browser");
+        editConnItem.addListener(SWT.Selection, e -> editQueueBrowser(hierarchyNode));
 
         MenuItem removeItem = new MenuItem(menu, SWT.PUSH);
-        removeItem.setText("Remove from Hierarchy");
+        removeItem.setText("Remove");
         removeItem.addListener(SWT.Selection, e -> deleteSelected());
-    }
-
-    private void connectAllInFolder(HierarchyNode folder) {
-        List<HierarchyNode> children = hierarchyConfig.getChildren(folder.getId());
-        int connected = 0;
-
-        for (HierarchyNode child : children) {
-            if (child.isQueueBrowser()) {
-                String connectionId = child.getConnectionConfigId();
-                if (!connectionManager.isConnected(connectionId)) {
-                    ConnectionConfig config =
-                            configManager.loadConnections().stream()
-                                    .filter(c -> connectionId.equals(c.getName()))
-                                    .findFirst()
-                                    .orElse(null);
-
-                    if (config != null) {
-                        try {
-                            connectionManager.connect(connectionId, config);
-                            updateNodeIcon(child.getId());
-                            connected++;
-                        } catch (Exception e) {
-                            log.error("Failed to connect to: {}", child.getName(), e);
-                        }
-                    }
-                }
-            }
-        }
-
-        MessageBox box = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-        box.setText("Connect All");
-        box.setMessage(String.format("Connected to %d queue manager(s)", connected));
-        box.open();
-    }
-
-    private void disconnectAllInFolder(HierarchyNode folder) {
-        List<HierarchyNode> children = hierarchyConfig.getChildren(folder.getId());
-        int disconnected = 0;
-
-        for (HierarchyNode child : children) {
-            if (child.isQueueBrowser()) {
-                String connectionId = child.getConnectionConfigId();
-                if (connectionManager.isConnected(connectionId)) {
-                    connectionManager.disconnect(connectionId);
-                    updateNodeIcon(child.getId());
-                    disconnected++;
-                }
-            }
-        }
-
-        MessageBox box = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-        box.setText("Disconnect All");
-        box.setMessage(String.format("Disconnected from %d queue manager(s)", disconnected));
-        box.open();
-    }
-
-    private void editConnectionConfig(HierarchyNode qm) {
-        MessageBox box = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-        box.setText("Edit Connection");
-        box.setMessage("Please use the Connection menu to edit connection configurations.");
-        box.open();
     }
 
     private void setupDragAndDrop() {
@@ -506,19 +397,7 @@ public class QueueManagerTreeViewer extends Composite {
                 }
                 // Ctrl+Shift+N - New queue manager
                 else if (e.stateMask == (SWT.CTRL | SWT.SHIFT) && e.keyCode == 'n') {
-                    addQueueManager();
-                }
-                // Enter - Connect to queue manager
-                else if (e.keyCode == SWT.CR && selected != null && selected.isQueueBrowser()) {
-                    String connectionId = selected.getConnectionConfigId();
-                    if (!connectionManager.isConnected(connectionId)) {
-                        connectSelected();
-                    }
-                }
-                // Ctrl+D - Disconnect
-                else if (e.stateMask == SWT.CTRL && e.keyCode == 'd' &&
-                        selected != null && selected.isQueueBrowser()) {
-                    disconnectSelected();
+                    addQueueBrowser();
                 }
             }
         });
@@ -620,15 +499,8 @@ public class QueueManagerTreeViewer extends Composite {
             // Use folder icon
             return folderIcon;
         } else {
-            // Queue manager - check connection status
-            String connectionId = node.getConnectionConfigId();
-            if (connectionId != null && connectionManager.isConnected(connectionId)) {
-                // Connected - use connected icon
-                return connectedIcon;
-            } else {
-                // Disconnected or connection error - use error icon
-                return errorIcon;
-            }
+            return connectedIcon;
+            // return errorIcon;
         }
     }
 
@@ -730,78 +602,66 @@ public class QueueManagerTreeViewer extends Composite {
      * Add a new folder to the hierarchy.
      */
     public void addFolder() {
-        HierarchyNode selectedNode = getSelectedNode();
-        String parentId = null;
-
-        // If a folder is selected, add as child; otherwise add to root
-        if (selectedNode != null && selectedNode.isFolder()) {
-            parentId = selectedNode.getId();
-        }
-
-        FolderDialog dialog = new FolderDialog(getShell());
-        String folderName = dialog.open();
+        final HierarchyNode selectedNode = getSelectedNode();
+        final String parentId = selectedNode != null && selectedNode.isFolder() ? selectedNode.getId() : null;
+        final FolderDialog dialog = new FolderDialog(getShell());
+        final String folderName = dialog.open();
 
         if (folderName != null) {
-            HierarchyNode newFolder = new HierarchyNode(HierarchyNode.NodeType.FOLDER, folderName);
+            final HierarchyNode newFolder = new HierarchyNode(HierarchyNode.NodeType.FOLDER, folderName);
             hierarchyConfig.addNode(newFolder, parentId);
-
             // Save and refresh
             configManager.saveHierarchy(hierarchyConfig);
             refresh();
-
             // Select the new folder
             TreeItem item = nodeIdToTreeItem.get(newFolder.getId());
             if (item != null) {
                 tree.setSelection(item);
                 tree.showItem(item);
             }
-
             log.info("Added folder: {}", folderName);
         }
     }
 
     /**
-     * Add a new queue manager to the hierarchy.
+     * Add a new queue browser to the hierarchy.
      */
-    public void addQueueManager() {
+    public void addQueueBrowser() {
         final HierarchyNode selectedNode = getSelectedNode();
-        String parentId = null;
+        final String parentId = selectedNode != null && selectedNode.isFolder() ?
+                selectedNode.getId() :
+                null;
+        final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
+                getShell(), configManager, null, false);
+        final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
 
-        // If a folder is selected, add as child; otherwise add to root
-        if (selectedNode != null && selectedNode.isFolder()) {
-            parentId = selectedNode.getId();
-        }
-
-        QueueManagerSelectionDialog dialog = new QueueManagerSelectionDialog(
-                getShell(), configManager, hierarchyConfig);
-        ConnectionConfig config = dialog.open();
-
-        if (config != null) {
-            String displayName = config.getName() != null && !config.getName().isEmpty()
-                    ? config.getName()
-                    : config.getQueueManager() + "@" + config.getHost();
-
-            HierarchyNode newNode = new HierarchyNode(
-                    HierarchyNode.NodeType.BROWSER,
-                    displayName,
-                    config.getName()
-            );
-
+        log.info("addQueueBrowser: {}", queueBrowserConfig);
+        if (queueBrowserConfig != null) {
+            final String displayName = queueBrowserConfig.getLabel();
+            final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.BROWSER, displayName);
             hierarchyConfig.addNode(newNode, parentId);
-
-            // Save and refresh
             configManager.saveHierarchy(hierarchyConfig);
+            this.configManager.save(newNode.getId(), queueBrowserConfig);
             refresh();
-
-            // Select the new queue manager
             TreeItem item = nodeIdToTreeItem.get(newNode.getId());
             if (item != null) {
                 tree.setSelection(item);
                 tree.showItem(item);
             }
-
             log.info("Added queue manager: {}", displayName);
         }
+    }
+
+    public void editQueueBrowser(HierarchyNode hierarchyNode) {
+        log.info("editQueueBrowser: {}", hierarchyNode);
+        final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
+                getShell(), configManager, hierarchyNode, true);
+        final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
+        log.info("editQueueBrowser: {}", queueBrowserConfig);
+        if (queueBrowserConfig == null) return;
+        hierarchyNode.setQueueBrowserConfig(queueBrowserConfig);
+        this.configManager.save(hierarchyNode.getId(), queueBrowserConfig);
+        refresh();
     }
 
     /**
@@ -870,13 +730,6 @@ public class QueueManagerTreeViewer extends Composite {
         }
 
         if (confirmBox.open() == SWT.YES) {
-            // Disconnect if connected
-            if (node.isQueueBrowser() && node.getConnectionConfigId() != null) {
-                if (connectionManager.isConnected(node.getConnectionConfigId())) {
-                    connectionManager.disconnect(node.getConnectionConfigId());
-                }
-            }
-
             // Remove from hierarchy
             hierarchyConfig.removeNode(node.getId());
             configManager.saveHierarchy(hierarchyConfig);
@@ -884,82 +737,6 @@ public class QueueManagerTreeViewer extends Composite {
 
             log.info("Deleted node: {}", node.getName());
         }
-    }
-
-    /**
-     * Connect to the selected queue manager.
-     */
-    public void connectSelected() {
-        HierarchyNode node = getSelectedNode();
-        if (node == null || !node.isQueueBrowser()) {
-            return;
-        }
-
-        String connectionId = node.getConnectionConfigId();
-        if (connectionManager.isConnected(connectionId)) {
-            MessageBox box = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-            box.setText("Already Connected");
-            box.setMessage("Already connected to " + node.getName());
-            box.open();
-            return;
-        }
-
-        // Find connection config
-        com.aquila.ibm.mq.gui.model.ConnectionConfig config = configManager.loadConnections().stream()
-                .filter(c -> connectionId.equals(c.getName()))
-                .findFirst()
-                .orElse(null);
-
-        if (config == null) {
-            MessageBox box = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
-            box.setText("Configuration Not Found");
-            box.setMessage("Connection configuration not found for: " + connectionId);
-            box.open();
-            return;
-        }
-
-        try {
-            connectionManager.connect(connectionId, config);
-            updateNodeIcon(node.getId());
-
-            MessageBox box = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-            box.setText("Connected");
-            box.setMessage("Successfully connected to " + node.getName());
-            box.open();
-
-            log.info("Connected to: {}", node.getName());
-        } catch (Exception e) {
-            MessageBox box = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
-            box.setText("Connection Failed");
-            box.setMessage("Failed to connect: " + e.getMessage());
-            box.open();
-
-            log.error("Failed to connect to: {}", node.getName(), e);
-        }
-    }
-
-    /**
-     * Disconnect from the selected queue manager.
-     */
-    public void disconnectSelected() {
-        HierarchyNode node = getSelectedNode();
-        if (node == null || !node.isQueueBrowser()) {
-            return;
-        }
-
-        String connectionId = node.getConnectionConfigId();
-        if (!connectionManager.isConnected(connectionId)) {
-            MessageBox box = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
-            box.setText("Not Connected");
-            box.setMessage("Not connected to " + node.getName());
-            box.open();
-            return;
-        }
-
-        connectionManager.disconnect(connectionId);
-        updateNodeIcon(node.getId());
-
-        log.info("Disconnected from: {}", node.getName());
     }
 
     @Override

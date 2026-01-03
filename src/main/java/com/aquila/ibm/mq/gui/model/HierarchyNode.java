@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.beans.Transient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -23,10 +24,9 @@ public class HierarchyNode {
     }
 
     private String id;
-    private QueueBrowserConfig queueBrowserConfig;
+    private transient QueueBrowserConfig queueBrowserConfig;
     private NodeType type;
     private String name;
-    private String connectionConfigId;  // Reference to ConnectionConfig name (null for folders)
     private String parentId;            // Parent node ID (null for root nodes)
     private List<String> childIds;
     private boolean expanded;           // Tree expansion state
@@ -42,13 +42,6 @@ public class HierarchyNode {
         this.type = type;
         this.name = name;
     }
-
-    public HierarchyNode(NodeType type, String name, String connectionConfigId) {
-        this(type, name);
-        this.connectionConfigId = connectionConfigId;
-    }
-
-    // Utility methods
 
     public boolean isFolder() {
         return type == NodeType.FOLDER;

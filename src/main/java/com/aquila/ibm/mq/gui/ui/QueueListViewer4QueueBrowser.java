@@ -15,15 +15,13 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
 
-public class QueueListViewer extends Composite {
+public class QueueListViewer4QueueBrowser extends Composite {
 
     public interface ContextMenuActionListener {
         void onSendMessage(QueueInfo queue);
         void onBrowseMessages(QueueInfo queue);
         void onRefreshQueue(QueueInfo queue);
-        void onCopyQueueName(QueueInfo queue);
     }
     private final Table table;
     private final List<QueueInfo> queues;
@@ -44,7 +42,7 @@ public class QueueListViewer extends Composite {
     private Spinner depthFilterSpinner;
     private Label filterStatusLabel;
 
-    public QueueListViewer(Composite parent, int style, AlertManager alertManager) {
+    public QueueListViewer4QueueBrowser(Composite parent, int style, AlertManager alertManager) {
         super(parent, style);
         this.queues = new ArrayList<>();
         this.filteredQueues = new ArrayList<>();
@@ -215,10 +213,6 @@ public class QueueListViewer extends Composite {
         return new ArrayList<>(queues);
     }
 
-    public void addSelectionListener(Consumer<QueueInfo> listener) {
-        this.selectionListener = listener;
-    }
-
     public QueueInfo getSelectedQueue() {
         int index = table.getSelectionIndex();
         if (index >= 0 && index < queues.size()) {
@@ -262,30 +256,8 @@ public class QueueListViewer extends Composite {
                 refreshItem.setText("Refresh Queue Info");
                 refreshItem.addListener(SWT.Selection, ev ->
                     contextMenuActionListener.onRefreshQueue(selectedQueue));
-
-                // Separator
-                new MenuItem(menu, SWT.SEPARATOR);
-
-                // Copy Queue Name action
-                MenuItem copyNameItem = new MenuItem(menu, SWT.PUSH);
-                copyNameItem.setText("Copy Queue Name");
-                copyNameItem.addListener(SWT.Selection, ev ->
-                    contextMenuActionListener.onCopyQueueName(selectedQueue));
             }
         });
-    }
-
-    public void refreshQueue(QueueInfo queue) {
-        // Find and update the queue in the master list
-        for (int i = 0; i < queues.size(); i++) {
-            if (queues.get(i).getName().equals(queue.getName())) {
-                queues.set(i, queue);
-                break;
-            }
-        }
-
-        // Reapply filters to update display
-        applyFilters();
     }
 
     public void showProgress(String message) {

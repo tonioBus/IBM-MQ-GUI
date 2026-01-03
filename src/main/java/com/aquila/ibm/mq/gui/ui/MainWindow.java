@@ -2,7 +2,7 @@ package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.config.ConfigManager;
-import com.aquila.ibm.mq.gui.model.ConnectionConfig;
+import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class MainWindow {
     private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
@@ -59,7 +60,7 @@ public class MainWindow {
 
         shell = new Shell(display);
         shell.setText("IBM MQ Queue Manager GUI");
-        shell.setSize(1200, 800);
+        shell.setSize(1600, 800);
         shell.setLayout(new GridLayout());
 
         createMenuBar();
@@ -239,15 +240,15 @@ public class MainWindow {
     }
 
     private void showConnectionDialog() {
-        ConnectionDialog dialog = new ConnectionDialog(shell, configManager);
-        ConnectionConfig config = dialog.open();
+        QueueManagerDialog dialog = new QueueManagerDialog(shell, configManager);
+        QueueManagerConfig config = dialog.open();
 
         if (config != null) {
             connect(config);
         }
     }
 
-    private void connect(ConnectionConfig config) {
+    private void connect(QueueManagerConfig config) {
         queueListViewer.showProgress("Connecting to " + config.getQueueManager() + "...");
 
         new Thread(() -> {
@@ -386,12 +387,12 @@ public class MainWindow {
             }
             updateStatus("Folder selected: " + event.node.getName());
 
-        } else if (event.type == QueueManagerTreeViewer.SelectionType.QUEUE_BROWSER) {
-            String connectionId = event.node.getConnectionConfigId();
+        } else if (false && event.type == QueueManagerTreeViewer.SelectionType.QUEUE_BROWSER) {
+            String connectionId = event.node.getQueueBrowserConfig().getQueueManager();
 
             // Connect if not already connected
             if (!connectionManager.isConnected(connectionId)) {
-                ConnectionConfig config = findConnectionConfig(connectionId);
+                QueueManagerConfig config = findConnectionConfig(connectionId);
                 if (config == null) {
                     showError("Configuration Not Found",
                             "Connection configuration not found for: " + connectionId);
@@ -436,7 +437,6 @@ public class MainWindow {
                         display.asyncExec(() -> {
                             queueListViewer.hideProgress();
                             showError("Connection Failed", e.getMessage());
-                            queueManagerTreeViewer.disconnectSelected();
                             queueManagerTreeViewer.updateNodeIcon(nodeId);
                         });
                     }
@@ -475,8 +475,8 @@ public class MainWindow {
         }).start();
     }
 
-    private ConnectionConfig findConnectionConfig(String name) {
-        return configManager.loadConnections().stream()
+    private QueueManagerConfig findConnectionConfig(String name) {
+        return configManager.loadConnections().values().stream()
                 .filter(c -> name.equals(c.getName()))
                 .findFirst()
                 .orElse(null);
@@ -486,7 +486,7 @@ public class MainWindow {
         HierarchyConfig hierarchy = configManager.loadHierarchy();
         if (hierarchy == null) {
             // First time: create default hierarchy from existing connections
-            List<ConnectionConfig> connections = configManager.loadConnections();
+            Map<String,QueueManagerConfig> connections = configManager.loadConnections();
             hierarchy = configManager.createDefaultHierarchy(connections);
             configManager.saveHierarchy(hierarchy);
         }

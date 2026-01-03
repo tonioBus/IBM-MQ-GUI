@@ -1,9 +1,8 @@
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.ConfigManager;
-import com.aquila.ibm.mq.gui.model.ConnectionConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
-import com.aquila.ibm.mq.gui.mq.QueueService;
+import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -13,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * Dialog for selecting a queue manager connection to add to the hierarchy.
@@ -26,8 +25,8 @@ public class QueueManagerSelectionDialog {
     private final HierarchyConfig hierarchy;
     private Shell shell;
     private org.eclipse.swt.widgets.List connectionList;
-    private List<ConnectionConfig> availableConnections;
-    private ConnectionConfig selectedConnection;
+    private List<QueueManagerConfig> availableConnections;
+    private QueueManagerConfig selectedConnection;
 
     public QueueManagerSelectionDialog(Shell parent, ConfigManager configManager, HierarchyConfig hierarchy) {
         this.parentShell = parent;
@@ -38,7 +37,7 @@ public class QueueManagerSelectionDialog {
     /**
      * Open the dialog and return the selected connection, or null if cancelled.
      */
-    public ConnectionConfig open() {
+    public QueueManagerConfig open() {
         loadAvailableConnections();
 
         if (availableConnections.isEmpty()) {
@@ -48,8 +47,8 @@ public class QueueManagerSelectionDialog {
             box.setMessage("No Queue Manager detected.\n\nWould you like to create a new connection first?");
 
             if (box.open() == SWT.YES) {
-                ConnectionDialog dialog = new ConnectionDialog(parentShell, configManager);
-                ConnectionConfig newConfig = dialog.open();
+                QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configManager);
+                QueueManagerConfig newConfig = dialog.open();
                 return newConfig;
             }
             return null;
@@ -63,8 +62,8 @@ public class QueueManagerSelectionDialog {
 
         // Center on parent
         shell.setLocation(
-            parentShell.getLocation().x + (parentShell.getSize().x - shell.getSize().x) / 2,
-            parentShell.getLocation().y + (parentShell.getSize().y - shell.getSize().y) / 2
+                parentShell.getLocation().x + (parentShell.getSize().x - shell.getSize().x) / 2,
+                parentShell.getLocation().y + (parentShell.getSize().y - shell.getSize().y) / 2
         );
 
         shell.open();
@@ -80,15 +79,12 @@ public class QueueManagerSelectionDialog {
     }
 
     private void loadAvailableConnections() {
-        List<ConnectionConfig> allConnections = configManager.loadConnections();
+        final Map<String, QueueManagerConfig> allConnections = configManager.loadConnections();
         availableConnections = new ArrayList<>();
 
         // Filter out connections already in the hierarchy
-        for (ConnectionConfig config : allConnections) {
-            String configName = config.getName();
-            if (!hierarchy.containsConnectionConfig(configName)) {
-                availableConnections.add(config);
-            }
+        for (QueueManagerConfig config : allConnections.values()) {
+            availableConnections.add(config);
         }
     }
 
@@ -108,10 +104,10 @@ public class QueueManagerSelectionDialog {
         connectionList = new org.eclipse.swt.widgets.List(shell, SWT.BORDER | SWT.SINGLE | SWT.V_SCROLL);
         connectionList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        for (ConnectionConfig config : availableConnections) {
+        for (QueueManagerConfig config : availableConnections) {
             String displayName = config.getName() != null && !config.getName().isEmpty()
-                ? config.getName()
-                : config.getQueueManager() + "@" + config.getHost();
+                    ? config.getName()
+                    : config.getQueueManager() + "@" + config.getHost();
             connectionList.add(displayName);
         }
 
@@ -160,8 +156,8 @@ public class QueueManagerSelectionDialog {
     }
 
     private void onNewConnection() {
-        ConnectionDialog dialog = new ConnectionDialog(parentShell, configManager);
-        ConnectionConfig newConfig = dialog.open();
+        QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configManager);
+        QueueManagerConfig newConfig = dialog.open();
 
         if (newConfig != null) {
             selectedConnection = newConfig;
