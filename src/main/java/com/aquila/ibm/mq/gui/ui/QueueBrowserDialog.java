@@ -32,7 +32,8 @@ public class QueueBrowserDialog {
     private Text regularExpression;
     private List queueManagerList;
     private Map<String, QueueManagerConfig> connections;
-    private QueueListViewer4QueueBrowser queueListViewer4QueueBrowser;
+    private QueueListViewer4QueueBrowser availableQueuesViewer;
+    private QueueListViewer4QueueBrowser selectedQueuesViewer;
 
     public QueueBrowserDialog(Shell parent, ConfigManager configManager, HierarchyNode hierarchyNode, boolean edit) {
         this.parent = parent;
@@ -87,14 +88,42 @@ public class QueueBrowserDialog {
     private void createQueueListSection(Composite composite) {
         Group queueManagerGroup = new Group(composite, SWT.NONE);
         queueManagerGroup.setText("Queues");
-        queueManagerGroup.setLayout(new GridLayout(1, false));
+        queueManagerGroup.setLayout(new GridLayout(3, false));
         queueManagerGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         final AlertManager alertManager = new AlertManager(configManager);
-        this.queueListViewer4QueueBrowser = new QueueListViewer4QueueBrowser(queueManagerGroup, SWT.READ_ONLY | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, alertManager);
-        queueListViewer4QueueBrowser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        queueListViewer4QueueBrowser.addListener(SWT.Selection, e -> {
-            log.info("selected: {}", e);
+
+        // Available queues viewer (left)
+        Composite leftQueueComposite = new Composite(queueManagerGroup, SWT.NONE);
+        leftQueueComposite.setLayout(new GridLayout(1, false));
+        leftQueueComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        Label availableLabel = new Label(leftQueueComposite, SWT.NONE);
+        availableLabel.setText("Available Queues");
+        availableLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        this.availableQueuesViewer = new QueueListViewer4QueueBrowser(leftQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI, alertManager);
+        availableQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        availableQueuesViewer.addListener(SWT.Selection, e -> {
+            log.info("available queue selected: {}", e);
+        });
+
+        // Middle buttons
+        createQueueTransferButtons(queueManagerGroup);
+
+        // Selected queues viewer (right)
+        Composite rightQueueComposite = new Composite(queueManagerGroup, SWT.NONE);
+        rightQueueComposite.setLayout(new GridLayout(1, false));
+        rightQueueComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        Label selectedLabel = new Label(rightQueueComposite, SWT.NONE);
+        selectedLabel.setText("Selected Queues");
+        selectedLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        this.selectedQueuesViewer = new QueueListViewer4QueueBrowser(rightQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI, alertManager);
+        selectedQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        selectedQueuesViewer.addListener(SWT.Selection, e -> {
+            log.info("selected queue selected: {}", e);
         });
     }
 
@@ -116,6 +145,27 @@ public class QueueBrowserDialog {
         regularExpression = new Text(regularexpressionGroup, SWT.BORDER);
         regularExpression.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         regularExpression.setText(edit ? hierarchyNode.getQueueBrowserConfig().getRegularExpression() : "*");
+    }
+
+    private void createQueueTransferButtons(Composite parent) {
+        Composite buttonBar = new Composite(parent, SWT.NONE);
+        buttonBar.setLayout(new GridLayout(1, false));
+        buttonBar.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
+
+        Button addButton = new Button(buttonBar, SWT.PUSH);
+        addButton.setText("Add >");
+        addButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        addButton.addListener(SWT.Selection, e -> addSelectedQueues());
+
+        Button removeButton = new Button(buttonBar, SWT.PUSH);
+        removeButton.setText("< Remove");
+        removeButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        removeButton.addListener(SWT.Selection, e -> removeSelectedQueues());
+
+        Button clearButton = new Button(buttonBar, SWT.PUSH);
+        clearButton.setText("Clear All");
+        clearButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        clearButton.addListener(SWT.Selection, e -> clearSelectedQueues());
     }
 
     private void createButtons(Composite parent) {
@@ -158,12 +208,59 @@ public class QueueBrowserDialog {
             QueueService queueService = new QueueService(connectionManager);
             java.util.List<QueueInfo> queues = queueService.getAllQueues();
             log.info("queues:\n{}", queues);
-            queues.forEach(q -> {
-                this.queueListViewer4QueueBrowser.setQueues(queues);
-            });
+            this.availableQueuesViewer.setQueues(queues);
         } catch (MQException | IOException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private void addSelectedQueues() {
+        java.util.List<QueueInfo> selectedQueues = availableQueuesViewer.getSelectedQueues();
+        if (selectedQueues.isEmpty()) {
+            log.info("No queues selected to add");
+            return;
+        }
+
+        log.info("Adding {} queues to selected list", selectedQueues.size());
+
+        // Get current selected queues
+        java.util.List<QueueInfo> currentSelected = new java.util.ArrayList<>(selectedQueuesViewer.getQueues());
+
+        // Add new queues (avoid duplicates)
+        for (QueueInfo queue : selectedQueues) {
+            if (!currentSelected.stream().anyMatch(q -> q.getName().equals(queue.getName()))) {
+                currentSelected.add(queue);
+            }
+        }
+
+        // Update selected queues viewer
+        selectedQueuesViewer.setQueues(currentSelected);
+    }
+
+    private void removeSelectedQueues() {
+        java.util.List<QueueInfo> queuesToRemove = selectedQueuesViewer.getSelectedQueues();
+        if (queuesToRemove.isEmpty()) {
+            log.info("No queues selected to remove");
+            return;
+        }
+
+        log.info("Removing {} queues from selected list", queuesToRemove.size());
+
+        // Get current selected queues
+        java.util.List<QueueInfo> currentSelected = new java.util.ArrayList<>(selectedQueuesViewer.getQueues());
+
+        // Remove selected queues
+        currentSelected.removeIf(queue ->
+            queuesToRemove.stream().anyMatch(q -> q.getName().equals(queue.getName()))
+        );
+
+        // Update selected queues viewer
+        selectedQueuesViewer.setQueues(currentSelected);
+    }
+
+    private void clearSelectedQueues() {
+        log.info("Clearing all selected queues");
+        selectedQueuesViewer.clearQueues();
     }
 
     private void createButtomButtons(Composite parent) {

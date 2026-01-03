@@ -221,6 +221,19 @@ public class QueueListViewer4QueueBrowser extends Composite {
         return null;
     }
 
+    public List<QueueInfo> getSelectedQueues() {
+        List<QueueInfo> selectedQueues = new ArrayList<>();
+        int[] selectionIndices = table.getSelectionIndices();
+
+        for (int index : selectionIndices) {
+            if (index >= 0 && index < filteredQueues.size()) {
+                selectedQueues.add(filteredQueues.get(index));
+            }
+        }
+
+        return selectedQueues;
+    }
+
     private void createContextMenu() {
         Menu menu = new Menu(table);
         table.setMenu(menu);
