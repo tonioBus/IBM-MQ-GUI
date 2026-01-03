@@ -14,7 +14,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.*;
 
 import java.io.IOException;
@@ -47,11 +46,12 @@ public class QueueBrowserDialog {
         shell.setText("Queue Browser");
         shell.setLayout(new GridLayout(1, true));
         shell.setSize(1600, 800);
-        SashForm sashForm = new SashForm(shell, SWT.HORIZONTAL);
+        final SashForm sashForm = new SashForm(shell, SWT.HORIZONTAL);
         sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        Composite leftComposite = new Composite(sashForm, SWT.NONE);
+        sashForm.setVisible(true);
+        final Composite leftComposite = new Composite(sashForm, SWT.NONE);
         leftComposite.setLayout(new GridLayout(1, true));
-        Composite rightComposite = new Composite(sashForm, SWT.NONE);
+        final Composite rightComposite = new Composite(sashForm, SWT.NONE);
         rightComposite.setLayout(new GridLayout(1, true));
         createLabelField(leftComposite);
         createQueueManagerSection(leftComposite);
@@ -59,11 +59,7 @@ public class QueueBrowserDialog {
         createQueueListSection(rightComposite);
         createButtons(rightComposite);
         createButtomButtons(shell);
-        leftComposite.pack();
-        // shell.pack();
-        sashForm.setWeights(new int[]{40, 50});
-        label.setSize(200, 30);
-        regularExpression.setSize(200, 30);
+        sashForm.setWeights(new int[]{40, 60});
         shell.open();
         Display display = parent.getDisplay();
         while (!shell.isDisposed()) {
@@ -91,13 +87,12 @@ public class QueueBrowserDialog {
     private void createQueueListSection(Composite composite) {
         Group queueManagerGroup = new Group(composite, SWT.NONE);
         queueManagerGroup.setText("Queues");
-        queueManagerGroup.setLayout(new GridLayout(3, false));
-        queueManagerGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        queueManagerGroup.setLayout(new GridLayout(1, false));
+        queueManagerGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         final AlertManager alertManager = new AlertManager(configManager);
         this.queueListViewer4QueueBrowser = new QueueListViewer4QueueBrowser(queueManagerGroup, SWT.READ_ONLY | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, alertManager);
-        queueListViewer4QueueBrowser.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        queueListViewer4QueueBrowser.setSize(500,500);
+        queueListViewer4QueueBrowser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         queueListViewer4QueueBrowser.addListener(SWT.Selection, e -> {
             log.info("selected: {}", e);
         });
@@ -106,18 +101,20 @@ public class QueueBrowserDialog {
     private void createLabelField(Composite parent) {
         final Group labelGroup = new Group(parent, SWT.NONE);
         labelGroup.setText("Label");
-        labelGroup.setLayout(new GridLayout(2, false));
-        labelGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        labelGroup.setLayout(new GridLayout(1, false));
+        labelGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         label = new Text(labelGroup, SWT.BORDER);
+        label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         label.setText(edit ? hierarchyNode.getQueueBrowserConfig().getLabel() : "DEFAULT");
     }
 
     private void createRegularExpressionField(Composite parent) {
         final Group regularexpressionGroup = new Group(parent, SWT.NONE);
         regularexpressionGroup.setText("Regular Expression");
-        regularexpressionGroup.setLayout(new GridLayout(2, false));
-        regularexpressionGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        regularexpressionGroup.setLayout(new GridLayout(1, false));
+        regularexpressionGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         regularExpression = new Text(regularexpressionGroup, SWT.BORDER);
+        regularExpression.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         regularExpression.setText(edit ? hierarchyNode.getQueueBrowserConfig().getRegularExpression() : "*");
     }
 
@@ -153,7 +150,7 @@ public class QueueBrowserDialog {
         int index = this.queueManagerList.getSelectionIndex();
         String selection = this.queueManagerList.getItem(index);
         log.info("Fill: {}", this.queueManagerList.getSelectionIndex());
-        
+
         MQConnectionManager connectionManager = new MQConnectionManager();
         QueueManagerConfig queueManagerConfig = this.connections.get(selection.split(" ")[1]);
         try {
@@ -210,7 +207,7 @@ public class QueueBrowserDialog {
         connections.values().forEach(q -> {
             final String label = String.format("%s %s", q.getName(), q.getLabel());
             queueManagerCombo.add(label);
-            if(edit && this.hierarchyNode.getQueueBrowserConfig().getQueueManager().equals(q.getLabel()))
+            if (edit && this.hierarchyNode.getQueueBrowserConfig().getQueueManager().equals(q.getLabel()))
                 queueManagerCombo.select(index.get());
             index.incrementAndGet();
         });
