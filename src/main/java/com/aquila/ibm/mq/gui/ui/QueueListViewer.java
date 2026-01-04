@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
 
 public class QueueListViewer extends Composite {
 
@@ -180,12 +179,12 @@ public class QueueListViewer extends Composite {
     }
 
     private void updateTableItem(TableItem item, QueueInfo queue) {
-        item.setText(0, queue.getName());
+        item.setText(0, queue.getQueue());
         item.setText(1, String.valueOf(queue.getCurrentDepth()));
         item.setText(2, String.valueOf(queue.getMaxDepth()));
         item.setText(3, String.format("%.1f%%", queue.getDepthPercentage()));
 
-        ThresholdConfig.AlertLevel alertLevel = alertManager.getCurrentAlertLevel(queue.getName());
+        ThresholdConfig.AlertLevel alertLevel = alertManager.getCurrentAlertLevel(queue.getQueue());
 
         switch (alertLevel) {
             case CRITICAL:
@@ -278,7 +277,7 @@ public class QueueListViewer extends Composite {
     public void refreshQueue(QueueInfo queue) {
         // Find and update the queue in the master list
         for (int i = 0; i < queues.size(); i++) {
-            if (queues.get(i).getName().equals(queue.getName())) {
+            if (queues.get(i).getQueue().equals(queue.getQueue())) {
                 queues.set(i, queue);
                 break;
             }
@@ -333,7 +332,7 @@ public class QueueListViewer extends Composite {
         final Pattern finalPattern = pattern;
         filteredQueues.addAll(
             queues.stream()
-                .filter(q -> finalPattern == null || finalPattern.matcher(q.getName()).find())
+                .filter(q -> finalPattern == null || finalPattern.matcher(q.getQueue()).find())
                 .filter(q -> minDepth == 0 || q.getCurrentDepth() >= minDepth)
                 .toList()
         );

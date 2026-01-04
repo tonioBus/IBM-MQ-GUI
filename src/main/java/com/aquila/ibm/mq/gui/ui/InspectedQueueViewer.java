@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public class QueueListViewer4QueueBrowser extends Composite {
+public class InspectedQueueViewer extends Composite {
 
     public interface ContextMenuActionListener {
         void onSendMessage(QueueInfo queue);
@@ -42,7 +42,7 @@ public class QueueListViewer4QueueBrowser extends Composite {
     private Spinner depthFilterSpinner;
     private Label filterStatusLabel;
 
-    public QueueListViewer4QueueBrowser(Composite parent, int style, AlertManager alertManager) {
+    public InspectedQueueViewer(Composite parent, int style, AlertManager alertManager) {
         super(parent, style);
         this.queues = new ArrayList<>();
         this.filteredQueues = new ArrayList<>();
@@ -178,12 +178,12 @@ public class QueueListViewer4QueueBrowser extends Composite {
     }
 
     private void updateTableItem(TableItem item, QueueInfo queue) {
-        item.setText(0, queue.getName());
+        item.setText(0, queue.getQueue());
         item.setText(1, String.valueOf(queue.getCurrentDepth()));
         item.setText(2, String.valueOf(queue.getMaxDepth()));
         item.setText(3, String.format("%.1f%%", queue.getDepthPercentage()));
 
-        ThresholdConfig.AlertLevel alertLevel = alertManager.getCurrentAlertLevel(queue.getName());
+        ThresholdConfig.AlertLevel alertLevel = alertManager.getCurrentAlertLevel(queue.getQueue());
 
         switch (alertLevel) {
             case CRITICAL:
@@ -318,7 +318,7 @@ public class QueueListViewer4QueueBrowser extends Composite {
         final Pattern finalPattern = pattern;
         filteredQueues.addAll(
             queues.stream()
-                .filter(q -> finalPattern == null || finalPattern.matcher(q.getName()).find())
+                .filter(q -> finalPattern == null || finalPattern.matcher(q.getQueue()).find())
                 .filter(q -> minDepth == 0 || q.getCurrentDepth() >= minDepth)
                 .toList()
         );

@@ -26,14 +26,14 @@ public class AlertManager {
     }
 
     public ThresholdConfig.AlertLevel checkQueue(QueueInfo queueInfo) {
-        ThresholdConfig threshold = configManager.getThreshold(queueInfo.getName());
+        ThresholdConfig threshold = configManager.getThreshold(queueInfo.getQueue());
         ThresholdConfig.AlertLevel newLevel = threshold.getAlertLevel(queueInfo);
         ThresholdConfig.AlertLevel currentLevel = currentAlertLevels.getOrDefault(
-            queueInfo.getName(), ThresholdConfig.AlertLevel.NONE);
+            queueInfo.getQueue(), ThresholdConfig.AlertLevel.NONE);
 
         if (newLevel != currentLevel) {
             handleAlertLevelChange(queueInfo, currentLevel, newLevel);
-            currentAlertLevels.put(queueInfo.getName(), newLevel);
+            currentAlertLevels.put(queueInfo.getQueue(), newLevel);
         }
 
         return newLevel;
@@ -43,10 +43,10 @@ public class AlertManager {
                                        ThresholdConfig.AlertLevel oldLevel,
                                        ThresholdConfig.AlertLevel newLevel) {
         logger.info("Alert level changed for queue {}: {} -> {}",
-                   queueInfo.getName(), oldLevel, newLevel);
+                   queueInfo.getQueue(), oldLevel, newLevel);
 
         AlertEvent event = new AlertEvent(
-            queueInfo.getName(),
+            queueInfo.getQueue(),
             queueInfo.getCurrentDepth(),
             queueInfo.getMaxDepth(),
             oldLevel,

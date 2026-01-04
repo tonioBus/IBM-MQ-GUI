@@ -60,7 +60,7 @@ public class DepthChartPanel extends Composite {
         }
 
         LinkedList<DataPoint> history = queueDataHistory.computeIfAbsent(
-            updatedQueue.getName(), k -> new LinkedList<>());
+            updatedQueue.getQueue(), k -> new LinkedList<>());
 
         history.add(new DataPoint(LocalDateTime.now(), updatedQueue.getCurrentDepth()));
 
@@ -68,7 +68,7 @@ public class DepthChartPanel extends Composite {
             history.removeFirst();
         }
 
-        if (selectedQueue != null && selectedQueue.getName().equals(updatedQueue.getName())) {
+        if (selectedQueue != null && selectedQueue.getQueue().equals(updatedQueue.getQueue())) {
             updateChart();
         }
     }
@@ -78,7 +78,7 @@ public class DepthChartPanel extends Composite {
         for (QueueInfo queue : allQueues) {
             LinkedList<DataPoint> history = new LinkedList<>();
             history.add(new DataPoint(LocalDateTime.now(), queue.getCurrentDepth()));
-            queueDataHistory.put(queue.getName(), history);
+            queueDataHistory.put(queue.getQueue(), history);
         }
     }
 
@@ -87,7 +87,7 @@ public class DepthChartPanel extends Composite {
             return;
         }
 
-        LinkedList<DataPoint> history = queueDataHistory.get(selectedQueue.getName());
+        LinkedList<DataPoint> history = queueDataHistory.get(selectedQueue.getQueue());
         if (history == null || history.isEmpty()) {
             return;
         }
@@ -108,7 +108,7 @@ public class DepthChartPanel extends Composite {
 
         chart.getAxisSet().getXAxis(0).setCategorySeries(xLabels);
         ILineSeries lineSeries = (ILineSeries) chart.getSeriesSet().createSeries(
-            ISeries.SeriesType.LINE, selectedQueue.getName());
+            ISeries.SeriesType.LINE, selectedQueue.getQueue());
         lineSeries.setYSeries(yValues);
         lineSeries.setLineColor(getDisplay().getSystemColor(SWT.COLOR_BLUE));
         lineSeries.setSymbolType(ILineSeries.PlotSymbolType.CIRCLE);

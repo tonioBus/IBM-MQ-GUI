@@ -17,6 +17,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,8 +33,8 @@ public class QueueBrowserDialog {
     private Text regularExpression;
     private List queueManagerList;
     private Map<String, QueueManagerConfig> connections;
-    private QueueListViewer4QueueBrowser availableQueuesViewer;
-    private QueueListViewer4QueueBrowser selectedQueuesViewer;
+    private InspectedQueueViewer availableQueuesViewer;
+    private SelectedQueuesViewer selectedQueuesViewer;
 
     public QueueBrowserDialog(Shell parent, ConfigManager configManager, HierarchyNode hierarchyNode, boolean edit) {
         this.parent = parent;
@@ -60,7 +61,7 @@ public class QueueBrowserDialog {
         createQueueListSection(rightComposite);
         createButtons(rightComposite);
         createButtomButtons(shell);
-        sashForm.setWeights(new int[]{40, 60});
+        sashForm.setWeights(new int[]{20, 80});
         shell.open();
         Display display = parent.getDisplay();
         while (!shell.isDisposed()) {
@@ -102,7 +103,7 @@ public class QueueBrowserDialog {
         availableLabel.setText("Available Queues");
         availableLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        this.availableQueuesViewer = new QueueListViewer4QueueBrowser(leftQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI, alertManager);
+        this.availableQueuesViewer = new InspectedQueueViewer(leftQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI, alertManager);
         availableQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         availableQueuesViewer.addListener(SWT.Selection, e -> {
             log.info("available queue selected: {}", e);
@@ -120,7 +121,7 @@ public class QueueBrowserDialog {
         selectedLabel.setText("Selected Queues");
         selectedLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        this.selectedQueuesViewer = new QueueListViewer4QueueBrowser(rightQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI, alertManager);
+        this.selectedQueuesViewer = new SelectedQueuesViewer(rightQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
         selectedQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         selectedQueuesViewer.addListener(SWT.Selection, e -> {
             log.info("selected queue selected: {}", e);
@@ -201,15 +202,20 @@ public class QueueBrowserDialog {
         String selection = this.queueManagerList.getItem(index);
         log.info("Fill: {}", this.queueManagerList.getSelectionIndex());
 
+        availableQueuesViewer.showProgress("Connecting to Queue Manager...");
+
         MQConnectionManager connectionManager = new MQConnectionManager();
         QueueManagerConfig queueManagerConfig = this.connections.get(selection.split(" ")[1]);
         try {
             connectionManager.connect(queueManagerConfig);
+            availableQueuesViewer.updateProgress("Retrieving queues...");
             QueueService queueService = new QueueService(connectionManager);
             java.util.List<QueueInfo> queues = queueService.getAllQueues();
             log.info("queues:\n{}", queues);
             this.availableQueuesViewer.setQueues(queues);
+            availableQueuesViewer.hideProgress();
         } catch (MQException | IOException ex) {
+            availableQueuesViewer.hideProgress();
             throw new RuntimeException(ex);
         }
     }
@@ -228,7 +234,7 @@ public class QueueBrowserDialog {
 
         // Add new queues (avoid duplicates)
         for (QueueInfo queue : selectedQueues) {
-            if (!currentSelected.stream().anyMatch(q -> q.getName().equals(queue.getName()))) {
+            if (!currentSelected.stream().anyMatch(q -> q.getQueue().equals(queue.getQueue()))) {
                 currentSelected.add(queue);
             }
         }
@@ -251,7 +257,7 @@ public class QueueBrowserDialog {
 
         // Remove selected queues
         currentSelected.removeIf(queue ->
-            queuesToRemove.stream().anyMatch(q -> q.getName().equals(queue.getName()))
+            queuesToRemove.stream().anyMatch(q -> q.getQueue().equals(queue.getQueue()))
         );
 
         // Update selected queues viewer
@@ -267,9 +273,9 @@ public class QueueBrowserDialog {
         Composite buttonBar = new Composite(parent, SWT.NONE);
         buttonBar.setLayout(new GridLayout(4, false));
         buttonBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        Button add = new Button(buttonBar, SWT.PUSH);
-        add.setText(edit ? "Modify" : "Add");
-        add.addListener(SWT.Selection, e -> {
+        Button addOrModify = new Button(buttonBar, SWT.PUSH);
+        addOrModify.setText(edit ? "Modify" : "Add");
+        addOrModify.addListener(SWT.Selection, e -> {
             result = getQueueBrowserConfig();
             shell.close();
         });
@@ -284,10 +290,17 @@ public class QueueBrowserDialog {
     private QueueBrowserConfig getQueueBrowserConfig() {
         final int selectionIndex = this.queueManagerList.getSelectionIndex();
         final String queueManagerKey = this.queueManagerList.getItem(selectionIndex).split(" ")[1];
+
+        final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
+        this.selectedQueuesViewer.getQueues().forEach(queueInfo -> {
+            String label = queueInfo.getLabel() == null  ? queueInfo.getQueue() : queueInfo.getLabel();
+            descriptions.put(queueInfo.getQueue(), new QueueBrowserConfig.QueueDescription(label));
+        });
         final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()
                 .label(this.label.getText().trim())
                 .regularExpression(this.regularExpression.getText().trim())
                 .queueManager(queueManagerKey)
+                .descriptions(descriptions)
                 .build();
         log.info("getQueueBrowserConfig return:\n{}", queueBrowserConfig);
         return queueBrowserConfig;

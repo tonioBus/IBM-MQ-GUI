@@ -79,13 +79,13 @@ public class QueueMonitor extends Thread {
     public void addQueue(QueueInfo queue) {
         if (!monitoredQueues.contains(queue)) {
             monitoredQueues.add(queue);
-            logger.info("Added queue to monitoring: {}", queue.getName());
+            logger.info("Added queue to monitoring: {}", queue.getQueue());
         }
     }
 
     public void removeQueue(QueueInfo queue) {
         monitoredQueues.remove(queue);
-        logger.info("Removed queue from monitoring: {}", queue.getName());
+        logger.info("Removed queue from monitoring: {}", queue.getQueue());
     }
 
     public void pauseMonitoring() {

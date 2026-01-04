@@ -508,7 +508,7 @@ public class MainWindow {
 
     private void handleSendMessage(QueueInfo queue) {
         SendMessageDialog dialog = new SendMessageDialog(shell, messageService);
-        dialog.open(queue.getName());
+        dialog.open(queue.getQueue());
     }
 
     private void handleBrowseMessages(QueueInfo queue) {
@@ -527,7 +527,7 @@ public class MainWindow {
     }
 
     private void handleRefreshQueue(QueueInfo queue) {
-        queueListViewer.showProgress("Refreshing " + queue.getName() + "...");
+        queueListViewer.showProgress("Refreshing " + queue.getQueue() + "...");
 
         new Thread(() -> {
             try {
@@ -540,7 +540,7 @@ public class MainWindow {
                     queueListViewer.hideProgress();
 
                     // If this is the currently selected queue, update panels
-                    if (selectedQueue != null && selectedQueue.getName().equals(queue.getName())) {
+                    if (selectedQueue != null && selectedQueue.getQueue().equals(queue.getQueue())) {
                         this.selectedQueue = queue;
                         if (propertiesPanel != null) {
                             propertiesPanel.setQueue(queue);
@@ -550,10 +550,10 @@ public class MainWindow {
                         }
                     }
 
-                    updateStatus("Queue " + queue.getName() + " refreshed");
+                    updateStatus("Queue " + queue.getQueue() + " refreshed");
                 });
             } catch (Exception e) {
-                logger.error("Failed to refresh queue: " + queue.getName(), e);
+                logger.error("Failed to refresh queue: " + queue.getQueue(), e);
                 display.asyncExec(() -> {
                     queueListViewer.hideProgress();
                     showError("Refresh Failed", "Failed to refresh queue: " + e.getMessage());
@@ -567,10 +567,10 @@ public class MainWindow {
         try {
             TextTransfer textTransfer = TextTransfer.getInstance();
             clipboard.setContents(
-                    new Object[]{queue.getName()},
+                    new Object[]{queue.getQueue()},
                     new Transfer[]{textTransfer}
             );
-            updateStatus("Queue name copied: " + queue.getName());
+            updateStatus("Queue name copied: " + queue.getQueue());
         } finally {
             clipboard.dispose();
         }

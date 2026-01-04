@@ -18,7 +18,7 @@ import java.util.Map;
 public class QueueBrowserConfig {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    record QueueDescription(String label, String queue) {
+    public record QueueDescription(String label) {
     }
 
     private String label;

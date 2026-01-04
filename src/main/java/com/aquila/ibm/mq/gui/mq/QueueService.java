@@ -9,14 +9,12 @@ import com.ibm.mq.constants.CMQCFC;
 import com.ibm.mq.constants.MQConstants;
 import com.ibm.mq.pcf.PCFMessage;
 import com.ibm.mq.pcf.PCFMessageAgent;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class QueueService {
     private static final Logger logger = LoggerFactory.getLogger(QueueService.class);
@@ -142,7 +140,7 @@ public class QueueService {
             queueInfo.setAttribute("MaxMsgLength", response.getIntParameterValue(MQConstants.MQIA_MAX_MSG_LENGTH));
 
         } catch (Exception e) {
-            logger.warn("Error populating queue info for {}", queueInfo.getName(), e);
+            logger.warn("Error populating queue info for {}", queueInfo.getQueue(), e);
         }
     }
 
@@ -167,7 +165,7 @@ public class QueueService {
     }
 
     public void refreshQueueInfo(QueueInfo queueInfo) throws MQException, IOException {
-        QueueInfo updated = getQueueInfo(queueInfo.getName());
+        QueueInfo updated = getQueueInfo(queueInfo.getQueue());
         if (updated != null) {
             queueInfo.setCurrentDepth(updated.getCurrentDepth());
             queueInfo.setMaxDepth(updated.getMaxDepth());
@@ -182,7 +180,7 @@ public class QueueService {
 
         for (QueueInfo queueInfo : queues) {
             for (QueueInfo updated : refreshed) {
-                if (queueInfo.getName().equals(updated.getName())) {
+                if (queueInfo.getQueue().equals(updated.getQueue())) {
                     queueInfo.setCurrentDepth(updated.getCurrentDepth());
                     queueInfo.setMaxDepth(updated.getMaxDepth());
                     queueInfo.setOpenInputCount(updated.getOpenInputCount());
