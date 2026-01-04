@@ -124,14 +124,16 @@ public class QueueBrowserDialog {
 
         this.selectedQueuesViewer = new SelectedQueuesViewer(rightQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
         selectedQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        java.util.List<QueueInfo> queues = new ArrayList<>();
-        this.hierarchyNode.getQueueBrowserConfig().getDescriptions().entrySet().forEach(entry -> {
-            queues.add(QueueInfo.builder()
-                    .queue(entry.getKey())
-                    .label(entry.getValue().label())
-                    .build());
-        });
-        selectedQueuesViewer.setQueues(queues);
+        if (this.hierarchyNode != null) {
+            java.util.List<QueueInfo> queues = new ArrayList<>();
+            this.hierarchyNode.getQueueBrowserConfig().getDescriptions().entrySet().forEach(entry -> {
+                queues.add(QueueInfo.builder()
+                        .queue(entry.getKey())
+                        .label(entry.getValue().label())
+                        .build());
+            });
+            selectedQueuesViewer.setQueues(queues);
+        }
     }
 
     private void createLabelField(Composite parent) {
@@ -189,14 +191,18 @@ public class QueueBrowserDialog {
 
     private void fill(Event e) {
         int index = this.queueManagerList.getSelectionIndex();
-        String selection = this.queueManagerList.getItem(index);
+        if (index == -1) {
+            log.info("No Queue Manager selected");
+            return;
+        }
+        final String selection = this.queueManagerList.getItem(index);
         log.info("Fill: {}", this.queueManagerList.getSelectionIndex());
 
-        availableQueuesViewer.showProgress("Connecting to Queue Manager...");
-
+        availableQueuesViewer.showProgress(String.format("Connecting to Queue Manager: %s", selection));
         MQConnectionManager connectionManager = new MQConnectionManager();
         QueueManagerConfig queueManagerConfig = this.connections.get(selection.split(" ")[1]);
         try {
+            log.info("Connecting to Queue Manager:{}", queueManagerConfig);
             connectionManager.connect(queueManagerConfig);
             availableQueuesViewer.updateProgress("Retrieving queues...");
             QueueService queueService = new QueueService(connectionManager);
