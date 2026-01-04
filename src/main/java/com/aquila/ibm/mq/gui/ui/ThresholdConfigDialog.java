@@ -187,14 +187,14 @@ public class ThresholdConfigDialog {
         table.removeAll();
 
         for (QueueInfo queue : queues) {
-            ThresholdConfig config = thresholds.get(queue.getName());
+            ThresholdConfig config = thresholds.get(queue.getQueue());
             if (config == null) {
                 config = new ThresholdConfig();
-                config.setQueueName(queue.getName());
+                config.setQueueName(queue.getQueue());
             }
 
             TableItem item = new TableItem(table, SWT.NONE);
-            updateTableItem(item, queue.getName(), config);
+            updateTableItem(item, queue.getQueue(), config);
         }
     }
 

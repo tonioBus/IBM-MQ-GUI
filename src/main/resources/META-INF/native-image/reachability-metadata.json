@@ -305,6 +305,18 @@
       "type": "char[]"
     },
     {
+      "type": "com.aquila.ibm.mq.gui.Main",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "main",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.RetrieveQueuesTest",
       "allDeclaredFields": true,
       "methods": [
@@ -321,6 +333,149 @@
     {
       "type": "com.aquila.ibm.mq.gui.model.ConnectionConfig",
       "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.HierarchyConfig",
+      "fields": [
+        {
+          "name": "nodes"
+        },
+        {
+          "name": "rootNodeIds"
+        },
+        {
+          "name": "selectedNodeId"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.HierarchyNode",
+      "fields": [
+        {
+          "name": "childIds"
+        },
+        {
+          "name": "expanded"
+        },
+        {
+          "name": "id"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "parentId"
+        },
+        {
+          "name": "type"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.HierarchyNode$NodeType",
+      "fields": [
+        {
+          "name": "BROWSER"
+        },
+        {
+          "name": "FOLDER"
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig",
+      "fields": [
+        {
+          "name": "descriptions"
+        },
+        {
+          "name": "inspect"
+        },
+        {
+          "name": "label"
+        },
+        {
+          "name": "queueManager"
+        },
+        {
+          "name": "regularExpression"
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig$QueueDescription",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "label",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfigTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSerDeser",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.QueueManagerConfig",
+      "fields": [
+        {
+          "name": "channel"
+        },
+        {
+          "name": "host"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "password"
+        },
+        {
+          "name": "port"
+        },
+        {
+          "name": "queueManager"
+        },
+        {
+          "name": "sslEnabled"
+        },
+        {
+          "name": "username"
+        }
+      ],
       "methods": [
         {
           "name": "<init>",
@@ -17019,12 +17174,7 @@
     },
     {
       "type": "com.ibm.mq.constants.MQConstants",
-      "allPublicFields": true,
-      "fields": [
-        {
-          "name": "sccsid"
-        }
-      ]
+      "allPublicFields": true
     },
     {
       "type": "com.ibm.mq.constants.MQPropertyIdentifiers",
@@ -17553,6 +17703,18 @@
       ]
     },
     {
+      "type": "com.intellij.junit6.JUnit6IdeaTestRunner",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.intellij.rt.debugger.agent.CaptureStorage"
+    },
+    {
       "type": "com.intellij.rt.execution.application.AppMainV2$Agent",
       "methods": [
         {
@@ -17560,6 +17722,18 @@
           "parameterTypes": [
             "java.lang.String",
             "java.lang.instrument.Instrumentation"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.intellij.rt.junit.JUnitStarter",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "main",
+          "parameterTypes": [
+            "java.lang.String[]"
           ]
         }
       ]
@@ -17784,6 +17958,9 @@
       ]
     },
     {
+      "type": "java.lang.Record"
+    },
+    {
       "type": "java.lang.RuntimePermission"
     },
     {
@@ -17813,6 +17990,21 @@
       "fields": [
         {
           "name": "threadLocalRandomProbe"
+        }
+      ],
+      "methods": [
+        {
+          "name": "ofVirtual",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.ThreadBuilders$VirtualThreadBuilder",
+      "methods": [
+        {
+          "name": "factory",
+          "parameterTypes": []
         }
       ]
     },
@@ -17937,10 +18129,19 @@
       "type": "java.security.AllPermission"
     },
     {
+      "type": "java.security.MessageDigestSpi"
+    },
+    {
       "type": "java.security.SecureRandomParameters"
     },
     {
       "type": "java.security.SecurityPermission"
+    },
+    {
+      "type": "java.security.interfaces.RSAPrivateKey"
+    },
+    {
+      "type": "java.security.interfaces.RSAPublicKey"
     },
     {
       "type": "java.sql.Date"
@@ -17961,6 +18162,9 @@
       "type": "java.util.Date"
     },
     {
+      "type": "java.util.HashMap"
+    },
+    {
       "type": "java.util.PropertyPermission",
       "methods": [
         {
@@ -17969,6 +18173,15 @@
             "java.lang.String",
             "java.lang.String"
           ]
+        }
+      ]
+    },
+    {
+      "type": "java.util.concurrent.Executors",
+      "methods": [
+        {
+          "name": "newVirtualThreadPerTaskExecutor",
+          "parameterTypes": []
         }
       ]
     },
@@ -18155,7 +18368,67 @@
       "type": "org.eclipse.swt.accessibility.Accessible$1"
     },
     {
+      "type": "org.eclipse.swt.dnd.DragSource"
+    },
+    {
+      "type": "org.eclipse.swt.dnd.DragSource$3"
+    },
+    {
+      "type": "org.eclipse.swt.dnd.DragSource$4"
+    },
+    {
+      "type": "org.eclipse.swt.dnd.DropTarget"
+    },
+    {
+      "type": "org.eclipse.swt.dnd.DropTarget$3"
+    },
+    {
       "type": "org.eclipse.swt.graphics.Device"
+    },
+    {
+      "type": "org.eclipse.swt.internal.image.GIFFileFormat",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.image.JPEGFileFormat",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.image.PNGFileFormat",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.image.WinBMPFileFormat",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.image.WinICOFileFormat",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.eclipse.swt.internal.ole.win32.COMObject",
@@ -18431,6 +18704,45 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.BITMAPINFOHEADER",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "biBitCount"
+        },
+        {
+          "name": "biClrImportant"
+        },
+        {
+          "name": "biClrUsed"
+        },
+        {
+          "name": "biCompression"
+        },
+        {
+          "name": "biHeight"
+        },
+        {
+          "name": "biPlanes"
+        },
+        {
+          "name": "biSize"
+        },
+        {
+          "name": "biSizeImage"
+        },
+        {
+          "name": "biWidth"
+        },
+        {
+          "name": "biXPelsPerMeter"
+        },
+        {
+          "name": "biYPelsPerMeter"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.COMBOBOXINFO",
       "jniAccessible": true,
       "fields": [
@@ -18472,6 +18784,60 @@
         },
         {
           "name": "stateButton"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.DIBSECTION",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "biBitCount"
+        },
+        {
+          "name": "biClrImportant"
+        },
+        {
+          "name": "biClrUsed"
+        },
+        {
+          "name": "biCompression"
+        },
+        {
+          "name": "biHeight"
+        },
+        {
+          "name": "biPlanes"
+        },
+        {
+          "name": "biSize"
+        },
+        {
+          "name": "biSizeImage"
+        },
+        {
+          "name": "biWidth"
+        },
+        {
+          "name": "biXPelsPerMeter"
+        },
+        {
+          "name": "biYPelsPerMeter"
+        },
+        {
+          "name": "dsBitfields0"
+        },
+        {
+          "name": "dsBitfields1"
+        },
+        {
+          "name": "dsBitfields2"
+        },
+        {
+          "name": "dsOffset"
+        },
+        {
+          "name": "dshSection"
         }
       ]
     },
@@ -18866,6 +19232,39 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.NMCUSTOMDRAW",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "bottom"
+        },
+        {
+          "name": "dwDrawStage"
+        },
+        {
+          "name": "dwItemSpec"
+        },
+        {
+          "name": "hdc"
+        },
+        {
+          "name": "lItemlParam"
+        },
+        {
+          "name": "left"
+        },
+        {
+          "name": "right"
+        },
+        {
+          "name": "top"
+        },
+        {
+          "name": "uItemState"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.NMHDR",
       "jniAccessible": true,
       "fields": [
@@ -18926,6 +19325,54 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.NMLVCUSTOMDRAW",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "clrFace"
+        },
+        {
+          "name": "clrText"
+        },
+        {
+          "name": "clrTextBk"
+        },
+        {
+          "name": "dwItemType"
+        },
+        {
+          "name": "iIconEffect"
+        },
+        {
+          "name": "iIconPhase"
+        },
+        {
+          "name": "iPartId"
+        },
+        {
+          "name": "iStateId"
+        },
+        {
+          "name": "iSubItem"
+        },
+        {
+          "name": "rcText_bottom"
+        },
+        {
+          "name": "rcText_left"
+        },
+        {
+          "name": "rcText_right"
+        },
+        {
+          "name": "rcText_top"
+        },
+        {
+          "name": "uAlign"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.NMLVDISPINFO",
       "jniAccessible": true,
       "fields": [
@@ -18971,6 +19418,42 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.NMTBHOTITEM",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "dwFlags"
+        },
+        {
+          "name": "idNew"
+        },
+        {
+          "name": "idOld"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.NMTREEVIEW",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "action"
+        },
+        {
+          "name": "hdr"
+        },
+        {
+          "name": "itemNew"
+        },
+        {
+          "name": "itemOld"
+        },
+        {
+          "name": "ptDrag"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.NMTTDISPINFO",
       "jniAccessible": true,
       "fields": [
@@ -18994,6 +19477,42 @@
       "fields": [
         {
           "name": "szText"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.NMTVDISPINFO",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cChildren"
+        },
+        {
+          "name": "cchTextMax"
+        },
+        {
+          "name": "hItem"
+        },
+        {
+          "name": "iImage"
+        },
+        {
+          "name": "iSelectedImage"
+        },
+        {
+          "name": "lParam"
+        },
+        {
+          "name": "mask"
+        },
+        {
+          "name": "pszText"
+        },
+        {
+          "name": "state"
+        },
+        {
+          "name": "stateMask"
         }
       ]
     },
@@ -19160,6 +19679,60 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.SCROLLBARINFO",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cbSize"
+        },
+        {
+          "name": "dxyLineButton"
+        },
+        {
+          "name": "rcScrollBar"
+        },
+        {
+          "name": "reserved"
+        },
+        {
+          "name": "rgstate"
+        },
+        {
+          "name": "xyThumbBottom"
+        },
+        {
+          "name": "xyThumbTop"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.SCROLLINFO",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cbSize"
+        },
+        {
+          "name": "fMask"
+        },
+        {
+          "name": "nMax"
+        },
+        {
+          "name": "nMin"
+        },
+        {
+          "name": "nPage"
+        },
+        {
+          "name": "nPos"
+        },
+        {
+          "name": "nTrackPos"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.STARTUPINFO",
       "jniAccessible": true,
       "fields": [
@@ -19216,6 +19789,66 @@
         },
         {
           "name": "wShowWindow"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.TBBUTTON",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "dwData"
+        },
+        {
+          "name": "fsState"
+        },
+        {
+          "name": "fsStyle"
+        },
+        {
+          "name": "iBitmap"
+        },
+        {
+          "name": "iString"
+        },
+        {
+          "name": "idCommand"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.TBBUTTONINFO",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cbSize"
+        },
+        {
+          "name": "cchText"
+        },
+        {
+          "name": "cx"
+        },
+        {
+          "name": "dwMask"
+        },
+        {
+          "name": "fsState"
+        },
+        {
+          "name": "fsStyle"
+        },
+        {
+          "name": "iImage"
+        },
+        {
+          "name": "idCommand"
+        },
+        {
+          "name": "lParam"
+        },
+        {
+          "name": "pszText"
         }
       ]
     },
@@ -19361,6 +19994,117 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.TVHITTESTINFO",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "flags"
+        },
+        {
+          "name": "hItem"
+        },
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.TVINSERTSTRUCT",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cChildren"
+        },
+        {
+          "name": "cchTextMax"
+        },
+        {
+          "name": "hInsertAfter"
+        },
+        {
+          "name": "hItem"
+        },
+        {
+          "name": "hParent"
+        },
+        {
+          "name": "iImage"
+        },
+        {
+          "name": "iIntegral"
+        },
+        {
+          "name": "iSelectedImage"
+        },
+        {
+          "name": "lParam"
+        },
+        {
+          "name": "mask"
+        },
+        {
+          "name": "pszText"
+        },
+        {
+          "name": "state"
+        },
+        {
+          "name": "stateMask"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.TVITEM",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cChildren"
+        },
+        {
+          "name": "cchTextMax"
+        },
+        {
+          "name": "hItem"
+        },
+        {
+          "name": "iImage"
+        },
+        {
+          "name": "iSelectedImage"
+        },
+        {
+          "name": "lParam"
+        },
+        {
+          "name": "mask"
+        },
+        {
+          "name": "pszText"
+        },
+        {
+          "name": "state"
+        },
+        {
+          "name": "stateMask"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.UDACCEL",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "nInc"
+        },
+        {
+          "name": "nSec"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.WINDOWPOS",
       "jniAccessible": true,
       "fields": [
@@ -19476,6 +20220,9 @@
       "type": "org.junit.platform.commons.annotation.Testable"
     },
     {
+      "type": "org.junit.platform.engine.discovery.NestedClassSelector"
+    },
+    {
       "type": "org.junit.platform.launcher.LauncherSession",
       "methods": [
         {
@@ -19507,6 +20254,15 @@
           "name": "<init>",
           "parameterTypes": [
             "long",
+            "boolean",
+            "boolean"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "long",
+            "boolean",
             "boolean",
             "boolean"
           ]
@@ -19552,8 +20308,23 @@
       ],
       "methods": [
         {
+          "name": "checkAndLoadMain",
+          "parameterTypes": [
+            "boolean",
+            "int",
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "getApplicationClass",
           "parameterTypes": []
+        },
+        {
+          "name": "makePlatformString",
+          "parameterTypes": [
+            "boolean",
+            "byte[]"
+          ]
         }
       ]
     },
@@ -19612,6 +20383,22 @@
       ]
     },
     {
+      "type": "sun.misc.Unsafe",
+      "fields": [
+        {
+          "name": "theUnsafe"
+        }
+      ],
+      "methods": [
+        {
+          "name": "allocateInstance",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
       "type": "sun.security.provider.DRBG",
       "methods": [
         {
@@ -19641,10 +20428,140 @@
       ]
     },
     {
+      "type": "sun.security.provider.X509Factory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSAKeyFactory$Legacy",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSASignature$SHA256withRSA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.AuthorityInfoAccessExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.AuthorityKeyIdentifierExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.BasicConstraintsExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.CRLDistributionPointsExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.CertificatePoliciesExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.ExtendedKeyUsageExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.KeyUsageExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.SubjectKeyIdentifierExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
       "type": "sun.text.resources.cldr.FormatData"
     },
     {
       "type": "sun.util.resources.cldr.CalendarData"
+    },
+    {
+      "type": {
+        "proxy": [
+          "java.lang.Runnable"
+        ]
+      }
     }
   ]
 }

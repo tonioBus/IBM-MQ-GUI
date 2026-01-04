@@ -1,10 +1,17 @@
 package com.aquila.ibm.mq.gui.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Builder
+@AllArgsConstructor
 public class QueueInfo {
-    private String name;
+    private String queue;
+    private String label;
     private int queueType;
     private int currentDepth;
     private int maxDepth;
@@ -17,17 +24,25 @@ public class QueueInfo {
         this.attributes = new HashMap<>();
     }
 
-    public QueueInfo(String name) {
-        this.name = name;
+    public QueueInfo(String queue) {
+        this.queue = queue;
         this.attributes = new HashMap<>();
     }
 
-    public String getName() {
-        return name;
+    public String getQueue() {
+        return queue;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setQueue(String queue) {
+        this.queue = queue;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
     }
 
     public int getQueueType() {
@@ -101,6 +116,6 @@ public class QueueInfo {
 
     @Override
     public String toString() {
-        return name + " (" + currentDepth + "/" + maxDepth + ")";
+        return queue + " (" + currentDepth + "/" + maxDepth + ")";
     }
 }

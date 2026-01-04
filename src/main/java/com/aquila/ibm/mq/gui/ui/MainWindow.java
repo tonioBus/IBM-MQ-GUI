@@ -2,20 +2,18 @@ package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.config.ConfigManager;
-import com.aquila.ibm.mq.gui.model.ConnectionConfig;
-import com.aquila.ibm.mq.gui.model.QueueInfo;
-import com.aquila.ibm.mq.gui.model.ThresholdConfig;
+import com.aquila.ibm.mq.gui.model.*;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.aquila.ibm.mq.gui.mq.QueueMonitor;
 import com.aquila.ibm.mq.gui.mq.QueueService;
 import com.ibm.mq.MQException;
+import lombok.Getter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
@@ -24,12 +22,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
 
 public class MainWindow {
     private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
 
     private final Display display;
+    @Getter
     private final Shell shell;
     private final ConfigManager configManager;
     private final MQConnectionManager connectionManager;
@@ -38,7 +37,7 @@ public class MainWindow {
     private final AlertManager alertManager;
     private QueueMonitor queueMonitor;
 
-    private QueueManagerTreeViewer queueManagerTreeViewer;
+    private HierarchyTreeViewer hierarchyTreeViewer;
     private QueueListViewer queueListViewer;
     private TabFolder tabFolder;
     private QueuePropertiesPanel propertiesPanel;
@@ -60,7 +59,7 @@ public class MainWindow {
 
         shell = new Shell(display);
         shell.setText("IBM MQ Queue Manager GUI");
-        shell.setSize(1200, 800);
+        shell.setSize(1600, 800);
         shell.setLayout(new GridLayout());
 
         createMenuBar();
@@ -162,9 +161,9 @@ public class MainWindow {
         sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         // NEW: Queue Manager Tree (20%)
-        queueManagerTreeViewer = new QueueManagerTreeViewer(
+        hierarchyTreeViewer = new HierarchyTreeViewer(
                 sashForm, SWT.BORDER, connectionManager, configManager);
-        queueManagerTreeViewer.addSelectionListener(this::onTreeSelection);
+        hierarchyTreeViewer.addSelectionListener(this::onTreeSelection);
 
         // EXISTING: Queue List (30%)
         queueListViewer = new QueueListViewer(sashForm, SWT.BORDER, alertManager);
@@ -240,15 +239,15 @@ public class MainWindow {
     }
 
     private void showConnectionDialog() {
-        ConnectionDialog dialog = new ConnectionDialog(shell, configManager);
-        ConnectionConfig config = dialog.open();
+        QueueManagerDialog dialog = new QueueManagerDialog(shell, configManager);
+        QueueManagerConfig config = dialog.open();
 
         if (config != null) {
             connect(config);
         }
     }
 
-    private void connect(ConnectionConfig config) {
+    private void connect(QueueManagerConfig config) {
         queueListViewer.showProgress("Connecting to " + config.getQueueManager() + "...");
 
         new Thread(() -> {
@@ -372,8 +371,8 @@ public class MainWindow {
         }
     }
 
-    private void onTreeSelection(QueueManagerTreeViewer.SelectionEvent event) {
-        if (event.type == QueueManagerTreeViewer.SelectionType.FOLDER) {
+    private void onTreeSelection(HierarchyTreeViewer.SelectionEvent event) {
+        if (event.type == HierarchyTreeViewer.SelectionType.FOLDER) {
             // Clear queue list and disable detail panels
             queueListViewer.clearQueues();
             if (propertiesPanel != null) {
@@ -387,12 +386,13 @@ public class MainWindow {
             }
             updateStatus("Folder selected: " + event.node.getName());
 
-        } else if (event.type == QueueManagerTreeViewer.SelectionType.QUEUE_MANAGER) {
-            String connectionId = event.node.getConnectionConfigId();
-
-            // Connect if not already connected
+        } else if (event.type == HierarchyTreeViewer.SelectionType.QUEUE_BROWSER) {
+            final QueueBrowserConfig queueBrowserConfig =event.node.getQueueBrowserConfig();
+            final String connectionId = queueBrowserConfig.getQueueManager();
+            final List<String> queuesName = queueBrowserConfig.getDescriptions().keySet().stream().toList();
+            logger.info("number of queues to retrieve: {}", queuesName.size());
             if (!connectionManager.isConnected(connectionId)) {
-                ConnectionConfig config = findConnectionConfig(connectionId);
+                QueueManagerConfig config = findConnectionConfig(connectionId);
                 if (config == null) {
                     showError("Configuration Not Found",
                             "Connection configuration not found for: " + connectionId);
@@ -412,13 +412,13 @@ public class MainWindow {
 
                         // Update icon on UI thread
                         display.asyncExec(() -> {
-                            queueManagerTreeViewer.updateNodeIcon(nodeId);
+                            hierarchyTreeViewer.updateNodeIcon(nodeId);
                             queueListViewer.updateProgress("Loading queues...");
                         });
 
                         // Set active and load queues (BLOCKING)
                         connectionManager.setActiveConnection(connectionId);
-                        List<QueueInfo> queues = queueService.getAllQueues();
+                        List<QueueInfo> queues = queueService.getQueuesInfo(queuesName);
 
                         // Update UI on UI thread
                         display.asyncExec(() -> {
@@ -437,8 +437,7 @@ public class MainWindow {
                         display.asyncExec(() -> {
                             queueListViewer.hideProgress();
                             showError("Connection Failed", e.getMessage());
-                            queueManagerTreeViewer.disconnectSelected();
-                            queueManagerTreeViewer.updateNodeIcon(nodeId);
+                            hierarchyTreeViewer.updateNodeIcon(nodeId);
                         });
                     }
                 }).start();
@@ -447,16 +446,16 @@ public class MainWindow {
 
             // If already connected, just set active and load queues
             connectionManager.setActiveConnection(connectionId);
-            loadQueuesAsync(event.node.getName());
+            loadQueuesAsync(event.node.getName(), queuesName);
         }
     }
 
-    private void loadQueuesAsync(String queueManagerName) {
+    private void loadQueuesAsync(String queueManagerName, List<String> queuesName) {
         queueListViewer.showProgress("Loading queues from " + queueManagerName + "...");
 
         new Thread(() -> {
             try {
-                List<QueueInfo> queues = queueService.getAllQueues();
+                List<QueueInfo> queues = queueService.getQueuesInfo(queuesName);
 
                 display.asyncExec(() -> {
                     queueListViewer.setQueues(queues);
@@ -476,22 +475,19 @@ public class MainWindow {
         }).start();
     }
 
-    private ConnectionConfig findConnectionConfig(String name) {
-        return configManager.loadConnections().stream()
-                .filter(c -> name.equals(c.getName()))
-                .findFirst()
-                .orElse(null);
+    private QueueManagerConfig findConnectionConfig(String name) {
+        return configManager.loadConnections().get(name);
     }
 
     private void loadHierarchy() {
-        com.aquila.ibm.mq.gui.model.HierarchyConfig hierarchy = configManager.loadHierarchy();
+        HierarchyConfig hierarchy = configManager.loadHierarchy();
         if (hierarchy == null) {
             // First time: create default hierarchy from existing connections
-            List<ConnectionConfig> connections = configManager.loadConnections();
+            Map<String,QueueManagerConfig> connections = configManager.loadConnections();
             hierarchy = configManager.createDefaultHierarchy(connections);
             configManager.saveHierarchy(hierarchy);
         }
-        queueManagerTreeViewer.setHierarchy(hierarchy);
+        hierarchyTreeViewer.setHierarchyConfig(hierarchy);
     }
 
     private void showThresholdDialog() {
@@ -509,7 +505,7 @@ public class MainWindow {
 
     private void handleSendMessage(QueueInfo queue) {
         SendMessageDialog dialog = new SendMessageDialog(shell, messageService);
-        dialog.open(queue.getName());
+        dialog.open(queue.getQueue());
     }
 
     private void handleBrowseMessages(QueueInfo queue) {
@@ -528,7 +524,7 @@ public class MainWindow {
     }
 
     private void handleRefreshQueue(QueueInfo queue) {
-        queueListViewer.showProgress("Refreshing " + queue.getName() + "...");
+        queueListViewer.showProgress("Refreshing " + queue.getQueue() + "...");
 
         new Thread(() -> {
             try {
@@ -541,7 +537,7 @@ public class MainWindow {
                     queueListViewer.hideProgress();
 
                     // If this is the currently selected queue, update panels
-                    if (selectedQueue != null && selectedQueue.getName().equals(queue.getName())) {
+                    if (selectedQueue != null && selectedQueue.getQueue().equals(queue.getQueue())) {
                         this.selectedQueue = queue;
                         if (propertiesPanel != null) {
                             propertiesPanel.setQueue(queue);
@@ -551,10 +547,10 @@ public class MainWindow {
                         }
                     }
 
-                    updateStatus("Queue " + queue.getName() + " refreshed");
+                    updateStatus("Queue " + queue.getQueue() + " refreshed");
                 });
             } catch (Exception e) {
-                logger.error("Failed to refresh queue: " + queue.getName(), e);
+                logger.error("Failed to refresh queue: " + queue.getQueue(), e);
                 display.asyncExec(() -> {
                     queueListViewer.hideProgress();
                     showError("Refresh Failed", "Failed to refresh queue: " + e.getMessage());
@@ -568,10 +564,10 @@ public class MainWindow {
         try {
             TextTransfer textTransfer = TextTransfer.getInstance();
             clipboard.setContents(
-                    new Object[]{queue.getName()},
+                    new Object[]{queue.getQueue()},
                     new Transfer[]{textTransfer}
             );
-            updateStatus("Queue name copied: " + queue.getName());
+            updateStatus("Queue name copied: " + queue.getQueue());
         } finally {
             clipboard.dispose();
         }
@@ -627,8 +623,8 @@ public class MainWindow {
 
     private void cleanup() {
         // Save hierarchy state (expansion, selection)
-        if (queueManagerTreeViewer != null) {
-            configManager.saveHierarchy(queueManagerTreeViewer.getHierarchy());
+        if (hierarchyTreeViewer != null) {
+            configManager.saveHierarchy(hierarchyTreeViewer.getHierarchyConfig());
         }
 
         stopMonitoring();
@@ -644,7 +640,4 @@ public class MainWindow {
         }
     }
 
-    public Shell getShell() {
-        return shell;
-    }
 }

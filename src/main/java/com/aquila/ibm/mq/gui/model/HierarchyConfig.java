@@ -1,5 +1,8 @@
 package com.aquila.ibm.mq.gui.model;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,11 +12,14 @@ import java.util.*;
  * Container for the entire hierarchy structure of queue managers and folders.
  * Maintains a flat map of all nodes with references to root nodes.
  */
+@ToString
+@Getter
 public class HierarchyConfig {
     private static final Logger logger = LoggerFactory.getLogger(HierarchyConfig.class);
 
     private Map<String, HierarchyNode> nodes;
     private List<String> rootNodeIds;
+    @Setter
     private String selectedNodeId;
 
     public HierarchyConfig() {
@@ -21,53 +27,11 @@ public class HierarchyConfig {
         this.rootNodeIds = new ArrayList<>();
     }
 
-    // Getters and Setters
-
-    public Map<String, HierarchyNode> getNodes() {
-        return nodes;
-    }
-
-    public void setNodes(Map<String, HierarchyNode> nodes) {
-        this.nodes = nodes;
-    }
-
-    public List<String> getRootNodeIds() {
-        return rootNodeIds;
-    }
-
-    public void setRootNodeIds(List<String> rootNodeIds) {
-        this.rootNodeIds = rootNodeIds;
-    }
-
-    public String getSelectedNodeId() {
-        return selectedNodeId;
-    }
-
-    public void setSelectedNodeId(String selectedNodeId) {
-        this.selectedNodeId = selectedNodeId;
-    }
-
-    // Tree manipulation methods
-
     /**
      * Get a node by its ID.
      */
     public HierarchyNode getNode(String nodeId) {
         return nodes.get(nodeId);
-    }
-
-    /**
-     * Get all nodes in the hierarchy.
-     */
-    public Collection<HierarchyNode> getAllNodes() {
-        return nodes.values();
-    }
-
-    /**
-     * Get the selected node.
-     */
-    public HierarchyNode getSelectedNode() {
-        return selectedNodeId != null ? nodes.get(selectedNodeId) : null;
     }
 
     /**
@@ -258,38 +222,11 @@ public class HierarchyConfig {
     public List<HierarchyNode> getAllQueueManagers() {
         List<HierarchyNode> queueManagers = new ArrayList<>();
         for (HierarchyNode node : nodes.values()) {
-            if (node.isQueueManager()) {
+            if (node.isQueueBrowser()) {
                 queueManagers.add(node);
             }
         }
         return queueManagers;
     }
 
-    /**
-     * Find a queue manager node by its connection config ID.
-     */
-    public HierarchyNode findQueueManagerByConfigId(String connectionConfigId) {
-        for (HierarchyNode node : nodes.values()) {
-            if (node.isQueueManager() && connectionConfigId.equals(node.getConnectionConfigId())) {
-                return node;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Check if a connection config is already in the hierarchy.
-     */
-    public boolean containsConnectionConfig(String connectionConfigId) {
-        return findQueueManagerByConfigId(connectionConfigId) != null;
-    }
-
-    @Override
-    public String toString() {
-        return "HierarchyConfig{" +
-                "nodeCount=" + nodes.size() +
-                ", rootNodeCount=" + rootNodeIds.size() +
-                ", selectedNodeId='" + selectedNodeId + '\'' +
-                '}';
-    }
 }

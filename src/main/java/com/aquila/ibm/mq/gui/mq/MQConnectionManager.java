@@ -1,6 +1,6 @@
 package com.aquila.ibm.mq.gui.mq;
 
-import com.aquila.ibm.mq.gui.model.ConnectionConfig;
+import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.ibm.mq.MQException;
 import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.MQConstants;
@@ -17,12 +17,12 @@ public class MQConnectionManager {
 
     // Multi-connection support
     private Map<String, MQQueueManager> activeConnections;
-    private Map<String, ConnectionConfig> connectionConfigs;
+    private Map<String, QueueManagerConfig> connectionConfigs;
     private String activeConnectionId;
 
     // Legacy fields (deprecated but maintained for backward compatibility)
     private MQQueueManager queueManager;
-    private ConnectionConfig currentConfig;
+    private QueueManagerConfig currentConfig;
     private boolean connected = false;
 
     public MQConnectionManager() {
@@ -34,7 +34,7 @@ public class MQConnectionManager {
      * Legacy connect method for backward compatibility.
      * Connects using the connection's name as the ID and sets it as active.
      */
-    public void connect(ConnectionConfig config) throws MQException {
+    public void connect(QueueManagerConfig config) throws MQException {
         String connectionId = getConnectionId(config);
         connect(connectionId, config);
         setActiveConnection(connectionId);
@@ -46,7 +46,7 @@ public class MQConnectionManager {
      * @param connectionId Unique identifier for this connection
      * @param config Connection configuration
      */
-    public void connect(String connectionId, ConnectionConfig config) throws MQException {
+    public void connect(String connectionId, QueueManagerConfig config) throws MQException {
         if (connectionId == null || connectionId.isEmpty()) {
             throw new IllegalArgumentException("Connection ID cannot be null or empty");
         }
@@ -102,13 +102,13 @@ public class MQConnectionManager {
     /**
      * Get a stable connection ID from a ConnectionConfig.
      */
-    private String getConnectionId(ConnectionConfig config) {
+    private String getConnectionId(QueueManagerConfig config) {
         return config.getName() != null && !config.getName().isEmpty()
             ? config.getName()
             : config.getQueueManager() + "@" + config.getHost();
     }
 
-    private String formatMQError(MQException e, ConnectionConfig config) {
+    private String formatMQError(MQException e, QueueManagerConfig config) {
         StringBuilder msg = new StringBuilder();
         msg.append(getMQErrorDescription(e.getReason())).append("\n\n");
         msg.append("Connection Details:\n");
@@ -215,7 +215,7 @@ public class MQConnectionManager {
             try {
                 if (qm.isConnected()) {
                     qm.disconnect();
-                    ConnectionConfig config = connectionConfigs.get(connectionId);
+                    QueueManagerConfig config = connectionConfigs.get(connectionId);
                     logger.info("Disconnected from queue manager: {} (ID: {})",
                                config != null ? config.getQueueManager() : "unknown",
                                connectionId);
@@ -362,7 +362,7 @@ public class MQConnectionManager {
     /**
      * Legacy getCurrentConfig - returns the active connection's config.
      */
-    public ConnectionConfig getCurrentConfig() {
+    public QueueManagerConfig getCurrentConfig() {
         if (activeConnectionId != null) {
             return connectionConfigs.get(activeConnectionId);
         }
@@ -374,7 +374,7 @@ public class MQConnectionManager {
      * @param connectionId The connection ID
      * @return The ConnectionConfig, or null if not found
      */
-    public ConnectionConfig getConfig(String connectionId) {
+    public QueueManagerConfig getConfig(String connectionId) {
         return connectionConfigs.get(connectionId);
     }
 
@@ -382,11 +382,11 @@ public class MQConnectionManager {
      * Get the configuration for the active connection.
      * @return The active ConnectionConfig, or null if none is active
      */
-    public ConnectionConfig getActiveConfig() {
+    public QueueManagerConfig getActiveConfig() {
         return activeConnectionId != null ? connectionConfigs.get(activeConnectionId) : null;
     }
 
-    public void testConnection(ConnectionConfig config) throws MQException {
+    public void testConnection(QueueManagerConfig config) throws MQException {
         logger.info("Testing connection to: {}", config.getQueueManager());
         Hashtable<String, Object> properties = new Hashtable<>();
         properties.put(MQConstants.HOST_NAME_PROPERTY, config.getHost());
@@ -418,7 +418,7 @@ public class MQConnectionManager {
 
     public String getConnectionStatus() {
         if (activeConnectionId != null) {
-            ConnectionConfig config = getActiveConfig();
+            QueueManagerConfig config = getActiveConfig();
             if (config != null) {
                 return String.format("Connected to %s at %s:%d",
                     config.getQueueManager(),

@@ -1,7 +1,7 @@
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.ConfigManager;
-import com.aquila.ibm.mq.gui.model.ConnectionConfig;
+import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -10,14 +10,14 @@ import org.eclipse.swt.widgets.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Map;
 
-public class ConnectionDialog {
-    private static final Logger logger = LoggerFactory.getLogger(ConnectionDialog.class);
+public class QueueManagerDialog {
+    private static final Logger logger = LoggerFactory.getLogger(QueueManagerDialog.class);
     private final Shell parent;
     private final ConfigManager configManager;
     private Shell shell;
-    private ConnectionConfig result;
+    private QueueManagerConfig result;
 
     private Combo profileCombo;
     private Text nameText;
@@ -29,12 +29,12 @@ public class ConnectionDialog {
     private Text passwordText;
     private Button saveProfileButton;
 
-    public ConnectionDialog(Shell parent, ConfigManager configManager) {
+    public QueueManagerDialog(Shell parent, ConfigManager configManager) {
         this.parent = parent;
         this.configManager = configManager;
     }
 
-    public ConnectionConfig open() {
+    public QueueManagerConfig open() {
         shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
         shell.setText("Connect to Queue Manager");
         shell.setLayout(new GridLayout(1, false));
@@ -127,9 +127,9 @@ public class ConnectionDialog {
         testButton.addListener(SWT.Selection, e -> testConnection());
 
         Button connectButton = new Button(buttonBar, SWT.PUSH);
-        connectButton.setText("Connect");
+        connectButton.setText("Create");
         connectButton.setLayoutData(new GridData(SWT.END, SWT.CENTER, true, false));
-        connectButton.addListener(SWT.Selection, e -> connect());
+        connectButton.addListener(SWT.Selection, e -> create());
         shell.setDefaultButton(connectButton);
 
         Button cancelButton = new Button(buttonBar, SWT.PUSH);
@@ -141,12 +141,13 @@ public class ConnectionDialog {
     }
 
     private void loadProfiles() {
-        List<ConnectionConfig> connections = configManager.loadConnections();
+        final Map<String, QueueManagerConfig> connections = configManager.loadConnections();
         profileCombo.removeAll();
         profileCombo.add("-- New Connection --");
-        for (ConnectionConfig config : connections) {
-            profileCombo.add(config.getName());
-        }
+        connections.values().forEach(q -> {
+            final String label = String.format("%s %s", q.getName(), q.getLabel());
+            profileCombo.add(label);
+        });
         profileCombo.select(0);
     }
 
@@ -158,9 +159,9 @@ public class ConnectionDialog {
         }
 
         String profileName = profileCombo.getItem(index);
-        List<ConnectionConfig> connections = configManager.loadConnections();
+        Map<String, QueueManagerConfig> connections = configManager.loadConnections();
 
-        for (ConnectionConfig config : connections) {
+        for (QueueManagerConfig config : connections.values()) {
             if (config.getName().equals(profileName)) {
                 nameText.setText(config.getName());
                 hostText.setText(config.getHost());
@@ -185,22 +186,19 @@ public class ConnectionDialog {
     }
 
     private void saveProfile() {
-        ConnectionConfig config = getConnectionConfig();
+        final QueueManagerConfig config = getConnectionConfig();
         if (config.getName() == null || config.getName().isEmpty()) {
             showError("Please enter a profile name");
             return;
         }
-
         configManager.saveConnection(config);
         loadProfiles();
-
         for (int i = 0; i < profileCombo.getItemCount(); i++) {
             if (profileCombo.getItem(i).equals(config.getName())) {
                 profileCombo.select(i);
                 break;
             }
         }
-
         showInfo("Profile saved successfully");
     }
 
@@ -209,12 +207,10 @@ public class ConnectionDialog {
         if (index <= 0) {
             return;
         }
-
         String profileName = profileCombo.getItem(index);
         MessageBox confirm = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
         confirm.setText("Confirm Delete");
         confirm.setMessage("Delete profile '" + profileName + "'?");
-
         if (confirm.open() == SWT.YES) {
             configManager.deleteConnection(profileName);
             loadProfiles();
@@ -223,7 +219,7 @@ public class ConnectionDialog {
     }
 
     private void testConnection() {
-        ConnectionConfig config = getConnectionConfig();
+        QueueManagerConfig config = getConnectionConfig();
         MQConnectionManager testManager = new MQConnectionManager();
 
         try {
@@ -237,14 +233,13 @@ public class ConnectionDialog {
         }
     }
 
-    private void connect() {
-        ConnectionConfig config = getConnectionConfig();
-        result = config;
+    private void create() {
+        result = getConnectionConfig();
         shell.close();
     }
 
-    private ConnectionConfig getConnectionConfig() {
-        ConnectionConfig config = new ConnectionConfig();
+    private QueueManagerConfig getConnectionConfig() {
+        QueueManagerConfig config = new QueueManagerConfig();
         config.setName(nameText.getText().trim());
         config.setHost(hostText.getText().trim());
 

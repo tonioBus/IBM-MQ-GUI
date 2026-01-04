@@ -9,14 +9,12 @@ import com.ibm.mq.constants.CMQCFC;
 import com.ibm.mq.constants.MQConstants;
 import com.ibm.mq.pcf.PCFMessage;
 import com.ibm.mq.pcf.PCFMessageAgent;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class QueueService {
     private static final Logger logger = LoggerFactory.getLogger(QueueService.class);
@@ -76,7 +74,7 @@ public class QueueService {
         });
         // Send request and get responses
         PCFMessage[] responses = agent.send(request);
-        System.out.println("\nFound " + responses.length + " queues:\n");
+        logger.info("\nFound  {} queues.", responses.length);
         for (PCFMessage response : responses) {
             try {
                 String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
@@ -84,18 +82,16 @@ public class QueueService {
                 int currentDepth = response.getIntParameterValue(CMQC.MQIA_CURRENT_Q_DEPTH);
                 int maxDepth = response.getIntParameterValue(CMQC.MQIA_MAX_Q_DEPTH);
 
-                String queueTypeStr = getQueueTypeString(queueType);
-
                 QueueInfo queueInfo = new QueueInfo(queueName);
                 queueInfo.setQueueType(queueType);
                 queueInfo.setCurrentDepth(currentDepth);
                 queueInfo.setMaxDepth(maxDepth);
+                queueInfo.setQueueType(queueType);
                 queues.add(queueInfo);
             } catch (Exception e) {
                 logger.error("Error", e);
             }
         }
-        logger.info("queues: {}", queues.stream().map(QueueInfo::getName).collect(Collectors.joining(",")));
         return queues;
     }
 
@@ -122,6 +118,47 @@ public class QueueService {
         }
     }
 
+    /**
+     * Get queue information for a list of queue names.
+     * @param queueNames List of queue names to retrieve information for
+     * @return List of QueueInfo objects for the specified queues
+     */
+    public List<QueueInfo> getQueuesInfo(List<String> queueNames) throws MQException {
+        if (queueNames == null || queueNames.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<QueueInfo> queueInfoList = new ArrayList<>();
+        MQQueueManager qm = connectionManager.getQueueManager();
+        PCFMessageAgent agent = new PCFMessageAgent(qm);
+
+        try {
+            for (String queueName : queueNames) {
+                try {
+                    PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
+                    request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
+
+                    PCFMessage[] responses = agent.send(request);
+
+                    if (responses.length > 0) {
+                        QueueInfo queueInfo = new QueueInfo(queueName);
+                        populateQueueInfo(queueInfo, responses[0]);
+                        queueInfoList.add(queueInfo);
+                    } else {
+                        logger.warn("Queue not found: {}", queueName);
+                    }
+                } catch (Exception e) {
+                    logger.error("Error retrieving info for queue: {}", queueName, e);
+                }
+            }
+        } finally {
+            agent.disconnect();
+        }
+
+        logger.info("Retrieved information for {} out of {} queues", queueInfoList.size(), queueNames.size());
+        return queueInfoList;
+    }
+
     private void populateQueueInfo(QueueInfo queueInfo, PCFMessage response) {
         try {
             queueInfo.setCurrentDepth(response.getIntParameterValue(MQConstants.MQIA_CURRENT_Q_DEPTH));
@@ -144,7 +181,7 @@ public class QueueService {
             queueInfo.setAttribute("MaxMsgLength", response.getIntParameterValue(MQConstants.MQIA_MAX_MSG_LENGTH));
 
         } catch (Exception e) {
-            logger.warn("Error populating queue info for {}", queueInfo.getName(), e);
+            logger.warn("Error populating queue info for {}", queueInfo.getQueue(), e);
         }
     }
 
@@ -169,7 +206,7 @@ public class QueueService {
     }
 
     public void refreshQueueInfo(QueueInfo queueInfo) throws MQException, IOException {
-        QueueInfo updated = getQueueInfo(queueInfo.getName());
+        QueueInfo updated = getQueueInfo(queueInfo.getQueue());
         if (updated != null) {
             queueInfo.setCurrentDepth(updated.getCurrentDepth());
             queueInfo.setMaxDepth(updated.getMaxDepth());
@@ -184,7 +221,7 @@ public class QueueService {
 
         for (QueueInfo queueInfo : queues) {
             for (QueueInfo updated : refreshed) {
-                if (queueInfo.getName().equals(updated.getName())) {
+                if (queueInfo.getQueue().equals(updated.getQueue())) {
                     queueInfo.setCurrentDepth(updated.getCurrentDepth());
                     queueInfo.setMaxDepth(updated.getMaxDepth());
                     queueInfo.setOpenInputCount(updated.getOpenInputCount());
