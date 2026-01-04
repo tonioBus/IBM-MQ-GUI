@@ -1,5 +1,10 @@
 package com.aquila.ibm.mq.gui.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class ThresholdConfig {
     private String queueName;
     private int warningThreshold;
@@ -23,54 +28,6 @@ public class ThresholdConfig {
         this.enabled = true;
         this.warningThresholdPercentage = true;
         this.criticalThresholdPercentage = true;
-    }
-
-    public String getQueueName() {
-        return queueName;
-    }
-
-    public void setQueueName(String queueName) {
-        this.queueName = queueName;
-    }
-
-    public int getWarningThreshold() {
-        return warningThreshold;
-    }
-
-    public void setWarningThreshold(int warningThreshold) {
-        this.warningThreshold = warningThreshold;
-    }
-
-    public int getCriticalThreshold() {
-        return criticalThreshold;
-    }
-
-    public void setCriticalThreshold(int criticalThreshold) {
-        this.criticalThreshold = criticalThreshold;
-    }
-
-    public boolean isWarningThresholdPercentage() {
-        return warningThresholdPercentage;
-    }
-
-    public void setWarningThresholdPercentage(boolean warningThresholdPercentage) {
-        this.warningThresholdPercentage = warningThresholdPercentage;
-    }
-
-    public boolean isCriticalThresholdPercentage() {
-        return criticalThresholdPercentage;
-    }
-
-    public void setCriticalThresholdPercentage(boolean criticalThresholdPercentage) {
-        this.criticalThresholdPercentage = criticalThresholdPercentage;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
     }
 
     public enum AlertLevel {

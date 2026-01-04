@@ -17,7 +17,7 @@ class QueueBrowserConfigTest {
     @Test
     void testSerDeser() throws FileNotFoundException {
         final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        final String file = "doc/.ibmmqgui/52f20a1e-f41b-4c1a-a005-ecd04b8ff9e4.json";
+        final String file = "doc/41f85a24-11ca-42d9-8a9d-59c539d158c5.json";
         final Reader reader = new FileReader(file);
         final QueueBrowserConfig queueBrowserConfig = gson.fromJson(reader, QueueBrowserConfig.class);
         assertNotNull(queueBrowserConfig);

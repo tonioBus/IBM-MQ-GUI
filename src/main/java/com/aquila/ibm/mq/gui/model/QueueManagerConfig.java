@@ -37,6 +37,6 @@ public class QueueManagerConfig {
     }
 
     public String getLabel() {
-        return String.format("%s(%d)", host, port);
+        return String.format("%s(%d)", host, (Integer)port);
     }
 }

@@ -361,6 +361,26 @@
       ]
     },
     {
+      "type": "com.aquila.ibm.mq.gui.model.HierarchyImportNode",
+      "fields": [
+        {
+          "name": "children"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "type"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.model.HierarchyNode",
       "fields": [
         {
@@ -397,6 +417,23 @@
         },
         {
           "name": "FOLDER"
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.ImportConfig",
+      "fields": [
+        {
+          "name": "Hierarchy"
+        },
+        {
+          "name": "QueueManagers"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
         }
       ]
     },
@@ -479,6 +516,60 @@
       "methods": [
         {
           "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.util.ImportExportUtilTest",
+      "fields": [
+        {
+          "name": "tempDir"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setUp",
+          "parameterTypes": []
+        },
+        {
+          "name": "tearDown",
+          "parameterTypes": []
+        },
+        {
+          "name": "testConversionWithComplexHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "testExportToFile",
+          "parameterTypes": []
+        },
+        {
+          "name": "testExportWithNullHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImportFromFile",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImportHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImportNonExistentFile",
+          "parameterTypes": []
+        },
+        {
+          "name": "testRoundTripConversion",
+          "parameterTypes": []
+        },
+        {
+          "name": "testWriteAndReadBack",
           "parameterTypes": []
         }
       ]
@@ -18327,6 +18418,9 @@
       "type": "jdk.management.jfr.SettingDescriptorInfo"
     },
     {
+      "type": "junit.framework.ComparisonFailure"
+    },
+    {
       "type": "kotlin.Metadata"
     },
     {
@@ -20212,6 +20306,9 @@
     },
     {
       "type": "org.junit.jupiter.api.Test"
+    },
+    {
+      "type": "org.junit.jupiter.api.io.TempDir"
     },
     {
       "type": "org.junit.jupiter.engine.JupiterTestEngine"

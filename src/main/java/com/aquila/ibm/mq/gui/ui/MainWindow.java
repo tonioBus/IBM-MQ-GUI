@@ -7,6 +7,7 @@ import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.aquila.ibm.mq.gui.mq.QueueMonitor;
 import com.aquila.ibm.mq.gui.mq.QueueService;
+import com.aquila.ibm.mq.gui.util.ImportExportUtil;
 import com.ibm.mq.MQException;
 import lombok.Getter;
 import org.eclipse.swt.SWT;
@@ -88,6 +89,16 @@ public class MainWindow {
         fileItem.setText("&File");
         Menu fileMenu = new Menu(shell, SWT.DROP_DOWN);
         fileItem.setMenu(fileMenu);
+
+        MenuItem importItem = new MenuItem(fileMenu, SWT.PUSH);
+        importItem.setText("&Import Configuration...");
+        importItem.addListener(SWT.Selection, e -> importConfiguration());
+
+        MenuItem exportItem = new MenuItem(fileMenu, SWT.PUSH);
+        exportItem.setText("&Export Configuration...");
+        exportItem.addListener(SWT.Selection, e -> exportConfiguration());
+
+        new MenuItem(fileMenu, SWT.SEPARATOR);
 
         MenuItem exitItem = new MenuItem(fileMenu, SWT.PUSH);
         exitItem.setText("E&xit");
@@ -619,6 +630,171 @@ public class MainWindow {
         box.setText("About");
         box.setMessage("IBM MQ Queue Visualizer GUI\nVersion 1.0\n\n(c) Aquila");
         box.open();
+    }
+
+    /**
+     * Import configuration from a JSON file and add to selected hierarchy node.
+     */
+    private void importConfiguration() {
+        // Show file dialog to select import file
+        org.eclipse.swt.widgets.FileDialog dialog = new org.eclipse.swt.widgets.FileDialog(shell, SWT.OPEN);
+        dialog.setText("Import Configuration");
+        dialog.setFilterExtensions(new String[]{"*.json", "*.*"});
+        dialog.setFilterNames(new String[]{"JSON Files (*.json)", "All Files (*.*)"});
+
+        String filePath = dialog.open();
+        if (filePath == null) {
+            return; // User cancelled
+        }
+
+        logger.info("Importing configuration from: {}", filePath);
+
+        // Import the configuration
+        ImportConfig importConfig = ImportExportUtil.importFromFile(filePath);
+
+        if (importConfig == null) {
+            showError("Import Failed", "Failed to read import file. Please check the file format.");
+            return;
+        }
+
+        // Import queue managers
+        Map<String, QueueManagerConfig> importedQueueManagers = importConfig.getQueueManagers();
+        if (importedQueueManagers != null && !importedQueueManagers.isEmpty()) {
+            Map<String, QueueManagerConfig> existingQueueManagers = configManager.loadConnections();
+
+            int newCount = 0;
+            for (Map.Entry<String, QueueManagerConfig> entry : importedQueueManagers.entrySet()) {
+                if (!existingQueueManagers.containsKey(entry.getKey())) {
+                    existingQueueManagers.put(entry.getKey(), entry.getValue());
+                    newCount++;
+                }
+            }
+
+            if (newCount > 0) {
+                configManager.saveConnections(existingQueueManagers);
+                logger.info("Imported {} new queue manager(s)", newCount);
+            }
+        }
+
+        // Import hierarchy
+        if (importConfig.getHierarchy() != null) {
+            // Ask user where to add the imported hierarchy
+            MessageBox locationBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO | SWT.CANCEL);
+            locationBox.setText("Import Location");
+            locationBox.setMessage("Where would you like to add the imported hierarchy?\n\n" +
+                    "YES - Add under currently selected node\n" +
+                    "NO - Add at root level\n" +
+                    "CANCEL - Skip hierarchy import");
+
+            int choice = locationBox.open();
+
+            if (choice != SWT.CANCEL) {
+                HierarchyConfig currentHierarchy = hierarchyTreeViewer.getHierarchyConfig();
+                if (currentHierarchy == null) {
+                    currentHierarchy = new HierarchyConfig();
+                }
+
+                // Convert imported hierarchy to internal format
+                HierarchyConfig importedHierarchy = importConfig.toHierarchyConfig();
+
+                String parentId = null;
+                if (choice == SWT.YES) {
+                    // Add under selected node
+                    HierarchyNode selectedNode = hierarchyTreeViewer.getSelectedNode();
+                    if (selectedNode != null) {
+                        if (selectedNode.isFolder()) {
+                            parentId = selectedNode.getId();
+                        } else {
+                            MessageBox infoBox = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
+                            infoBox.setText("Invalid Selection");
+                            infoBox.setMessage("Can only add hierarchy under a folder node. Adding at root level instead.");
+                            infoBox.open();
+                        }
+                    }
+                }
+
+                // Add all root nodes from imported hierarchy to current hierarchy
+                for (String rootId : importedHierarchy.getRootNodeIds()) {
+                    HierarchyNode rootNode = importedHierarchy.getNode(rootId);
+                    if (rootNode != null) {
+                        mergeHierarchyNode(rootNode, importedHierarchy, currentHierarchy, parentId);
+                    }
+                }
+
+                // Save and refresh
+                configManager.saveHierarchy(currentHierarchy);
+                hierarchyTreeViewer.setHierarchyConfig(currentHierarchy);
+
+                logger.info("Successfully imported hierarchy");
+            }
+        }
+
+        // Show success message
+        MessageBox successBox = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
+        successBox.setText("Import Complete");
+        successBox.setMessage("Configuration imported successfully!");
+        successBox.open();
+    }
+
+    /**
+     * Recursively merge a hierarchy node and its children into the target hierarchy.
+     */
+    private void mergeHierarchyNode(HierarchyNode sourceNode, HierarchyConfig sourceHierarchy,
+                                   HierarchyConfig targetHierarchy, String targetParentId) {
+        // Create a copy of the node
+        HierarchyNode newNode = new HierarchyNode(sourceNode.getType(), sourceNode.getName());
+        newNode.setQueueBrowserConfig(sourceNode.getQueueBrowserConfig());
+
+        // Add to target hierarchy
+        targetHierarchy.addNode(newNode, targetParentId);
+
+        // Copy queue browser config if it exists
+        if (sourceNode.getQueueBrowserConfig() != null) {
+            configManager.save(newNode.getId(), sourceNode.getQueueBrowserConfig());
+        }
+
+        // Recursively merge children
+        for (String childId : sourceNode.getChildIds()) {
+            HierarchyNode childNode = sourceHierarchy.getNode(childId);
+            if (childNode != null) {
+                mergeHierarchyNode(childNode, sourceHierarchy, targetHierarchy, newNode.getId());
+            }
+        }
+    }
+
+    /**
+     * Export current configuration to a JSON file.
+     */
+    private void exportConfiguration() {
+        // Show file dialog to select export location
+        org.eclipse.swt.widgets.FileDialog dialog = new org.eclipse.swt.widgets.FileDialog(shell, SWT.SAVE);
+        dialog.setText("Export Configuration");
+        dialog.setFilterExtensions(new String[]{"*.json", "*.*"});
+        dialog.setFilterNames(new String[]{"JSON Files (*.json)", "All Files (*.*)"});
+        dialog.setFileName("export.json");
+
+        String filePath = dialog.open();
+        if (filePath == null) {
+            return; // User cancelled
+        }
+
+        logger.info("Exporting configuration to: {}", filePath);
+
+        // Get current configuration
+        HierarchyConfig hierarchyConfig = hierarchyTreeViewer.getHierarchyConfig();
+        Map<String, QueueManagerConfig> queueManagers = configManager.loadConnections();
+
+        // Export
+        boolean success = ImportExportUtil.exportToFile(filePath, hierarchyConfig, queueManagers);
+
+        if (success) {
+            MessageBox successBox = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
+            successBox.setText("Export Complete");
+            successBox.setMessage("Configuration exported successfully to:\n" + filePath);
+            successBox.open();
+        } else {
+            showError("Export Failed", "Failed to export configuration. Please check the file path and permissions.");
+        }
     }
 
     private void cleanup() {

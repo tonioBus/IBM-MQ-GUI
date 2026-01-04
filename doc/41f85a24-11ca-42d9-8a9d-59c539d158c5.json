@@ -1,0 +1,118 @@
+{
+  "label": "DEFAULT",
+  "queueManager": "192.168.1.73(1414)",
+  "regularExpression": "*",
+  "descriptions": {
+    "SYSTEM.DEAD.LETTER.QUEUE": {
+      "label": "SYSTEM.DEAD.LETTER.QUEUE"
+    },
+    "SYSTEM.CHLAUTH.DATA.QUEUE": {
+      "label": "SYSTEM.CHLAUTH.DATA.QUEUE"
+    },
+    "SYSTEM.BROKER.DEFAULT.STREAM": {
+      "label": "SYSTEM.BROKER.DEFAULT.STREAM"
+    },
+    "SYSTEM.DEFAULT.INITIATION.QUEUE": {
+      "label": "SYSTEM.DEFAULT.INITIATION.QUEUE"
+    },
+    "SYSTEM.AMQP.COMMAND.QUEUE": {
+      "label": "SYSTEM.AMQP.COMMAND.QUEUE"
+    },
+    "SYSTEM.DOTNET.XARECOVERY.QUEUE": {
+      "label": "SYSTEM.DOTNET.XARECOVERY.QUEUE"
+    },
+    "SYSTEM.CLUSTER.HISTORY.QUEUE": {
+      "label": "SYSTEM.CLUSTER.HISTORY.QUEUE"
+    },
+    "SYSTEM.BROKER.INTER.BROKER.COMMUNICATIONS": {
+      "label": "SYSTEM.BROKER.INTER.BROKER.COMMUNICATIONS"
+    },
+    "SYSTEM.CHANNEL.INITQ": {
+      "label": "SYSTEM.CHANNEL.INITQ"
+    },
+    "SYSTEM.ADMIN.TRACE.ACTIVITY.QUEUE": {
+      "label": "SYSTEM.ADMIN.TRACE.ACTIVITY.QUEUE"
+    },
+    "SYSTEM.HIERARCHY.STATE": {
+      "label": "SYSTEM.HIERARCHY.STATE"
+    },
+    "SYSTEM.ADMIN.PERFM.EVENT": {
+      "label": "SYSTEM.ADMIN.PERFM.EVENT"
+    },
+    "SYSTEM.CLUSTER.COMMAND.QUEUE": {
+      "label": "SYSTEM.CLUSTER.COMMAND.QUEUE"
+    },
+    "SYSTEM.DURABLE.SUBSCRIBER.QUEUE": {
+      "label": "SYSTEM.DURABLE.SUBSCRIBER.QUEUE"
+    },
+    "SYSTEM.ADMIN.COMMAND.EVENT": {
+      "label": "SYSTEM.ADMIN.COMMAND.EVENT"
+    },
+    "SYSTEM.ADMIN.CONFIG.EVENT": {
+      "label": "SYSTEM.ADMIN.CONFIG.EVENT"
+    },
+    "SYSTEM.BROKER.ADMIN.STREAM": {
+      "label": "SYSTEM.BROKER.ADMIN.STREAM"
+    },
+    "SYSTEM.ADMIN.PUBSUB.EVENT": {
+      "label": "SYSTEM.ADMIN.PUBSUB.EVENT"
+    },
+    "SYSTEM.ADMIN.ACTIVITY.QUEUE": {
+      "label": "SYSTEM.ADMIN.ACTIVITY.QUEUE"
+    },
+    "SYSTEM.CICS.INITIATION.QUEUE": {
+      "label": "SYSTEM.CICS.INITIATION.QUEUE"
+    },
+    "SYSTEM.ADMIN.TRACE.ROUTE.QUEUE": {
+      "label": "SYSTEM.ADMIN.TRACE.ROUTE.QUEUE"
+    },
+    "DEV.QUEUE.3": {
+      "label": "DEV.QUEUE.3"
+    },
+    "SYSTEM.BROKER.CONTROL.QUEUE": {
+      "label": "SYSTEM.BROKER.CONTROL.QUEUE"
+    },
+    "DEV.QUEUE.2": {
+      "label": "DEV.QUEUE.2"
+    },
+    "DEV.QUEUE.1": {
+      "label": "DEV.QUEUE.1"
+    },
+    "SYSTEM.CLUSTER.TRANSMIT.QUEUE": {
+      "label": "SYSTEM.CLUSTER.TRANSMIT.QUEUE"
+    },
+    "SYSTEM.ADMIN.CHANNEL.EVENT": {
+      "label": "SYSTEM.ADMIN.CHANNEL.EVENT"
+    },
+    "SYSTEM.DEFAULT.LOCAL.QUEUE": {
+      "label": "SYSTEM.DEFAULT.LOCAL.QUEUE"
+    },
+    "SYSTEM.ADMIN.LOGGER.EVENT": {
+      "label": "SYSTEM.ADMIN.LOGGER.EVENT"
+    },
+    "SYSTEM.ADMIN.STATISTICS.QUEUE": {
+      "label": "SYSTEM.ADMIN.STATISTICS.QUEUE"
+    },
+    "SYSTEM.AUTH.DATA.QUEUE": {
+      "label": "SYSTEM.AUTH.DATA.QUEUE"
+    },
+    "SYSTEM.CLUSTER.REPOSITORY.QUEUE": {
+      "label": "SYSTEM.CLUSTER.REPOSITORY.QUEUE"
+    },
+    "SYSTEM.CHANNEL.SYNCQ": {
+      "label": "SYSTEM.CHANNEL.SYNCQ"
+    },
+    "SYSTEM.ADMIN.ACCOUNTING.QUEUE": {
+      "label": "SYSTEM.ADMIN.ACCOUNTING.QUEUE"
+    },
+    "SYSTEM.DDELAY.LOCAL.QUEUE": {
+      "label": "SYSTEM.DDELAY.LOCAL.QUEUE"
+    },
+    "SYSTEM.ADMIN.QMGR.EVENT": {
+      "label": "SYSTEM.ADMIN.QMGR.EVENT"
+    },
+    "SYSTEM.ADMIN.COMMAND.QUEUE": {
+      "label": "SYSTEM.ADMIN.COMMAND.QUEUE"
+    }
+  }
+}

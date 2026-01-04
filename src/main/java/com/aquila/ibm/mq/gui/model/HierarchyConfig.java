@@ -3,6 +3,7 @@ package com.aquila.ibm.mq.gui.model;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,9 +15,8 @@ import java.util.*;
  */
 @ToString
 @Getter
+@Slf4j
 public class HierarchyConfig {
-    private static final Logger logger = LoggerFactory.getLogger(HierarchyConfig.class);
-
     private Map<String, HierarchyNode> nodes;
     private List<String> rootNodeIds;
     @Setter
@@ -41,7 +41,7 @@ public class HierarchyConfig {
      */
     public void addNode(HierarchyNode node, String parentId) {
         if (node == null) {
-            logger.warn("Attempted to add null node");
+            log.warn("Attempted to add null node");
             return;
         }
 
@@ -59,7 +59,7 @@ public class HierarchyConfig {
             if (parent != null) {
                 parent.addChild(node.getId());
             } else {
-                logger.warn("Parent node not found: {}, adding to root instead", parentId);
+                log.warn("Parent node not found: {}, adding to root instead", parentId);
                 if (!rootNodeIds.contains(node.getId())) {
                     rootNodeIds.add(node.getId());
                 }
@@ -67,7 +67,7 @@ public class HierarchyConfig {
             }
         }
 
-        logger.debug("Added node: {} to parent: {}", node.getName(), parentId);
+        log.debug("Added node: {} to parent: {}", node.getName(), parentId);
     }
 
     /**
@@ -77,7 +77,7 @@ public class HierarchyConfig {
     public void removeNode(String nodeId) {
         HierarchyNode node = nodes.get(nodeId);
         if (node == null) {
-            logger.warn("Node not found for removal: {}", nodeId);
+            log.warn("Node not found for removal: {}", nodeId);
             return;
         }
 
@@ -106,7 +106,7 @@ public class HierarchyConfig {
             selectedNodeId = null;
         }
 
-        logger.debug("Removed node: {}", node.getName());
+        log.debug("Removed node: {}", node.getName());
     }
 
     /**
@@ -118,19 +118,19 @@ public class HierarchyConfig {
     public boolean moveNode(String nodeId, String newParentId) {
         HierarchyNode node = nodes.get(nodeId);
         if (node == null) {
-            logger.warn("Node not found for move: {}", nodeId);
+            log.warn("Node not found for move: {}", nodeId);
             return false;
         }
 
         // Prevent moving to self
         if (nodeId.equals(newParentId)) {
-            logger.warn("Cannot move node to itself");
+            log.warn("Cannot move node to itself");
             return false;
         }
 
         // Prevent circular dependencies (can't move folder into its own descendant)
         if (newParentId != null && isDescendant(newParentId, nodeId)) {
-            logger.warn("Cannot move node {} to its own descendant {}", nodeId, newParentId);
+            log.warn("Cannot move node {} to its own descendant {}", nodeId, newParentId);
             return false;
         }
 
@@ -155,7 +155,7 @@ public class HierarchyConfig {
             if (newParent != null) {
                 newParent.addChild(nodeId);
             } else {
-                logger.warn("New parent not found: {}, moving to root instead", newParentId);
+                log.warn("New parent not found: {}, moving to root instead", newParentId);
                 if (!rootNodeIds.contains(nodeId)) {
                     rootNodeIds.add(nodeId);
                 }
@@ -163,7 +163,7 @@ public class HierarchyConfig {
             }
         }
 
-        logger.debug("Moved node: {} to new parent: {}", node.getName(), newParentId);
+        log.debug("Moved node: {} to new parent: {}", node.getName(), newParentId);
         return true;
     }
 
