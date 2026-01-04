@@ -17,6 +17,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,9 +124,14 @@ public class QueueBrowserDialog {
 
         this.selectedQueuesViewer = new SelectedQueuesViewer(rightQueueComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
         selectedQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        selectedQueuesViewer.addListener(SWT.Selection, e -> {
-            log.info("selected queue selected: {}", e);
+        java.util.List<QueueInfo> queues = new ArrayList<>();
+        this.hierarchyNode.getQueueBrowserConfig().getDescriptions().entrySet().forEach(entry -> {
+            queues.add(QueueInfo.builder()
+                    .queue(entry.getKey())
+                    .label(entry.getValue().label())
+                    .build());
         });
+        selectedQueuesViewer.setQueues(queues);
     }
 
     private void createLabelField(Composite parent) {
@@ -211,19 +217,15 @@ public class QueueBrowserDialog {
             log.info("No queues selected to add");
             return;
         }
-
         log.info("Adding {} queues to selected list", selectedQueues.size());
-
         // Get current selected queues
         java.util.List<QueueInfo> currentSelected = new java.util.ArrayList<>(selectedQueuesViewer.getQueues());
-
         // Add new queues (avoid duplicates)
         for (QueueInfo queue : selectedQueues) {
             if (!currentSelected.stream().anyMatch(q -> q.getQueue().equals(queue.getQueue()))) {
                 currentSelected.add(queue);
             }
         }
-
         // Update selected queues viewer
         selectedQueuesViewer.setQueues(currentSelected);
     }
@@ -242,7 +244,7 @@ public class QueueBrowserDialog {
 
         // Remove selected queues
         currentSelected.removeIf(queue ->
-            queuesToRemove.stream().anyMatch(q -> q.getQueue().equals(queue.getQueue()))
+                queuesToRemove.stream().anyMatch(q -> q.getQueue().equals(queue.getQueue()))
         );
 
         // Update selected queues viewer
@@ -278,7 +280,7 @@ public class QueueBrowserDialog {
 
         final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
         this.selectedQueuesViewer.getQueues().forEach(queueInfo -> {
-            String label = queueInfo.getLabel() == null  ? queueInfo.getQueue() : queueInfo.getLabel();
+            String label = queueInfo.getLabel() == null ? queueInfo.getQueue() : queueInfo.getLabel();
             descriptions.put(queueInfo.getQueue(), new QueueBrowserConfig.QueueDescription(label));
         });
         final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()

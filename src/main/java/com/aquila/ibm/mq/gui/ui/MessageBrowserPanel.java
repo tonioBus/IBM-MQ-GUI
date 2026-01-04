@@ -24,17 +24,12 @@ public class MessageBrowserPanel extends Composite {
     public MessageBrowserPanel(Composite parent, int style, MessageService messageService) {
         super(parent, style);
         this.messageService = messageService;
-
         setLayout(new GridLayout());
-
         createToolbar();
-
         SashForm sashForm = new SashForm(this, SWT.VERTICAL);
         sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
         createMessagesTable(sashForm);
         createMessageDetailArea(sashForm);
-
         sashForm.setWeights(new int[]{60, 40});
     }
 

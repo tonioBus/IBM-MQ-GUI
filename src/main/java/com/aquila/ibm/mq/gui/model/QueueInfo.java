@@ -1,8 +1,14 @@
 package com.aquila.ibm.mq.gui.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Builder
+@AllArgsConstructor
 public class QueueInfo {
     private String queue;
     private String label;
