@@ -8,6 +8,7 @@ import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.aquila.ibm.mq.gui.mq.QueueMonitor;
 import com.aquila.ibm.mq.gui.mq.QueueService;
 import com.ibm.mq.MQException;
+import lombok.Getter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
@@ -27,6 +28,7 @@ public class MainWindow {
     private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
 
     private final Display display;
+    @Getter
     private final Shell shell;
     private final ConfigManager configManager;
     private final MQConnectionManager connectionManager;
@@ -638,7 +640,4 @@ public class MainWindow {
         }
     }
 
-    public Shell getShell() {
-        return shell;
-    }
 }

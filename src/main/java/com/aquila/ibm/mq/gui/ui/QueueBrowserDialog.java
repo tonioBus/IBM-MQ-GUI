@@ -207,7 +207,6 @@ public class QueueBrowserDialog {
             connectionManager.disconnect();
         } catch (MQException | IOException ex) {
             availableQueuesViewer.hideProgress();
-            throw new RuntimeException(ex);
         }
     }
 

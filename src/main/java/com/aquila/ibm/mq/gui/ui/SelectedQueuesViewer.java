@@ -8,6 +8,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,10 @@ public class SelectedQueuesViewer extends Composite {
     private final Table table;
     private final List<QueueInfo> queues;
     private final Map<TableItem, TableEditor> editors;
+
+    // Sorting state
+    private int sortColumn = 1; // Default sort by Queue Name
+    private boolean sortAscending = true;
 
     public SelectedQueuesViewer(Composite parent, int style) {
         super(parent, style);
@@ -33,26 +38,31 @@ public class SelectedQueuesViewer extends Composite {
         TableColumn labelColumn = new TableColumn(table, SWT.LEFT);
         labelColumn.setText("Label");
         labelColumn.setWidth(150);
+        labelColumn.addListener(SWT.Selection, e -> sortBy(0));
 
         // Queue Name column
         TableColumn nameColumn = new TableColumn(table, SWT.LEFT);
         nameColumn.setText("Queue Name");
         nameColumn.setWidth(250);
+        nameColumn.addListener(SWT.Selection, e -> sortBy(1));
 
         // Depth column
         TableColumn depthColumn = new TableColumn(table, SWT.RIGHT);
         depthColumn.setText("Depth");
         depthColumn.setWidth(80);
+        depthColumn.addListener(SWT.Selection, e -> sortBy(2));
 
         // Max Depth column
         TableColumn maxDepthColumn = new TableColumn(table, SWT.RIGHT);
         maxDepthColumn.setText("Max Depth");
         maxDepthColumn.setWidth(80);
+        maxDepthColumn.addListener(SWT.Selection, e -> sortBy(3));
 
         // Percent column
         TableColumn percentColumn = new TableColumn(table, SWT.RIGHT);
         percentColumn.setText("% Full");
         percentColumn.setWidth(70);
+        percentColumn.addListener(SWT.Selection, e -> sortBy(4));
 
         addDisposeListener(e -> {
             // Dispose all editors
@@ -64,6 +74,7 @@ public class SelectedQueuesViewer extends Composite {
     public void setQueues(List<QueueInfo> queues) {
         this.queues.clear();
         this.queues.addAll(queues);
+        sortQueues();
         refresh();
     }
 
@@ -148,5 +159,41 @@ public class SelectedQueuesViewer extends Composite {
 
     public void setLayoutData(Object layoutData) {
         super.setLayoutData(layoutData);
+    }
+
+    private void sortBy(int columnIndex) {
+        if (sortColumn == columnIndex) {
+            // Toggle sort direction
+            sortAscending = !sortAscending;
+        } else {
+            // New column, default to ascending
+            sortColumn = columnIndex;
+            sortAscending = true;
+        }
+
+        // Update sort indicator
+        table.setSortColumn(table.getColumn(columnIndex));
+        table.setSortDirection(sortAscending ? SWT.UP : SWT.DOWN);
+
+        // Apply sorting
+        sortQueues();
+        refresh();
+    }
+
+    private void sortQueues() {
+        Comparator<QueueInfo> comparator = switch (sortColumn) {
+            case 0 -> Comparator.comparing(q -> q.getLabel() != null ? q.getLabel() : "", String.CASE_INSENSITIVE_ORDER);
+            case 1 -> Comparator.comparing(QueueInfo::getQueue);
+            case 2 -> Comparator.comparingInt(QueueInfo::getCurrentDepth);
+            case 3 -> Comparator.comparingInt(QueueInfo::getMaxDepth);
+            case 4 -> Comparator.comparingDouble(QueueInfo::getDepthPercentage);
+            default -> Comparator.comparing(QueueInfo::getQueue);
+        };
+
+        if (!sortAscending) {
+            comparator = comparator.reversed();
+        }
+
+        queues.sort(comparator);
     }
 }

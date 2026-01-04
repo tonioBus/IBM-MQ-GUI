@@ -4,6 +4,7 @@ import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
@@ -11,19 +12,25 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+@Slf4j
 public class QueueListViewer extends Composite {
 
     public interface ContextMenuActionListener {
         void onSendMessage(QueueInfo queue);
+
         void onBrowseMessages(QueueInfo queue);
+
         void onRefreshQueue(QueueInfo queue);
+
         void onCopyQueueName(QueueInfo queue);
     }
+
     private final Table table;
     private final List<QueueInfo> queues;
     private final List<QueueInfo> filteredQueues;
@@ -34,6 +41,10 @@ public class QueueListViewer extends Composite {
     private final Color greenColor;
     private final Color yellowColor;
     private final Color redColor;
+
+    // Sorting state
+    private int sortColumn = 0;
+    private boolean sortAscending = true;
 
     private final Composite progressPanel;
     private ProgressBar progressBar;
@@ -86,23 +97,27 @@ public class QueueListViewer extends Composite {
         TableColumn nameColumn = new TableColumn(table, SWT.LEFT);
         nameColumn.setText("Queue Name");
         nameColumn.setWidth(250);
+        nameColumn.addListener(SWT.Selection, e -> sortBy(0));
 
         TableColumn depthColumn = new TableColumn(table, SWT.RIGHT);
         depthColumn.setText("Depth");
         depthColumn.setWidth(80);
+        depthColumn.addListener(SWT.Selection, e -> sortBy(1));
 
         TableColumn maxDepthColumn = new TableColumn(table, SWT.RIGHT);
         maxDepthColumn.setText("Max Depth");
         maxDepthColumn.setWidth(80);
+        maxDepthColumn.addListener(SWT.Selection, e -> sortBy(2));
 
         TableColumn percentColumn = new TableColumn(table, SWT.RIGHT);
         percentColumn.setText("% Full");
         percentColumn.setWidth(70);
+        percentColumn.addListener(SWT.Selection, e -> sortBy(3));
 
         table.addListener(SWT.Selection, e -> {
             int index = table.getSelectionIndex();
-            if (index >= 0 && index < queues.size() && selectionListener != null) {
-                selectionListener.accept(queues.get(index));
+            if (index >= 0 && index < filteredQueues.size() && selectionListener != null) {
+                selectionListener.accept(filteredQueues.get(index));
             }
         });
 
@@ -167,11 +182,13 @@ public class QueueListViewer extends Composite {
             TableItem item = new TableItem(table, SWT.NONE);
             updateTableItem(item, queue);
         }
-
         updateFilterStatus();
 
         if (!filteredQueues.isEmpty() && table.getSelectionIndex() < 0) {
-            table.select(0);
+            if (table.getSelectionIndex() == -1) {
+                log.info("Table Selection");
+                table.select(0);
+            }
             if (selectionListener != null) {
                 selectionListener.accept(filteredQueues.get(0));
             }
@@ -229,7 +246,6 @@ public class QueueListViewer extends Composite {
     private void createContextMenu() {
         Menu menu = new Menu(table);
         table.setMenu(menu);
-
         // Dynamically build menu based on selection
         menu.addListener(SWT.Show, e -> {
             // Clear existing items
@@ -245,13 +261,13 @@ public class QueueListViewer extends Composite {
                 MenuItem sendMessageItem = new MenuItem(menu, SWT.PUSH);
                 sendMessageItem.setText("Send Message...");
                 sendMessageItem.addListener(SWT.Selection, ev ->
-                    contextMenuActionListener.onSendMessage(selectedQueue));
+                        contextMenuActionListener.onSendMessage(selectedQueue));
 
                 // Browse Messages action
                 MenuItem browseMessagesItem = new MenuItem(menu, SWT.PUSH);
                 browseMessagesItem.setText("Browse Messages...");
                 browseMessagesItem.addListener(SWT.Selection, ev ->
-                    contextMenuActionListener.onBrowseMessages(selectedQueue));
+                        contextMenuActionListener.onBrowseMessages(selectedQueue));
 
                 // Separator
                 new MenuItem(menu, SWT.SEPARATOR);
@@ -260,7 +276,7 @@ public class QueueListViewer extends Composite {
                 MenuItem refreshItem = new MenuItem(menu, SWT.PUSH);
                 refreshItem.setText("Refresh Queue Info");
                 refreshItem.addListener(SWT.Selection, ev ->
-                    contextMenuActionListener.onRefreshQueue(selectedQueue));
+                        contextMenuActionListener.onRefreshQueue(selectedQueue));
 
                 // Separator
                 new MenuItem(menu, SWT.SEPARATOR);
@@ -269,7 +285,7 @@ public class QueueListViewer extends Composite {
                 MenuItem copyNameItem = new MenuItem(menu, SWT.PUSH);
                 copyNameItem.setText("Copy Queue Name");
                 copyNameItem.addListener(SWT.Selection, ev ->
-                    contextMenuActionListener.onCopyQueueName(selectedQueue));
+                        contextMenuActionListener.onCopyQueueName(selectedQueue));
             }
         });
     }
@@ -323,6 +339,7 @@ public class QueueListViewer extends Composite {
                 // Invalid regex - show error and display all queues
                 regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
                 filteredQueues.addAll(queues);
+                sortQueues();
                 refresh();
                 return;
             }
@@ -331,12 +348,13 @@ public class QueueListViewer extends Composite {
         // Apply filters using streams
         final Pattern finalPattern = pattern;
         filteredQueues.addAll(
-            queues.stream()
-                .filter(q -> finalPattern == null || finalPattern.matcher(q.getQueue()).find())
-                .filter(q -> minDepth == 0 || q.getCurrentDepth() >= minDepth)
-                .toList()
+                queues.stream()
+                        .filter(q -> finalPattern == null || finalPattern.matcher(q.getQueue()).find())
+                        .filter(q -> minDepth == 0 || q.getCurrentDepth() >= minDepth)
+                        .toList()
         );
 
+        sortQueues();
         refresh();
     }
 
@@ -345,7 +363,7 @@ public class QueueListViewer extends Composite {
             filterStatusLabel.setText(String.format("%d queues", queues.size()));
         } else {
             filterStatusLabel.setText(String.format("%d of %d queues",
-                filteredQueues.size(), queues.size()));
+                    filteredQueues.size(), queues.size()));
         }
     }
 
@@ -353,5 +371,39 @@ public class QueueListViewer extends Composite {
         regexFilterText.setText("");
         depthFilterSpinner.setSelection(0);
         // applyFilters() will be called automatically via listeners
+    }
+
+    private void sortBy(int columnIndex) {
+        if (sortColumn == columnIndex) {
+            // Toggle sort direction
+            sortAscending = !sortAscending;
+        } else {
+            // New column, default to ascending
+            sortColumn = columnIndex;
+            sortAscending = true;
+        }
+
+        // Update sort indicator
+        table.setSortColumn(table.getColumn(columnIndex));
+        table.setSortDirection(sortAscending ? SWT.UP : SWT.DOWN);
+
+        // Apply sorting
+        sortQueues();
+        refresh();
+    }
+
+    private void sortQueues() {
+        Comparator<QueueInfo> comparator = switch (sortColumn) {
+            case 1 -> Comparator.comparingInt(QueueInfo::getCurrentDepth);
+            case 2 -> Comparator.comparingInt(QueueInfo::getMaxDepth);
+            case 3 -> Comparator.comparingDouble(QueueInfo::getDepthPercentage);
+            default -> Comparator.comparing(QueueInfo::getQueue);
+        };
+
+        if (!sortAscending) {
+            comparator = comparator.reversed();
+        }
+
+        filteredQueues.sort(comparator);
     }
 }
