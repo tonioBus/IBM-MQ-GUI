@@ -17174,12 +17174,7 @@
     },
     {
       "type": "com.ibm.mq.constants.MQConstants",
-      "allPublicFields": true,
-      "fields": [
-        {
-          "name": "sccsid"
-        }
-      ]
+      "allPublicFields": true
     },
     {
       "type": "com.ibm.mq.constants.MQPropertyIdentifiers",
