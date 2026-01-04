@@ -4,6 +4,7 @@ import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
@@ -16,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+@Slf4j
 public class InspectedQueueViewer extends Composite {
 
     public interface ContextMenuActionListener {
@@ -77,7 +79,7 @@ public class InspectedQueueViewer extends Composite {
         progressLabel = new Label(progressPanel, SWT.NONE);
         progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION);
+        table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI);
         table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         table.setHeaderVisible(true);
         table.setLinesVisible(true);

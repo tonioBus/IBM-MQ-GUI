@@ -135,7 +135,7 @@ public class QueueBrowserDialog {
         labelGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         label = new Text(labelGroup, SWT.BORDER);
         label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        label.setText(edit ? hierarchyNode.getQueueBrowserConfig().getLabel() : "DEFAULT");
+        label.setText(edit && hierarchyNode.getQueueBrowserConfig() != null ? hierarchyNode.getQueueBrowserConfig().getLabel() : "DEFAULT");
     }
 
     private void createRegularExpressionField(Composite parent) {
@@ -174,26 +174,10 @@ public class QueueBrowserDialog {
         buttonBar.setLayout(new GridLayout(4, false));
         buttonBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        Button clear = new Button(buttonBar, SWT.PUSH);
-        clear.setText("Clear");
-        clear.addListener(SWT.Selection, e -> clear());
-
         Button fill = new Button(buttonBar, SWT.PUSH);
         fill.setText("Fill");
         fill.addListener(SWT.Selection, e -> {
             fill(e);
-        });
-
-        Button save = new Button(buttonBar, SWT.PUSH);
-        save.setText("Save");
-        save.addListener(SWT.Selection, e -> {
-            log.info("Save: {}", e);
-        });
-
-        Button reload = new Button(buttonBar, SWT.PUSH);
-        reload.setText("Reload");
-        reload.addListener(SWT.Selection, e -> {
-            log.info("Reload: {}", e);
         });
     }
 
@@ -214,6 +198,7 @@ public class QueueBrowserDialog {
             log.info("queues:\n{}", queues);
             this.availableQueuesViewer.setQueues(queues);
             availableQueuesViewer.hideProgress();
+            connectionManager.disconnect();
         } catch (MQException | IOException ex) {
             availableQueuesViewer.hideProgress();
             throw new RuntimeException(ex);

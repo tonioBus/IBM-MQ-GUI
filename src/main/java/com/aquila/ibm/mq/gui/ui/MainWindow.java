@@ -2,10 +2,7 @@ package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.config.ConfigManager;
-import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
-import com.aquila.ibm.mq.gui.model.HierarchyConfig;
-import com.aquila.ibm.mq.gui.model.QueueInfo;
-import com.aquila.ibm.mq.gui.model.ThresholdConfig;
+import com.aquila.ibm.mq.gui.model.*;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.aquila.ibm.mq.gui.mq.QueueMonitor;
@@ -38,7 +35,7 @@ public class MainWindow {
     private final AlertManager alertManager;
     private QueueMonitor queueMonitor;
 
-    private QueueManagerTreeViewer queueManagerTreeViewer;
+    private HierarchyTreeViewer hierarchyTreeViewer;
     private QueueListViewer queueListViewer;
     private TabFolder tabFolder;
     private QueuePropertiesPanel propertiesPanel;
@@ -162,9 +159,9 @@ public class MainWindow {
         sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         // NEW: Queue Manager Tree (20%)
-        queueManagerTreeViewer = new QueueManagerTreeViewer(
+        hierarchyTreeViewer = new HierarchyTreeViewer(
                 sashForm, SWT.BORDER, connectionManager, configManager);
-        queueManagerTreeViewer.addSelectionListener(this::onTreeSelection);
+        hierarchyTreeViewer.addSelectionListener(this::onTreeSelection);
 
         // EXISTING: Queue List (30%)
         queueListViewer = new QueueListViewer(sashForm, SWT.BORDER, alertManager);
@@ -372,8 +369,8 @@ public class MainWindow {
         }
     }
 
-    private void onTreeSelection(QueueManagerTreeViewer.SelectionEvent event) {
-        if (event.type == QueueManagerTreeViewer.SelectionType.FOLDER) {
+    private void onTreeSelection(HierarchyTreeViewer.SelectionEvent event) {
+        if (event.type == HierarchyTreeViewer.SelectionType.FOLDER) {
             // Clear queue list and disable detail panels
             queueListViewer.clearQueues();
             if (propertiesPanel != null) {
@@ -387,10 +384,11 @@ public class MainWindow {
             }
             updateStatus("Folder selected: " + event.node.getName());
 
-        } else if (false && event.type == QueueManagerTreeViewer.SelectionType.QUEUE_BROWSER) {
-            String connectionId = event.node.getQueueBrowserConfig().getQueueManager();
-
-            // Connect if not already connected
+        } else if (event.type == HierarchyTreeViewer.SelectionType.QUEUE_BROWSER) {
+            final QueueBrowserConfig queueBrowserConfig =event.node.getQueueBrowserConfig();
+            final String connectionId = queueBrowserConfig.getQueueManager();
+            final List<String> queuesName = queueBrowserConfig.getDescriptions().keySet().stream().toList();
+            logger.info("number of queues to retrieve: {}", queuesName.size());
             if (!connectionManager.isConnected(connectionId)) {
                 QueueManagerConfig config = findConnectionConfig(connectionId);
                 if (config == null) {
@@ -412,13 +410,13 @@ public class MainWindow {
 
                         // Update icon on UI thread
                         display.asyncExec(() -> {
-                            queueManagerTreeViewer.updateNodeIcon(nodeId);
+                            hierarchyTreeViewer.updateNodeIcon(nodeId);
                             queueListViewer.updateProgress("Loading queues...");
                         });
 
                         // Set active and load queues (BLOCKING)
                         connectionManager.setActiveConnection(connectionId);
-                        List<QueueInfo> queues = queueService.getAllQueues();
+                        List<QueueInfo> queues = queueService.getQueuesInfo(queuesName);
 
                         // Update UI on UI thread
                         display.asyncExec(() -> {
@@ -437,7 +435,7 @@ public class MainWindow {
                         display.asyncExec(() -> {
                             queueListViewer.hideProgress();
                             showError("Connection Failed", e.getMessage());
-                            queueManagerTreeViewer.updateNodeIcon(nodeId);
+                            hierarchyTreeViewer.updateNodeIcon(nodeId);
                         });
                     }
                 }).start();
@@ -446,16 +444,16 @@ public class MainWindow {
 
             // If already connected, just set active and load queues
             connectionManager.setActiveConnection(connectionId);
-            loadQueuesAsync(event.node.getName());
+            loadQueuesAsync(event.node.getName(), queuesName);
         }
     }
 
-    private void loadQueuesAsync(String queueManagerName) {
+    private void loadQueuesAsync(String queueManagerName, List<String> queuesName) {
         queueListViewer.showProgress("Loading queues from " + queueManagerName + "...");
 
         new Thread(() -> {
             try {
-                List<QueueInfo> queues = queueService.getAllQueues();
+                List<QueueInfo> queues = queueService.getQueuesInfo(queuesName);
 
                 display.asyncExec(() -> {
                     queueListViewer.setQueues(queues);
@@ -476,10 +474,7 @@ public class MainWindow {
     }
 
     private QueueManagerConfig findConnectionConfig(String name) {
-        return configManager.loadConnections().values().stream()
-                .filter(c -> name.equals(c.getName()))
-                .findFirst()
-                .orElse(null);
+        return configManager.loadConnections().get(name);
     }
 
     private void loadHierarchy() {
@@ -490,7 +485,7 @@ public class MainWindow {
             hierarchy = configManager.createDefaultHierarchy(connections);
             configManager.saveHierarchy(hierarchy);
         }
-        queueManagerTreeViewer.setHierarchyConfig(hierarchy);
+        hierarchyTreeViewer.setHierarchyConfig(hierarchy);
     }
 
     private void showThresholdDialog() {
@@ -626,8 +621,8 @@ public class MainWindow {
 
     private void cleanup() {
         // Save hierarchy state (expansion, selection)
-        if (queueManagerTreeViewer != null) {
-            configManager.saveHierarchy(queueManagerTreeViewer.getHierarchyConfig());
+        if (hierarchyTreeViewer != null) {
+            configManager.saveHierarchy(hierarchyTreeViewer.getHierarchyConfig());
         }
 
         stopMonitoring();

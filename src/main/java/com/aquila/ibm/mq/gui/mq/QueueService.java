@@ -118,6 +118,47 @@ public class QueueService {
         }
     }
 
+    /**
+     * Get queue information for a list of queue names.
+     * @param queueNames List of queue names to retrieve information for
+     * @return List of QueueInfo objects for the specified queues
+     */
+    public List<QueueInfo> getQueuesInfo(List<String> queueNames) throws MQException {
+        if (queueNames == null || queueNames.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<QueueInfo> queueInfoList = new ArrayList<>();
+        MQQueueManager qm = connectionManager.getQueueManager();
+        PCFMessageAgent agent = new PCFMessageAgent(qm);
+
+        try {
+            for (String queueName : queueNames) {
+                try {
+                    PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
+                    request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
+
+                    PCFMessage[] responses = agent.send(request);
+
+                    if (responses.length > 0) {
+                        QueueInfo queueInfo = new QueueInfo(queueName);
+                        populateQueueInfo(queueInfo, responses[0]);
+                        queueInfoList.add(queueInfo);
+                    } else {
+                        logger.warn("Queue not found: {}", queueName);
+                    }
+                } catch (Exception e) {
+                    logger.error("Error retrieving info for queue: {}", queueName, e);
+                }
+            }
+        } finally {
+            agent.disconnect();
+        }
+
+        logger.info("Retrieved information for {} out of {} queues", queueInfoList.size(), queueNames.size());
+        return queueInfoList;
+    }
+
     private void populateQueueInfo(QueueInfo queueInfo, PCFMessage response) {
         try {
             queueInfo.setCurrentDepth(response.getIntParameterValue(MQConstants.MQIA_CURRENT_Q_DEPTH));

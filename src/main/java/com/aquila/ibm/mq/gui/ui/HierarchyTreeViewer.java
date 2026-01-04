@@ -23,8 +23,8 @@ import java.util.function.Consumer;
  * Tree viewer for queue manager hierarchy with folders.
  * Supports selection, drag-drop, context menus, and toolbar operations.
  */
-public class QueueManagerTreeViewer extends Composite {
-    private static final Logger log = LoggerFactory.getLogger(QueueManagerTreeViewer.class);
+public class HierarchyTreeViewer extends Composite {
+    private static final Logger log = LoggerFactory.getLogger(HierarchyTreeViewer.class);
 
     private Tree tree;
     private HierarchyConfig hierarchyConfig;
@@ -62,9 +62,9 @@ public class QueueManagerTreeViewer extends Composite {
         NONE
     }
 
-    public QueueManagerTreeViewer(Composite parent, int style,
-                                  MQConnectionManager connectionManager,
-                                  ConfigManager configManager) {
+    public HierarchyTreeViewer(Composite parent, int style,
+                               MQConnectionManager connectionManager,
+                               ConfigManager configManager) {
         super(parent, style);
         this.connectionManager = connectionManager;
         this.configManager = configManager;
@@ -175,6 +175,7 @@ public class QueueManagerTreeViewer extends Composite {
 
         // Add selection listener
         tree.addListener(SWT.Selection, event -> {
+            log.info("TREE selected: {}", event);
             TreeItem[] selection = tree.getSelection();
             if (selection.length > 0) {
                 onTreeItemSelected(selection[0]);
@@ -724,7 +725,7 @@ public class QueueManagerTreeViewer extends Composite {
             }
         } else {
             confirmBox.setMessage(String.format(
-                    "Remove queue manager '%s' from hierarchy?\n\n" +
+                    "Remove queue browser '%s' from hierarchy?\n\n" +
                             "Note: This will not delete the connection configuration.",
                     node.getName()));
         }
