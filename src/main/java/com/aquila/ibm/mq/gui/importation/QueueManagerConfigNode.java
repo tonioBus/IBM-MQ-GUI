@@ -1,15 +1,13 @@
-package com.aquila.ibm.mq.gui.model;
+package com.aquila.ibm.mq.gui.importation;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.beans.Transient;
-
 @Setter
 @Getter
 @ToString
-public class QueueManagerConfig {
+public class QueueManagerConfigNode {
     private String name;
     private String host;
     private int port;
@@ -19,13 +17,13 @@ public class QueueManagerConfig {
     private String password;
     private boolean sslEnabled;
 
-    public QueueManagerConfig() {
+    public QueueManagerConfigNode() {
         this.port = 1414;
         this.sslEnabled = false;
     }
 
-    public QueueManagerConfig(String name, String host, int port, String channel,
-                              String queueManager, String username, String password) {
+    public QueueManagerConfigNode(String name, String host, int port, String channel,
+                                  String queueManager, String username, String password) {
         this.name = name;
         this.host = host;
         this.port = port;

@@ -4,6 +4,7 @@ import com.aquila.ibm.mq.gui.model.HierarchyNode.NodeType;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +17,13 @@ import java.util.Map;
 @Getter
 @Setter
 @ToString
+@Slf4j
+@Deprecated
 public class HierarchyImportNode {
     private String name;
     private NodeType type;
     private Map<String, Object> children;
+    private String queueMgr;
 
     public HierarchyImportNode() {
     }
@@ -45,6 +49,15 @@ public class HierarchyImportNode {
         if (nodeMap.containsKey("type")) {
             String typeStr = (String) nodeMap.get("type");
             node.setType(NodeType.valueOf(typeStr));
+            if(node.getType()==NodeType.QUEUE && !nodeMap.containsKey("queueMgr")) {
+                log.error("node of type NodeType.QUEUE should have a field \"queueMgr\"");
+                return null;
+            }
+        }
+
+        if( nodeMap.containsKey("queueMgr")) {
+            String queueMgr = (String) nodeMap.get("queueMgr");
+            node.setQueueMgr(queueMgr);
         }
 
         // Extract children
@@ -67,6 +80,10 @@ public class HierarchyImportNode {
 
         if (type != null) {
             map.put("type", type.toString());
+        }
+
+        if (queueMgr != null) {
+            map.put("queueMgr", queueMgr);
         }
 
         if (children != null && !children.isEmpty()) {

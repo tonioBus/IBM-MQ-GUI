@@ -4,8 +4,6 @@ import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.ImportConfig;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 

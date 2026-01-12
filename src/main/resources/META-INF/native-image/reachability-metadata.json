@@ -331,6 +331,146 @@
       ]
     },
     {
+      "type": "com.aquila.ibm.mq.gui.importation.FolderImportNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChildren",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.ImportNode"
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.QueueManagerConfigNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChannel",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setHost",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPassword",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPort",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "name": "setQueueManager",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSslEnabled",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setUsername",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.QueuesImportNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChildren",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        },
+        {
+          "name": "setQueueMgr",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.RootImportNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setHierarchy",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        },
+        {
+          "name": "setLabel",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setQueueManagers",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.RootImportNodeTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "test",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImport",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.model.ConnectionConfig",
       "allDeclaredFields": true,
       "methods": [
@@ -565,11 +705,24 @@
           "parameterTypes": []
         },
         {
+          "name": "testRead",
+          "parameterTypes": []
+        },
+        {
           "name": "testRoundTripConversion",
           "parameterTypes": []
         },
         {
           "name": "testWriteAndReadBack",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+      "methods": [
+        {
+          "name": "<init>",
           "parameterTypes": []
         }
       ]
@@ -20649,6 +20802,12 @@
     },
     {
       "type": "sun.text.resources.cldr.FormatData"
+    },
+    {
+      "type": "sun.text.resources.cldr.FormatData_en"
+    },
+    {
+      "type": "sun.text.resources.cldr.FormatData_en_US"
     },
     {
       "type": "sun.util.resources.cldr.CalendarData"

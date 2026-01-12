@@ -4,8 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -222,7 +220,7 @@ public class HierarchyConfig {
     public List<HierarchyNode> getAllQueueManagers() {
         List<HierarchyNode> queueManagers = new ArrayList<>();
         for (HierarchyNode node : nodes.values()) {
-            if (node.isQueueBrowser()) {
+            if (node.isQueue()) {
                 queueManagers.add(node);
             }
         }

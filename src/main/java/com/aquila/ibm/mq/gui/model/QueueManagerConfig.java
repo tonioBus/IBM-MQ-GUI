@@ -1,10 +1,9 @@
 package com.aquila.ibm.mq.gui.model;
 
+import com.aquila.ibm.mq.gui.importation.QueueManagerConfigNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.beans.Transient;
 
 @Setter
 @Getter
@@ -36,7 +35,17 @@ public class QueueManagerConfig {
         this.sslEnabled = false;
     }
 
+    public QueueManagerConfig(QueueManagerConfigNode queueManagerConfigNode) {
+        this(queueManagerConfigNode.getName(),
+                queueManagerConfigNode.getHost(),
+                queueManagerConfigNode.getPort(),
+                queueManagerConfigNode.getChannel(),
+                queueManagerConfigNode.getQueueManager(),
+                queueManagerConfigNode.getUsername(),
+                queueManagerConfigNode.getPassword());
+    }
+
     public String getLabel() {
-        return String.format("%s(%d)", host, (Integer)port);
+        return String.format("%s(%d)", host, (Integer) port);
     }
 }

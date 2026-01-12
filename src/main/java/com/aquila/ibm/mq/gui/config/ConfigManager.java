@@ -150,7 +150,7 @@ public class ConfigManager {
             log.info("Loaded hierarchy with {} nodes", hierarchyConfig != null ? hierarchyConfig.getNodes().size() : 0);
             if (!this.queueManagers.isEmpty() && hierarchyConfig != null && hierarchyConfig.getNodes() != null) {
                 hierarchyConfig.getNodes().entrySet().parallelStream()
-                        .filter(entry -> entry.getValue().isQueueBrowser())
+                        .filter(entry -> entry.getValue().isQueue())
                         .forEach(entry -> {
                             final String key = entry.getKey();
                             final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.fromFile(key,

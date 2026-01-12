@@ -1,5 +1,6 @@
 {
-  "QueueManagers": {
+  "label": "test",
+  "queueManagers": {
     "192.168.1.73(1414)": {
       "name": "QM1",
       "host": "192.168.1.73",
@@ -21,19 +22,37 @@
       "sslEnabled": false
     }
   },
-  "Hierarchy": {
-    "name": "MERCURY",
-    "type": "FOLDER",
-    "children": {
-      "DEV": {
-        "type": "BROWSER",
-        "children": {
-          "DEV.QUEUE.1": "D-10",
-          "DEV.QUEUE.2": "D-20",
-          "DEV.QUEUE.3": "D-23"
+  "hierarchy": {
+    "MERCURY": {
+      "type": "FOLDER",
+      "children": {
+        "DEV": {
+          "type": "QUEUE",
+          "queueMgr": "192.168.1.73(1414)",
+          "children": {
+            "DEV.QUEUE.1": "D-10",
+            "DEV.QUEUE.2": "D-20",
+            "DEV.QUEUE.3": "D-23"
+          }
+        }
+      }
+    },
+    "XMEDIA": {
+      "type": "FOLDER",
+      "children": {
+        "DEV": {
+          "type": "FOLDER",
+          "children": {
+            "DEV1": {
+              "type": "QUEUE",
+              "queueMgr": "192.168.1.73(1414)",
+              "children": {
+                "DEV.QUEUE.1": "D-10"
+              }
+            }
+          }
         }
       }
     }
   }
-
 }
