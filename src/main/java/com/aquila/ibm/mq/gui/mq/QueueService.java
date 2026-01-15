@@ -11,6 +11,7 @@ import com.ibm.mq.headers.MQDataException;
 import com.ibm.mq.headers.pcf.PCFMessageAgent;
 import com.ibm.mq.headers.pcf.PCFMessage;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +19,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class QueueService {
-    private static final Logger logger = LoggerFactory.getLogger(QueueService.class);
+    private static final Logger log = LoggerFactory.getLogger(QueueService.class);
     private final MQConnectionManager connectionManager;
 
     public QueueService(MQConnectionManager connectionManager) {
@@ -75,8 +77,9 @@ public class QueueService {
                 CMQC.MQIA_MAX_Q_DEPTH
         });
         // Send request and get responses
+        log.info("Before agent.send()");
         final PCFMessage[] responses = agent.send(request);
-        logger.info("\nFound  {} queues.", responses.length);
+        log.info("\nFound  {} queues.", responses.length);
         for (PCFMessage response : responses) {
             try {
                 final String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
@@ -91,7 +94,7 @@ public class QueueService {
                 queueInfo.setQueueType(queueType);
                 queues.add(queueInfo);
             } catch (Exception e) {
-                logger.error("Error", e);
+                log.error("Error", e);
             }
         }
         return queues;
@@ -113,7 +116,7 @@ public class QueueService {
                 return queueInfo;
             }
 
-            logger.warn("Queue not found: {}", queueName);
+            log.warn("Queue not found: {}", queueName);
             return null;
         } finally {
             agent.disconnect();
@@ -125,7 +128,7 @@ public class QueueService {
      * @param queueNames List of queue names to retrieve information for
      * @return List of QueueInfo objects for the specified queues
      */
-    public List<QueueInfo> getQueuesInfo(List<String> queueNames) throws MQException, MQDataException {
+    public List<QueueInfo> getQueuesInfo(List<String> queueNames) throws MQException, MQDataException, IOException {
         if (queueNames == null || queueNames.isEmpty()) {
             return new ArrayList<>();
         }
@@ -133,31 +136,17 @@ public class QueueService {
         final List<QueueInfo> queueInfoList = new ArrayList<>();
         final MQQueueManager qm = connectionManager.getQueueManager();
         final PCFMessageAgent agent = new PCFMessageAgent(qm);
-
-        try {
-            for (String queueName : queueNames) {
-                try {
-                    final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-                    request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
-
-                    final PCFMessage[] responses = agent.send(request);
-
-                    if (responses.length > 0) {
-                        final QueueInfo queueInfo = new QueueInfo(queueName);
-                        populateQueueInfo(queueInfo, responses[0]);
-                        queueInfoList.add(queueInfo);
-                    } else {
-                        logger.warn("Queue not found: {}", queueName);
-                    }
-                } catch (Exception e) {
-                    logger.error("Error retrieving info for queue: {}", queueName, e);
-                }
-            }
-        } finally {
-            agent.disconnect();
+        final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
+        for(final String queueName: queueNames) {
+            request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
+            log.info("Before agent.send()");
+            final PCFMessage[] responses = agent.send(request);
+            log.info("After agent.send() responses;{}", responses.length);
+            final QueueInfo queueInfo = new QueueInfo(queueName);
+            populateQueueInfo(queueInfo, responses[0]);
+            queueInfoList.add(queueInfo);
         }
-
-        logger.info("Retrieved information for {} out of {} queues", queueInfoList.size(), queueNames.size());
+        log.info("Retrieved information for {} out of {} queues", queueInfoList.size(), queueNames.size());
         return queueInfoList;
     }
 
@@ -183,7 +172,7 @@ public class QueueService {
             queueInfo.setAttribute("MaxMsgLength", response.getIntParameterValue(MQConstants.MQIA_MAX_MSG_LENGTH));
 
         } catch (Exception e) {
-            logger.warn("Error populating queue info for {}", queueInfo.getQueue(), e);
+            log.warn("Error populating queue info for {}", queueInfo.getQueue(), e);
         }
     }
 
@@ -201,7 +190,7 @@ public class QueueService {
                 try {
                     queue.close();
                 } catch (MQException e) {
-                    logger.warn("Error closing queue: {}", e.getMessage());
+                    log.warn("Error closing queue: {}", e.getMessage());
                 }
             }
         }
