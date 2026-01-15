@@ -29,8 +29,8 @@ public class RetrieveQueuesTest {
         properties.put(CMQC.HOST_NAME_PROPERTY, host);
         properties.put(CMQC.PORT_PROPERTY, port);
         properties.put(CMQC.TRANSPORT_PROPERTY, CMQC.TRANSPORT_MQSERIES_CLIENT);
-//        properties.put(CMQC.USER_ID_PROPERTY, "app");
-//        properties.put(CMQC.PASSWORD_PROPERTY, "passw0rd");
+        properties.put(CMQC.USER_ID_PROPERTY, "admin");
+        properties.put(CMQC.PASSWORD_PROPERTY, "passw0rd");
 
         MQQueueManager queueManager = null;
         PCFMessageAgent agent = null;
@@ -43,44 +43,7 @@ public class RetrieveQueuesTest {
             // Create PCF Message Agent
             agent = new PCFMessageAgent(queueManager);
 
-            // Create PCF request to inquire queues
-            final PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
-
-            // Request all queues (use wildcard)
-            request.addParameter(CMQC.MQCA_Q_NAME, "*");
-            request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL | MQConstants.MQQT_ALIAS);
-
-            // Specify which attributes to retrieve
-            request.addParameter(CMQCFC.MQIACF_Q_ATTRS, new int[]{
-                    CMQC.MQCA_Q_NAME,
-                    CMQC.MQIA_Q_TYPE,
-                    CMQC.MQIA_CURRENT_Q_DEPTH,
-                    CMQC.MQIA_MAX_Q_DEPTH
-            });
-
-            // Send request and get responses
-            final PCFMessage[] responses = agent.send(request);
-
-            System.out.println("\nFound " + responses.length + " queues:\n");
-            System.out.println(String.format("%-50s %-15s %-10s %-10s",
-                    "Queue Name", "Type", "Depth", "Max Depth"));
-            System.out.println("-".repeat(90));
-
-            for (PCFMessage response : responses) {
-                try {
-                    String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
-                    int queueType = response.getIntParameterValue(CMQC.MQIA_Q_TYPE);
-                    int currentDepth = response.getIntParameterValue(CMQC.MQIA_CURRENT_Q_DEPTH);
-                    int maxDepth = response.getIntParameterValue(CMQC.MQIA_MAX_Q_DEPTH);
-
-                    String queueTypeStr = getQueueTypeString(queueType);
-
-                    System.out.println(String.format("%-50s %-15s %-10d %-10d",
-                            queueName, queueTypeStr, currentDepth, maxDepth));
-                } catch (Exception e) {
-
-                }
-            }
+            queryQueue(agent,"DEV.QUEUE.1", "DEV.QUEUE.2");
 
         } catch (MQException e) {
             System.err.println("MQ Exception occurred:");
@@ -106,19 +69,54 @@ public class RetrieveQueuesTest {
     }
 
     private static String getQueueTypeString(int queueType) {
-        switch (queueType) {
-            case CMQC.MQQT_LOCAL:
-                return "LOCAL";
-            case CMQC.MQQT_REMOTE:
-                return "REMOTE";
-            case CMQC.MQQT_ALIAS:
-                return "ALIAS";
-            case CMQC.MQQT_MODEL:
-                return "MODEL";
-            case CMQC.MQQT_CLUSTER:
-                return "CLUSTER";
-            default:
-                return "UNKNOWN";
+        return switch (queueType) {
+            case CMQC.MQQT_LOCAL -> "LOCAL";
+            case CMQC.MQQT_REMOTE -> "REMOTE";
+            case CMQC.MQQT_ALIAS -> "ALIAS";
+            case CMQC.MQQT_MODEL -> "MODEL";
+            case CMQC.MQQT_CLUSTER -> "CLUSTER";
+            default -> "UNKNOWN";
+        };
+    }
+
+    private void queryQueue(PCFMessageAgent agent,String ... queueNames) throws IOException, MQDataException {
+        // Create PCF request to inquire queues
+        final PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
+
+        // Request all queues (use wildcard)
+        request.addParameter(CMQC.MQCA_Q_NAME, queueNames);
+        request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL | MQConstants.MQQT_ALIAS);
+
+        // Specify which attributes to retrieve
+        request.addParameter(CMQCFC.MQIACF_Q_ATTRS, new int[]{
+                CMQC.MQCA_Q_NAME,
+                CMQC.MQIA_Q_TYPE,
+                CMQC.MQIA_CURRENT_Q_DEPTH,
+                CMQC.MQIA_MAX_Q_DEPTH
+        });
+
+        // Send request and get responses
+        final PCFMessage[] responses = agent.send(request);
+
+        System.out.println("\nFound " + responses.length + " queues:\n");
+        System.out.println(String.format("%-50s %-15s %-10s %-10s",
+                "Queue Name", "Type", "Depth", "Max Depth"));
+        System.out.println("-".repeat(90));
+
+        for (PCFMessage response : responses) {
+            try {
+                String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
+                int queueType = response.getIntParameterValue(CMQC.MQIA_Q_TYPE);
+                int currentDepth = response.getIntParameterValue(CMQC.MQIA_CURRENT_Q_DEPTH);
+                int maxDepth = response.getIntParameterValue(CMQC.MQIA_MAX_Q_DEPTH);
+
+                String queueTypeStr = getQueueTypeString(queueType);
+
+                System.out.println(String.format("%-50s %-15s %-10d %-10d",
+                        queueName, queueTypeStr, currentDepth, maxDepth));
+            } catch (Exception e) {
+
+            }
         }
     }
 }
