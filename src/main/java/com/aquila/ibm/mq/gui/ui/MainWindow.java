@@ -10,6 +10,7 @@ import com.aquila.ibm.mq.gui.mq.QueueMonitor;
 import com.aquila.ibm.mq.gui.mq.QueueService;
 import com.aquila.ibm.mq.gui.util.ImportExportUtil;
 import com.ibm.mq.MQException;
+import com.ibm.mq.headers.MQDataException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
@@ -370,7 +371,7 @@ public class MainWindow {
         if (propertiesPanel != null) {
             try {
                 queueService.refreshQueueInfo(queue);
-            } catch (MQException | IOException e) {
+            } catch (MQException | IOException  | MQDataException e) {
                 throw new RuntimeException(e);
             }
             propertiesPanel.setQueue(queue);

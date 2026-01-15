@@ -9,6 +9,7 @@ import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import com.aquila.ibm.mq.gui.mq.QueueService;
 import com.ibm.mq.MQException;
+import com.ibm.mq.headers.MQDataException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -211,7 +212,7 @@ public class QueueBrowserDialog {
             this.availableQueuesViewer.setQueues(queues);
             availableQueuesViewer.hideProgress();
             connectionManager.disconnect();
-        } catch (MQException | IOException ex) {
+        } catch (MQException | IOException | MQDataException ex) {
             availableQueuesViewer.hideProgress();
         }
     }

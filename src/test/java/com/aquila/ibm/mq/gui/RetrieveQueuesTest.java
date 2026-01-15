@@ -5,8 +5,9 @@ import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.CMQC;
 import com.ibm.mq.constants.CMQCFC;
 import com.ibm.mq.constants.MQConstants;
-import com.ibm.mq.pcf.PCFMessage;
-import com.ibm.mq.pcf.PCFMessageAgent;
+import com.ibm.mq.headers.MQDataException;
+import com.ibm.mq.headers.pcf.PCFMessage;
+import com.ibm.mq.headers.pcf.PCFMessageAgent;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
@@ -18,12 +19,12 @@ public class RetrieveQueuesTest {
 
     @Test
     void testRetrieveAllQueues() {
-        String queueManagerName = "QM1";
-        String host = "192.168.1.73"; // "localhost";
+        final String queueManagerName = "QM1";
+        final String host = "192.168.1.73"; // "localhost";
         int port = 1414;
-        String channel = "DEV.ADMIN.SVRCONN";
+        final String channel = "DEV.ADMIN.SVRCONN";
 
-        Hashtable<String, Object> properties = new Hashtable<>();
+        final Hashtable<String, Object> properties = new Hashtable<>();
         properties.put(CMQC.CHANNEL_PROPERTY, channel);
         properties.put(CMQC.HOST_NAME_PROPERTY, host);
         properties.put(CMQC.PORT_PROPERTY, port);
@@ -43,7 +44,7 @@ public class RetrieveQueuesTest {
             agent = new PCFMessageAgent(queueManager);
 
             // Create PCF request to inquire queues
-            PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
+            final PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
 
             // Request all queues (use wildcard)
             request.addParameter(CMQC.MQCA_Q_NAME, "*");
@@ -58,7 +59,7 @@ public class RetrieveQueuesTest {
             });
 
             // Send request and get responses
-            PCFMessage[] responses = agent.send(request);
+            final PCFMessage[] responses = agent.send(request);
 
             System.out.println("\nFound " + responses.length + " queues:\n");
             System.out.println(String.format("%-50s %-15s %-10s %-10s",
@@ -86,7 +87,7 @@ public class RetrieveQueuesTest {
             System.err.println("Completion Code: " + e.getCompCode());
             System.err.println("Reason Code: " + e.getReason());
             e.printStackTrace();
-        } catch (IOException e) {
+        } catch (IOException | MQDataException e) {
             System.err.println("IO Exception occurred:");
             e.printStackTrace();
         } finally {
@@ -98,7 +99,7 @@ public class RetrieveQueuesTest {
                     queueManager.disconnect();
                     System.out.println("\nDisconnected from Queue Manager");
                 }
-            } catch (MQException e) {
+            } catch (MQException | MQDataException e) {
                 e.printStackTrace();
             }
         }
