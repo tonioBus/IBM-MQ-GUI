@@ -136,8 +136,8 @@ public class QueueService {
         final List<QueueInfo> queueInfoList = new ArrayList<>();
         final MQQueueManager qm = connectionManager.getQueueManager();
         final PCFMessageAgent agent = new PCFMessageAgent(qm);
-        final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
         for(final String queueName: queueNames) {
+            final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
             request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
             log.info("Before agent.send()");
             final PCFMessage[] responses = agent.send(request);

@@ -1,7 +1,5 @@
 package com.aquila.ibm.mq.gui.importation;
 
-import com.aquila.ibm.mq.gui.model.HierarchyConfig;
-import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
