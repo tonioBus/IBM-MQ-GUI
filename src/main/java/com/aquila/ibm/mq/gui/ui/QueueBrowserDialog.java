@@ -32,7 +32,8 @@ public class QueueBrowserDialog {
     private Shell shell;
     private QueueBrowserConfig result;
     private Text label;
-    private Text regularExpression;
+    private Text queuePattern;
+    private Button sequencialQueueRequestCheckbox;
     private List queueManagerList;
     private Map<String, QueueManagerConfig> connections;
     private InspectedQueueViewer availableQueuesViewer;
@@ -60,6 +61,7 @@ public class QueueBrowserDialog {
         createLabelField(leftComposite);
         createQueueManagerSection(leftComposite);
         createRegularExpressionField(leftComposite);
+        createSequencialQueueRequestField(leftComposite);
         createQueueListSection(rightComposite);
         createButtons(rightComposite);
         createButtomButtons(shell);
@@ -144,17 +146,45 @@ public class QueueBrowserDialog {
         labelGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         label = new Text(labelGroup, SWT.BORDER);
         label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        label.setText(edit && hierarchyNode.getQueueBrowserConfig() != null ? hierarchyNode.getQueueBrowserConfig().getLabel() : "DEFAULT");
+        final String labelSz;
+        if (edit && hierarchyNode.getQueueBrowserConfig() != null && hierarchyNode.getQueueBrowserConfig().getLabel() != null) {
+            labelSz = hierarchyNode.getQueueBrowserConfig().getLabel();
+        } else {
+            assert hierarchyNode.getQueueBrowserConfig() != null;
+            labelSz = hierarchyNode.getQueueBrowserConfig().getQueueManager();
+        }
+        label.setText(labelSz);
     }
 
     private void createRegularExpressionField(Composite parent) {
-        final Group regularexpressionGroup = new Group(parent, SWT.NONE);
-        regularexpressionGroup.setText("Regular Expression");
-        regularexpressionGroup.setLayout(new GridLayout(1, false));
-        regularexpressionGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        regularExpression = new Text(regularexpressionGroup, SWT.BORDER);
-        regularExpression.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        regularExpression.setText(edit ? hierarchyNode.getQueueBrowserConfig().getRegularExpression() : "*");
+        final Group queuePatternGroup = new Group(parent, SWT.NONE);
+        queuePatternGroup.setText("Queue Pattern (IBM MQ wildcards: *, ? or Java regex)");
+        queuePatternGroup.setLayout(new GridLayout(1, false));
+        queuePatternGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        queuePattern = new Text(queuePatternGroup, SWT.BORDER);
+        queuePattern.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        queuePattern.setText(edit && hierarchyNode.getQueueBrowserConfig().getQueuePattern() != null ?
+                hierarchyNode.getQueueBrowserConfig().getQueuePattern() :
+                "*");
+    }
+
+    private void createSequencialQueueRequestField(Composite parent) {
+        final Group sequencialGroup = new Group(parent, SWT.NONE);
+        sequencialGroup.setText("Queue Request Options");
+        sequencialGroup.setLayout(new GridLayout(1, false));
+        sequencialGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        sequencialQueueRequestCheckbox = new Button(sequencialGroup, SWT.CHECK);
+        sequencialQueueRequestCheckbox.setText("Sequential Queue Request");
+        sequencialQueueRequestCheckbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        sequencialQueueRequestCheckbox.setToolTipText("Request queue information sequentially instead of in parallel");
+
+        // Initialize with existing value if in edit mode
+        if (edit && hierarchyNode.getQueueBrowserConfig() != null) {
+            sequencialQueueRequestCheckbox.setSelection(hierarchyNode.getQueueBrowserConfig().isSequencialQueueRequest());
+        } else {
+            sequencialQueueRequestCheckbox.setSelection(false);
+        }
     }
 
     private void createQueueTransferButtons(Composite parent) {
@@ -291,7 +321,8 @@ public class QueueBrowserDialog {
         });
         final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()
                 .label(this.label.getText().trim())
-                .regularExpression(this.regularExpression.getText().trim())
+                .queuePattern(this.queuePattern.getText().trim())
+                .sequencialQueueRequest(this.sequencialQueueRequestCheckbox.getSelection())
                 .queueManager(queueManagerKey)
                 .descriptions(descriptions)
                 .build();

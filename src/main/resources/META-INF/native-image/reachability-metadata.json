@@ -593,7 +593,7 @@
           "name": "queueManager"
         },
         {
-          "name": "regularExpression"
+          "name": "queuePattern"
         }
       ]
     },
@@ -714,6 +714,204 @@
         },
         {
           "name": "testWriteAndReadBack",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.util.OptimiseIBMQueuePatternTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCommonPrefixAndSuffix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCommonPrefixOnly",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEmptyArray",
+          "parameterTypes": []
+        },
+        {
+          "name": "testMixedEnvironments",
+          "parameterTypes": []
+        },
+        {
+          "name": "testNoCommonPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSimplePattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSystemQueues",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.util.QueueNameRegexCalculatorTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_EmptyList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_MultipleQueues",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_NullList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_SingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_SpecialCharacters",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_ComplexPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_NoPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_NullList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_PrefixAndSuffix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_PrefixOnly",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_SingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculatePrefixBasedRegex_CommonPrefix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculatePrefixBasedRegex_NoCommonPrefix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculatePrefixBasedRegex_SingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_AsteriskWildcard",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_ComplexPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_MixedWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_NullList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_QuestionMarkWildcard",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompilePattern_CaseInsensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompilePattern_CaseSensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_CaseInsensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_CaseSensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_EmptyPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_IBMMQWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_JavaRegex",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_NullPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testConvertMQWildcardToRegex",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEdgeCase_EmptyStrings",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEdgeCase_SpecialRegexCharacters",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEdgeCase_VeryLongQueueName",
+          "parameterTypes": []
+        },
+        {
+          "name": "testIsIBMMQWildcardPattern_JavaRegex",
+          "parameterTypes": []
+        },
+        {
+          "name": "testIsIBMMQWildcardPattern_NoWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testIsIBMMQWildcardPattern_SimpleWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testRealWorldScenario_IBMMQQueues",
+          "parameterTypes": []
+        },
+        {
+          "name": "testRealWorldScenario_WildcardPatterns",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSmartPattern_RealWorldUsage",
           "parameterTypes": []
         }
       ]

@@ -6,7 +6,8 @@
       "Bash(.\\\\mvnw.cmd clean compile:*)",
       "Bash(mvn clean compile:*)",
       "Bash(.mvnw.cmd clean compile:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(mvn compile:*)"
     ]
   }
 }

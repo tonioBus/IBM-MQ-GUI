@@ -3,6 +3,7 @@ package com.aquila.ibm.mq.gui.ui;
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
+import com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
@@ -335,14 +336,22 @@ public class QueueListViewer extends Composite {
         String regexPattern = regexFilterText.getText().trim();
         int minDepth = depthFilterSpinner.getSelection();
 
-        // Compile regex pattern
+        // Compile pattern using smart pattern compiler
+        // Automatically detects and converts IBM MQ wildcards (*, ?) to Java regex
         Pattern pattern = null;
         if (!regexPattern.isEmpty()) {
             try {
-                pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
+                pattern = QueueNameRegexCalculator.compileSmartPattern(regexPattern, true);
                 regexFilterText.setBackground(null);  // Clear error indicator
             } catch (PatternSyntaxException e) {
                 // Invalid regex - show error and display all queues
+                regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
+                filteredQueues.addAll(queues);
+                sortQueues();
+                refresh();
+                return;
+            } catch (IllegalArgumentException e) {
+                // Empty pattern - shouldn't happen but handle gracefully
                 regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
                 filteredQueues.addAll(queues);
                 sortQueues();

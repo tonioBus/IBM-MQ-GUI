@@ -1,23 +1,22 @@
 package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.model.QueueInfo;
+import com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator;
 import com.ibm.mq.MQException;
-import com.ibm.mq.MQQueue;
 import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.CMQC;
 import com.ibm.mq.constants.CMQCFC;
 import com.ibm.mq.constants.MQConstants;
 import com.ibm.mq.headers.MQDataException;
-import com.ibm.mq.headers.pcf.PCFMessageAgent;
+import com.ibm.mq.headers.pcf.PCFException;
 import com.ibm.mq.headers.pcf.PCFMessage;
-
+import com.ibm.mq.headers.pcf.PCFMessageAgent;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public class QueueService {
@@ -45,7 +44,8 @@ public class QueueService {
 
     /**
      * Get all queues for a specific connection.
-     * @param connectionId The connection ID
+     *
+     * @param connectionId        The connection ID
      * @param includeSystemQueues Whether to include system queues
      */
     public List<QueueInfo> getAllQueues(String connectionId, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
@@ -125,24 +125,58 @@ public class QueueService {
 
     /**
      * Get queue information for a list of queue names.
+     *
      * @param queueInfos List of queue names to retrieve information for
      * @return List of QueueInfo objects for the specified queues
      */
-    public void populateQueueInfos(List<QueueInfo> queueInfos) throws MQException, MQDataException, IOException {
+    public void populateQueueInfos(List<QueueInfo> queueInfos, boolean sequentialRequest) throws MQDataException, IOException {
         if (queueInfos == null || queueInfos.isEmpty()) {
             return;
         }
         final MQQueueManager qm = connectionManager.getQueueManager();
         final PCFMessageAgent agent = new PCFMessageAgent(qm);
-        for(final QueueInfo queueInfo: queueInfos) {
-            final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-            request.addParameter(MQConstants.MQCA_Q_NAME, queueInfo.getQueue());
-            log.info("Before agent.send()");
-            final PCFMessage[] responses = agent.send(request);
-            log.info("After agent.send() responses;{}", responses.length);
-            populateQueueInfo(queueInfo, responses[0]);
+        long startTime = System.currentTimeMillis();
+        if (sequentialRequest) {
+            for (final QueueInfo queueInfo : queueInfos) {
+                final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
+                request.addParameter(MQConstants.MQCA_Q_NAME, queueInfo.getQueue());
+                log.info("Before agent.send()");
+                final PCFMessage[] responses = agent.send(request);
+                log.info("After agent.send() responses;{}", responses.length);
+                populateQueueInfo(queueInfo, responses[0]);
+            }
+        } else {
+            List<String> queueNames = queueInfos.stream().map(QueueInfo::getQueue).toList();
+            List<String> optimizedIBMMQPatterns = QueueNameRegexCalculator.createOptimizedIBMMQPatterns(queueNames);
+            for (final String optimizedIBMMQPattern : optimizedIBMMQPatterns) {
+                final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
+                request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
+                log.info("Before agent.send() optimise ({})", optimizedIBMMQPattern);
+                final PCFMessage[] responses = agent.send(request);
+                log.info("After agent.send() optimise responses;{}", responses.length);
+                populateQueueInfos(queueInfos, responses);
+            }
         }
-        log.info("Retrieved information for {} out of {} queues", queueInfos.size(), queueInfos.size());
+        long endTime = System.currentTimeMillis();
+        log.info("Retrieved information for {} out of {} queues in {} ms", queueInfos.size(), queueInfos.size(), endTime - startTime);
+    }
+
+    private void populateQueueInfos(List<QueueInfo> queueInfos, PCFMessage[] responses) {
+        Map<String, QueueInfo> mapQueuesInfos = new HashMap<>();
+        queueInfos.forEach(queueInfo -> mapQueuesInfos.put(queueInfo.getQueue(), queueInfo));
+        Arrays.stream(responses).parallel().forEach(response -> {
+            String queueName = null;
+            try {
+                queueName = response.getStringParameterValue(MQConstants.MQCA_Q_NAME).trim();
+                QueueInfo queueInfo = mapQueuesInfos.get(queueName);
+                if (queueInfo != null) {
+                    log.info("populateQueueInfo({}) -> {}", queueName, queueInfo);
+                    populateQueueInfo(queueInfo, response);
+                } else log.error("QueueName:{} not found on PCF agent response", queueName);
+            } catch (PCFException e) {
+                log.error("Can not retrieve queue name", e);
+            }
+        });
     }
 
     private void populateQueueInfo(QueueInfo queueInfo, PCFMessage response) {
@@ -171,26 +205,6 @@ public class QueueService {
         }
     }
 
-    public int getQueueDepth(String queueName) throws MQException {
-        final MQQueueManager qm = connectionManager.getQueueManager();
-
-        final int openOptions = MQConstants.MQOO_INQUIRE | MQConstants.MQOO_FAIL_IF_QUIESCING;
-        MQQueue queue = null;
-
-        try {
-            queue = qm.accessQueue(queueName, openOptions);
-            return queue.getCurrentDepth();
-        } finally {
-            if (queue != null) {
-                try {
-                    queue.close();
-                } catch (MQException e) {
-                    log.warn("Error closing queue: {}", e.getMessage());
-                }
-            }
-        }
-    }
-
     public void refreshQueueInfo(QueueInfo queueInfo) throws MQException, IOException, MQDataException {
         final QueueInfo updated = getQueueInfo(queueInfo.getQueue());
         if (updated != null) {
@@ -202,7 +216,7 @@ public class QueueService {
         }
     }
 
-    public List<QueueInfo> refreshAllQueues(List<QueueInfo> queues) throws MQException, IOException, MQDataException {
+    public void refreshAllQueues(List<QueueInfo> queues) throws MQException, IOException, MQDataException {
         final List<QueueInfo> refreshed = getAllQueues();
 
         for (QueueInfo queueInfo : queues) {
@@ -217,7 +231,6 @@ public class QueueService {
             }
         }
 
-        return queues;
     }
 
     private static String getQueueTypeString(int queueType) {

@@ -160,7 +160,7 @@ public class ImportConfig {
                 final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()
                         .descriptions(descriptions)
                         .label(importNode.getName())
-                        .regularExpression("*")
+                        .queuePattern("*")
                         .queueManager(importNode.getQueueMgr())
                         .build();
                 node.setQueueBrowserConfig(queueBrowserConfig);

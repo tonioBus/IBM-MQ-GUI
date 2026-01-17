@@ -471,11 +471,11 @@ public class HierarchyTreeViewer extends Composite {
             item = new TreeItem(parent, SWT.NONE);
         }
 
-        if (node.isQueue()) {
-            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
-            final String description = queueBrowserConfig == null || queueBrowserConfig.getQueueManager() == null ? "?" : queueBrowserConfig.getQueueManager();
-            item.setText(String.format("%s %s", description, node.getName()));
-        } else
+//        if (node.isQueue()) {
+//            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
+//            final String description = queueBrowserConfig == null || queueBrowserConfig.getQueueManager() == null ? "?" : queueBrowserConfig.getQueueManager();
+//            item.setText(String.format("%s %s", description, node.getName()));
+//        } else
             item.setText(node.getName());
         item.setImage(getNodeIcon(node));
 
@@ -673,7 +673,7 @@ public class HierarchyTreeViewer extends Composite {
         this.configManager.save(newNode.getId(),
                 QueueBrowserConfig.builder()
                         .queueManager(queuesImportNode.getQueueMgr())
-                        .regularExpression("*")
+                        .queuePattern("*")
                         .descriptions(descriptions)
                         .build());
         refresh();
