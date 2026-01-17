@@ -2,9 +2,8 @@ package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -18,6 +17,7 @@ public class QueueMonitor extends Thread {
     private final AtomicBoolean running;
     private final AtomicBoolean paused;
     private int refreshInterval = 5000;
+    @Setter
     private QueueMonitorListener listener;
 
     public QueueMonitor(QueueService queueService, AlertManager alertManager) {
@@ -113,17 +113,9 @@ public class QueueMonitor extends Thread {
         return paused.get();
     }
 
-    public int getRefreshInterval() {
-        return refreshInterval;
-    }
-
     public void setRefreshInterval(int refreshInterval) {
         this.refreshInterval = Math.max(1000, Math.min(60000, refreshInterval));
         log.info("Refresh interval set to {} ms", this.refreshInterval);
-    }
-
-    public void setListener(QueueMonitorListener listener) {
-        this.listener = listener;
     }
 
     public interface QueueMonitorListener {

@@ -29,6 +29,11 @@ public class QueueInfo {
         this.attributes = new HashMap<>();
     }
 
+    public QueueInfo(String queue, String label) {
+        this.label = label;
+        this(queue);
+    }
+
     public void setAttribute(String key, Object value) {
         this.attributes.put(key, value);
     }

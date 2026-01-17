@@ -125,29 +125,24 @@ public class QueueService {
 
     /**
      * Get queue information for a list of queue names.
-     * @param queueNames List of queue names to retrieve information for
+     * @param queueInfos List of queue names to retrieve information for
      * @return List of QueueInfo objects for the specified queues
      */
-    public List<QueueInfo> getQueuesInfo(List<String> queueNames) throws MQException, MQDataException, IOException {
-        if (queueNames == null || queueNames.isEmpty()) {
-            return new ArrayList<>();
+    public void populateQueueInfos(List<QueueInfo> queueInfos) throws MQException, MQDataException, IOException {
+        if (queueInfos == null || queueInfos.isEmpty()) {
+            return;
         }
-
-        final List<QueueInfo> queueInfoList = new ArrayList<>();
         final MQQueueManager qm = connectionManager.getQueueManager();
         final PCFMessageAgent agent = new PCFMessageAgent(qm);
-        for(final String queueName: queueNames) {
+        for(final QueueInfo queueInfo: queueInfos) {
             final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-            request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
+            request.addParameter(MQConstants.MQCA_Q_NAME, queueInfo.getQueue());
             log.info("Before agent.send()");
             final PCFMessage[] responses = agent.send(request);
             log.info("After agent.send() responses;{}", responses.length);
-            final QueueInfo queueInfo = new QueueInfo(queueName);
             populateQueueInfo(queueInfo, responses[0]);
-            queueInfoList.add(queueInfo);
         }
-        log.info("Retrieved information for {} out of {} queues", queueInfoList.size(), queueNames.size());
-        return queueInfoList;
+        log.info("Retrieved information for {} out of {} queues", queueInfos.size(), queueInfos.size());
     }
 
     private void populateQueueInfo(QueueInfo queueInfo, PCFMessage response) {

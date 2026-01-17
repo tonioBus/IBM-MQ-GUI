@@ -371,7 +371,7 @@ public class MainWindow {
         if (propertiesPanel != null) {
             try {
                 queueService.refreshQueueInfo(queue);
-            } catch (MQException | IOException  | MQDataException e) {
+            } catch (MQException | IOException | MQDataException e) {
                 throw new RuntimeException(e);
             }
             propertiesPanel.setQueue(queue);
@@ -406,8 +406,10 @@ public class MainWindow {
                 log.error("queueBrowserConfig.getDescriptions() null for {}", queueBrowserConfig);
                 return;
             }
-            final List<String> queuesName = queueBrowserConfig.getDescriptions().keySet().stream().toList();
-            log.info("number of queues to retrieve: {}", queuesName.size());
+            final List<QueueInfo> queueInfos = queueBrowserConfig.getDescriptions().entrySet().stream()
+                    .map(e -> new QueueInfo(e.getKey(), e.getValue().label()))
+                    .toList();
+            log.info("number of queues to retrieve: {}", queueInfos.size());
             if (!connectionManager.isConnected(connectionId)) {
                 QueueManagerConfig config = findConnectionConfig(connectionId);
                 if (config == null) {
@@ -435,17 +437,17 @@ public class MainWindow {
 
                         // Set active and load queues (BLOCKING)
                         connectionManager.setActiveConnection(connectionId);
-                        List<QueueInfo> queues = queueService.getQueuesInfo(queuesName);
+                        queueService.populateQueueInfos(queueInfos);
 
                         // Update UI on UI thread
                         display.asyncExec(() -> {
-                            queueListViewer.setQueues(queues);
+                            queueListViewer.setQueues(queueInfos);
                             queueListViewer.hideProgress();
                             updateStatus("Connected to " + qmName);
 
                             // Update panels
                             if (depthChartPanel != null) {
-                                depthChartPanel.setQueues(queues);
+                                depthChartPanel.setQueues(queueInfos);
                             }
                         });
 
@@ -463,23 +465,23 @@ public class MainWindow {
 
             // If already connected, just set active and load queues
             connectionManager.setActiveConnection(connectionId);
-            loadQueuesAsync(event.node.getName(), queuesName);
+            loadQueuesAsync(event.node.getName(), queueInfos);
         }
     }
 
-    private void loadQueuesAsync(String queueManagerName, List<String> queuesName) {
+    private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos) {
         queueListViewer.showProgress("Loading queues from " + queueManagerName + "...");
 
         new Thread(() -> {
             try {
-                List<QueueInfo> queues = queueService.getQueuesInfo(queuesName);
+                queueService.populateQueueInfos(queueInfos);
 
                 display.asyncExec(() -> {
-                    queueListViewer.setQueues(queues);
+                    queueListViewer.setQueues(queueInfos);
                     queueListViewer.hideProgress();
                     updateStatus("Loaded queues from " + queueManagerName);
                     if (depthChartPanel != null) {
-                        depthChartPanel.setQueues(queues);
+                        depthChartPanel.setQueues(queueInfos);
                     }
                 });
             } catch (Exception e) {
@@ -715,7 +717,7 @@ public class MainWindow {
 
     private void processRecursive(Map<String, ImportNode> importChildrens, String parentId) {
         importChildrens.forEach((key, value) -> {
-            switch(value) {
+            switch (value) {
                 case FolderImportNode folder -> {
                     HierarchyNode hierarchyNode = this.hierarchyTreeViewer.addFolder(key, parentId);
                     processRecursive(folder.getChildren(), hierarchyNode.getId());
