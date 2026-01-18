@@ -36,7 +36,7 @@ public class QueueService {
      * Get all queues for the active connection.
      */
     public List<QueueInfo> getAllQueues(boolean includeSystemQueues) throws MQException, IOException, MQDataException {
-        MQQueueManager qm = connectionManager.getQueueManager();
+        final MQQueueManager qm = connectionManager.getQueueManager();
         return getAllQueuesForManager(qm, includeSystemQueues);
     }
 
@@ -47,7 +47,7 @@ public class QueueService {
      * @param includeSystemQueues Whether to include system queues
      */
     public List<QueueInfo> getAllQueues(String connectionId, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
-        MQQueueManager qm = connectionManager.getQueueManager(connectionId);
+        final MQQueueManager qm = connectionManager.getQueueManager(connectionId);
         return getAllQueuesForManager(qm, includeSystemQueues);
     }
 
@@ -78,7 +78,7 @@ public class QueueService {
         log.info("Before agent.send()");
         final PCFMessage[] responses = agent.send(request);
         log.info("\nFound  {} queues.", responses.length);
-        for (PCFMessage response : responses) {
+        for (final PCFMessage response : responses) {
             try {
                 final String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
                 final QueueInfo queueInfo = new QueueInfo(queueName);
@@ -162,13 +162,13 @@ public class QueueService {
     }
 
     private void populateQueueInfos(List<QueueInfo> queueInfos, PCFMessage[] responses) {
-        Map<String, QueueInfo> mapQueuesInfos = new HashMap<>();
+        final Map<String, QueueInfo> mapQueuesInfos = new HashMap<>();
         queueInfos.forEach(queueInfo -> mapQueuesInfos.put(queueInfo.getQueue(), queueInfo));
         Arrays.stream(responses).parallel().forEach(response -> {
             String queueName = null;
             try {
                 queueName = response.getStringParameterValue(MQConstants.MQCA_Q_NAME).trim();
-                QueueInfo queueInfo = mapQueuesInfos.get(queueName);
+                final QueueInfo queueInfo = mapQueuesInfos.get(queueName);
                 if (queueInfo != null) {
                     log.info("populateQueueInfo({}) -> {}", queueName, queueInfo);
                     populateQueueInfo(queueInfo, response);
@@ -232,8 +232,8 @@ public class QueueService {
     public void refreshAllQueues(List<QueueInfo> queues) throws MQException, IOException, MQDataException {
         final List<QueueInfo> refreshed = getAllQueues();
 
-        for (QueueInfo queueInfo : queues) {
-            for (QueueInfo updated : refreshed) {
+        for (final QueueInfo queueInfo : queues) {
+            for (final QueueInfo updated : refreshed) {
                 if (queueInfo.getQueue().equals(updated.getQueue())) {
                     queueInfo.setCurrentDepth(updated.getCurrentDepth());
                     queueInfo.setMaxDepth(updated.getMaxDepth());
@@ -277,9 +277,9 @@ public class QueueService {
             final PCFMessage[] responses = agent.send(request);
             log.info("Found {} handles for queue {}", responses.length, queueName);
 
-            for (PCFMessage response : responses) {
+            for (final PCFMessage response : responses) {
                 try {
-                    QueueHandle handle = parseQueueHandle(response, queueName);
+                    final QueueHandle handle = parseQueueHandle(response, queueName);
                     handles.add(handle);
                 } catch (Exception e) {
                     log.warn("Error parsing handle for queue {}", queueName, e);
@@ -300,17 +300,8 @@ public class QueueService {
         return handles;
     }
 
-    /**
-     * Get all handles for all queues on the queue manager.
-     *
-     * @return List of QueueHandle objects for all queues
-     */
-    public List<QueueHandle> getAllQueueHandles() throws IOException, MQDataException {
-        return getQueueHandles("*");
-    }
-
     private QueueHandle parseQueueHandle(PCFMessage response, String queueName) {
-        QueueHandle.QueueHandleBuilder builder = QueueHandle.builder();
+        final QueueHandle.QueueHandleBuilder builder = QueueHandle.builder();
 
         // Queue name (may differ from input if wildcard was used)
         try {
@@ -364,7 +355,7 @@ public class QueueService {
 
         // Open options
         try {
-            int openOptions = response.getIntParameterValue(MQConstants.MQIACF_OPEN_OPTIONS);
+            final int openOptions = response.getIntParameterValue(MQConstants.MQIACF_OPEN_OPTIONS);
             builder.openOptions(openOptions);
             builder.openForInput((openOptions & MQConstants.MQOO_INPUT_AS_Q_DEF) != 0 ||
                     (openOptions & MQConstants.MQOO_INPUT_SHARED) != 0 ||
@@ -381,7 +372,7 @@ public class QueueService {
 
     private static String bytesToHex(byte[] bytes) {
         if (bytes == null) return "";
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
             sb.append(String.format("%02X", b));
         }

@@ -381,7 +381,7 @@ public class MainWindow {
             try {
                 queueService.refreshQueueInfo(queue);
             } catch (MQException | IOException | MQDataException e) {
-                throw new RuntimeException(e);
+                log.error("Exception during refreshQueueInfo({})", queue.getQueue(), e);
             }
             propertiesPanel.setQueue(queue);
         }
