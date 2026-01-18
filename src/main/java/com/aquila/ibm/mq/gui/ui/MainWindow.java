@@ -47,6 +47,7 @@ public class MainWindow {
     private MessageBrowserPanel messageBrowserPanel;
     private SendMessageDialog sendMessageDialog;
     private DepthChartPanel depthChartPanel;
+    private QueueHandlesPanel queueHandlesPanel;
     private Label statusLabel;
     private Label alertLabel;
 
@@ -209,6 +210,7 @@ public class MainWindow {
         createPropertiesTab();
         createMessagesTab();
         createChartTab();
+        createHandlesTab();
 
         // UPDATED: Three-panel weights (was: 30, 70)
         sashForm.setWeights(new int[]{20, 30, 50});
@@ -233,6 +235,13 @@ public class MainWindow {
         chartTab.setText("Depth Chart");
         depthChartPanel = new DepthChartPanel(tabFolder, SWT.NONE);
         chartTab.setControl(depthChartPanel);
+    }
+
+    private void createHandlesTab() {
+        TabItem handlesTab = new TabItem(tabFolder, SWT.NONE);
+        handlesTab.setText("Handles");
+        queueHandlesPanel = new QueueHandlesPanel(tabFolder, SWT.NONE, queueService);
+        handlesTab.setControl(queueHandlesPanel);
     }
 
     private void createStatusBar() {
@@ -382,6 +391,9 @@ public class MainWindow {
         if (depthChartPanel != null) {
             depthChartPanel.setSelectedQueue(queue);
         }
+        if (queueHandlesPanel != null) {
+            queueHandlesPanel.setQueue(queue.getQueue());
+        }
     }
 
     private void onTreeSelection(HierarchyTreeViewer.SelectionEvent event) {
@@ -396,6 +408,9 @@ public class MainWindow {
             }
             if (depthChartPanel != null) {
                 depthChartPanel.setSelectedQueue(null);
+            }
+            if (queueHandlesPanel != null) {
+                queueHandlesPanel.setQueue(null);
             }
             updateStatus("Folder selected: " + event.node.getName());
 
