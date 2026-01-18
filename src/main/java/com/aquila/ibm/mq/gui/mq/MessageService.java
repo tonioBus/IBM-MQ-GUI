@@ -17,6 +17,11 @@ public class MessageService {
     private final MQConnectionManager connectionManager;
     private static final int DEFAULT_MAX_MESSAGES = 1000;
 
+    public interface BatchCallback {
+        boolean isCancelled();
+        void onProgress(int sent, int total);
+    }
+
     public MessageService(MQConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
@@ -129,6 +134,62 @@ public class MessageService {
                 }
             }
         }
+    }
+
+    public int putMessages(String queueName, String messageData, int priority, int persistence,
+                           int count, int delayMs, BatchCallback callback) throws MQException, IOException {
+        MQQueueManager qm = connectionManager.getQueueManager();
+
+        int openOptions = MQConstants.MQOO_OUTPUT | MQConstants.MQOO_FAIL_IF_QUIESCING;
+        MQQueue queue = null;
+        int sent = 0;
+
+        try {
+            queue = qm.accessQueue(queueName, openOptions);
+            MQPutMessageOptions pmo = new MQPutMessageOptions();
+
+            for (int i = 0; i < count; i++) {
+                if (callback != null && callback.isCancelled()) {
+                    logger.info("Batch send cancelled after {} messages", sent);
+                    break;
+                }
+
+                MQMessage message = new MQMessage();
+                message.format = MQConstants.MQFMT_STRING;
+                message.priority = priority;
+                message.persistence = persistence;
+                message.writeString(messageData);
+
+                queue.put(message, pmo);
+                sent++;
+
+                if (callback != null) {
+                    callback.onProgress(sent, count);
+                }
+
+                if (delayMs > 0 && i < count - 1) {
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        logger.info("Batch send interrupted after {} messages", sent);
+                        break;
+                    }
+                }
+            }
+
+            logger.info("Put {} messages to queue {}, size: {} bytes each", sent, queueName, messageData.length());
+        } finally {
+            if (queue != null) {
+                try {
+                    queue.close();
+                } catch (MQException e) {
+                    logger.warn("Error closing queue: {}", e.getMessage());
+                }
+            }
+        }
+
+        return sent;
     }
 
     public MessageInfo getMessage(String queueName, byte[] messageId) throws MQException {

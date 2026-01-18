@@ -9,6 +9,8 @@ import org.eclipse.swt.widgets.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class SendMessageDialog {
     private static final Logger logger = LoggerFactory.getLogger(SendMessageDialog.class);
     private final Shell parent;
@@ -18,6 +20,15 @@ public class SendMessageDialog {
     private Text messageText;
     private Spinner prioritySpinner;
     private Combo persistenceCombo;
+    private Spinner messageCountSpinner;
+    private Spinner delaySpinner;
+    private ProgressBar progressBar;
+    private Label progressLabel;
+    private Composite progressPanel;
+    private Button sendButton;
+    private Button closeButton;
+    private final AtomicBoolean cancelled = new AtomicBoolean(false);
+    private volatile boolean isSending = false;
 
     public SendMessageDialog(Shell parent, MessageService messageService) {
         this.parent = parent;
@@ -27,22 +38,18 @@ public class SendMessageDialog {
     public void open(String queueName) {
         this.queueName = queueName;
 
-        shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE);
+        shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.RESIZE);
         shell.setText("Send Message to " + queueName);
         shell.setLayout(new GridLayout(1, false));
-        shell.setSize(600, 500);
+        shell.setSize(600, 550);
 
         createMessageArea();
         createOptionsArea();
+        createBatchOptionsArea();
+        createProgressPanel();
         createButtons();
 
         shell.open();
-        Display display = parent.getDisplay();
-        while (!shell.isDisposed()) {
-            if (!display.readAndDispatch()) {
-                display.sleep();
-            }
-        }
     }
 
     private void createMessageArea() {
@@ -58,7 +65,7 @@ public class SendMessageDialog {
     private void createOptionsArea() {
         Group optionsGroup = new Group(shell, SWT.NONE);
         optionsGroup.setText("Message Options");
-        optionsGroup.setLayout(new GridLayout(2, false));
+        optionsGroup.setLayout(new GridLayout(4, false));
         optionsGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         new Label(optionsGroup, SWT.NONE).setText("Priority:");
@@ -76,18 +83,64 @@ public class SendMessageDialog {
         persistenceCombo.select(2);
     }
 
+    private void createBatchOptionsArea() {
+        Group batchGroup = new Group(shell, SWT.NONE);
+        batchGroup.setText("Batch Options");
+        batchGroup.setLayout(new GridLayout(4, false));
+        batchGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        new Label(batchGroup, SWT.NONE).setText("Number of messages:");
+        messageCountSpinner = new Spinner(batchGroup, SWT.BORDER);
+        messageCountSpinner.setMinimum(1);
+        messageCountSpinner.setMaximum(100000);
+        messageCountSpinner.setSelection(1);
+
+        new Label(batchGroup, SWT.NONE).setText("Delay between (ms):");
+        delaySpinner = new Spinner(batchGroup, SWT.BORDER);
+        delaySpinner.setMinimum(0);
+        delaySpinner.setMaximum(60000);
+        delaySpinner.setSelection(0);
+    }
+
+    private void createProgressPanel() {
+        progressPanel = new Composite(shell, SWT.NONE);
+        progressPanel.setLayout(new GridLayout(1, false));
+        GridData progressData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        progressPanel.setLayoutData(progressData);
+
+        progressBar = new ProgressBar(progressPanel, SWT.HORIZONTAL);
+        progressBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        progressBar.setMinimum(0);
+        progressBar.setMaximum(100);
+
+        progressLabel = new Label(progressPanel, SWT.NONE);
+        progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        progressLabel.setText("");
+
+        progressPanel.setVisible(false);
+        ((GridData) progressPanel.getLayoutData()).exclude = true;
+    }
+
     private void createButtons() {
         Composite buttonBar = new Composite(shell, SWT.NONE);
         buttonBar.setLayout(new GridLayout(2, false));
         buttonBar.setLayoutData(new GridData(SWT.END, SWT.CENTER, true, false));
 
-        Button sendButton = new Button(buttonBar, SWT.PUSH);
+        sendButton = new Button(buttonBar, SWT.PUSH);
         sendButton.setText("Send");
-        sendButton.addListener(SWT.Selection, e -> sendMessage());
+        sendButton.addListener(SWT.Selection, e -> handleSendButtonClick());
 
-        Button cancelButton = new Button(buttonBar, SWT.PUSH);
-        cancelButton.setText("Cancel");
-        cancelButton.addListener(SWT.Selection, e -> shell.close());
+        closeButton = new Button(buttonBar, SWT.PUSH);
+        closeButton.setText("Close");
+        closeButton.addListener(SWT.Selection, e -> shell.close());
+    }
+
+    private void handleSendButtonClick() {
+        if (isSending) {
+            cancelled.set(true);
+        } else {
+            sendMessage();
+        }
     }
 
     private void sendMessage() {
@@ -99,7 +152,17 @@ public class SendMessageDialog {
 
         int priority = prioritySpinner.getSelection();
         int persistence = getPersistenceValue();
+        int messageCount = messageCountSpinner.getSelection();
+        int delayMs = delaySpinner.getSelection();
 
+        if (messageCount == 1) {
+            sendSingleMessage(content, priority, persistence);
+        } else {
+            sendBatchMessages(content, priority, persistence, messageCount, delayMs);
+        }
+    }
+
+    private void sendSingleMessage(String content, int priority, int persistence) {
         try {
             messageService.putMessage(queueName, content, priority, persistence);
             showInfo("Message sent successfully");
@@ -108,6 +171,91 @@ public class SendMessageDialog {
             logger.error("Failed to send message", e);
             showError("Failed to send message: " + e.getMessage());
         }
+    }
+
+    private void sendBatchMessages(String content, int priority, int persistence, int messageCount, int delayMs) {
+        isSending = true;
+        cancelled.set(false);
+
+        setControlsEnabled(false);
+        sendButton.setText("Cancel");
+        sendButton.setEnabled(true);
+
+        showProgress(true);
+        progressBar.setSelection(0);
+        progressLabel.setText("Sent 0 of " + messageCount + " messages...");
+
+        new Thread(() -> {
+            int sent = 0;
+            Exception error = null;
+
+            try {
+                sent = messageService.putMessages(queueName, content, priority, persistence,
+                        messageCount, delayMs, new MessageService.BatchCallback() {
+                            @Override
+                            public boolean isCancelled() {
+                                return cancelled.get();
+                            }
+
+                            @Override
+                            public void onProgress(int sentCount, int total) {
+                                Display display = shell.getDisplay();
+                                if (!shell.isDisposed()) {
+                                    display.asyncExec(() -> {
+                                        if (!shell.isDisposed()) {
+                                            int percent = (sentCount * 100) / total;
+                                            progressBar.setSelection(percent);
+                                            progressLabel.setText("Sent " + sentCount + " of " + total + " messages...");
+                                        }
+                                    });
+                                }
+                            }
+                        });
+            } catch (Exception e) {
+                error = e;
+                logger.error("Failed to send batch messages", e);
+            }
+
+            final int finalSent = sent;
+            final Exception finalError = error;
+            final boolean wasCancelled = cancelled.get();
+
+            Display display = shell.getDisplay();
+            if (!shell.isDisposed()) {
+                display.asyncExec(() -> {
+                    if (!shell.isDisposed()) {
+                        isSending = false;
+                        setControlsEnabled(true);
+                        sendButton.setText("Send");
+                        showProgress(false);
+
+                        if (finalError != null) {
+                            showError("Failed to send messages.\nSent " + finalSent + " of " + messageCount + " messages.\nError: " + finalError.getMessage());
+                        } else if (wasCancelled) {
+                            showInfo("Batch sending cancelled.\nSent " + finalSent + " of " + messageCount + " messages.");
+                        } else {
+                            showInfo("Successfully sent " + finalSent + " messages.");
+                            shell.close();
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void setControlsEnabled(boolean enabled) {
+        messageText.setEnabled(enabled);
+        prioritySpinner.setEnabled(enabled);
+        persistenceCombo.setEnabled(enabled);
+        messageCountSpinner.setEnabled(enabled);
+        delaySpinner.setEnabled(enabled);
+        closeButton.setEnabled(enabled);
+    }
+
+    private void showProgress(boolean visible) {
+        progressPanel.setVisible(visible);
+        ((GridData) progressPanel.getLayoutData()).exclude = !visible;
+        shell.layout(true, true);
     }
 
     private int getPersistenceValue() {

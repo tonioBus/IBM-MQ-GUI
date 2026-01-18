@@ -41,3 +41,4 @@ build/
 ### Application ###
 logs/
 .ibmmqgui/
+/mqjms.log.0
