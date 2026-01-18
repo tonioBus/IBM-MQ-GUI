@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.beans.Transient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,7 +19,7 @@ public class HierarchyNode {
 
     public enum NodeType {
         FOLDER,
-        BROWSER
+        QUEUE
     }
 
     private String id;
@@ -47,8 +46,8 @@ public class HierarchyNode {
         return type == NodeType.FOLDER;
     }
 
-    public boolean isQueueBrowser() {
-        return type == NodeType.BROWSER;
+    public boolean isQueue() {
+        return type == NodeType.QUEUE;
     }
 
     public void addChild(String childId) {

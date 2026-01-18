@@ -1,12 +1,15 @@
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.importation.QueuesImportNode;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.*;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -379,9 +382,9 @@ public class HierarchyTreeViewer extends Composite {
     }
 
     private void setupKeyboardShortcuts() {
-        tree.addKeyListener(new org.eclipse.swt.events.KeyAdapter() {
+        tree.addKeyListener(new KeyAdapter() {
             @Override
-            public void keyPressed(org.eclipse.swt.events.KeyEvent e) {
+            public void keyPressed(KeyEvent e) {
                 HierarchyNode selected = getSelectedNode();
 
                 // F2 - Rename
@@ -468,11 +471,11 @@ public class HierarchyTreeViewer extends Composite {
             item = new TreeItem(parent, SWT.NONE);
         }
 
-        if (node.isQueueBrowser()) {
-            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
-            final String description = queueBrowserConfig == null || queueBrowserConfig.getQueueManager() == null ? "?" : queueBrowserConfig.getQueueManager();
-            item.setText(String.format("%s %s", description, node.getName()));
-        } else
+//        if (node.isQueue()) {
+//            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
+//            final String description = queueBrowserConfig == null || queueBrowserConfig.getQueueManager() == null ? "?" : queueBrowserConfig.getQueueManager();
+//            item.setText(String.format("%s %s", description, node.getName()));
+//        } else
             item.setText(node.getName());
         item.setImage(getNodeIcon(node));
 
@@ -609,19 +612,24 @@ public class HierarchyTreeViewer extends Composite {
         final String folderName = dialog.open();
 
         if (folderName != null) {
-            final HierarchyNode newFolder = new HierarchyNode(HierarchyNode.NodeType.FOLDER, folderName);
-            hierarchyConfig.addNode(newFolder, parentId);
-            // Save and refresh
-            configManager.saveHierarchy(hierarchyConfig);
-            refresh();
-            // Select the new folder
-            TreeItem item = nodeIdToTreeItem.get(newFolder.getId());
-            if (item != null) {
-                tree.setSelection(item);
-                tree.showItem(item);
-            }
-            log.info("Added folder: {}", folderName);
+            addFolder(folderName, parentId);
         }
+    }
+
+    public HierarchyNode addFolder(String folderName, String parentId) {
+        final HierarchyNode newFolder = new HierarchyNode(HierarchyNode.NodeType.FOLDER, folderName);
+        hierarchyConfig.addNode(newFolder, parentId);
+        // Save and refresh
+        configManager.saveHierarchy(hierarchyConfig);
+        refresh();
+        // Select the new folder
+        TreeItem item = nodeIdToTreeItem.get(newFolder.getId());
+        if (item != null) {
+            tree.setSelection(item);
+            tree.showItem(item);
+        }
+        log.info("Added folder: {}", folderName);
+        return newFolder;
     }
 
     /**
@@ -633,12 +641,12 @@ public class HierarchyTreeViewer extends Composite {
                 selectedNode.getId() :
                 null;
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
-                getShell(), configManager, null, false);
+                getShell(), configManager, selectedNode, false);
         final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
         log.info("addQueueBrowser: {}", queueBrowserConfig);
         if (queueBrowserConfig != null) {
             final String displayName = queueBrowserConfig.getLabel();
-            final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.BROWSER, displayName);
+            final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, displayName);
             newNode.setQueueBrowserConfig(queueBrowserConfig);
             hierarchyConfig.addNode(newNode, parentId);
             configManager.saveHierarchy(hierarchyConfig);
@@ -651,6 +659,30 @@ public class HierarchyTreeViewer extends Composite {
             }
             log.info("Added queue manager: {}", displayName);
         }
+    }
+
+    public void addQueues(String key, QueuesImportNode queuesImportNode, String parentId) {
+        final String displayName = key;
+        final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, displayName);
+        hierarchyConfig.addNode(newNode, parentId);
+        configManager.saveHierarchy(hierarchyConfig);
+        final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
+        queuesImportNode.getChildren().forEach((key1, value) -> {
+            descriptions.put(key1, new QueueBrowserConfig.QueueDescription(value));
+        });
+        this.configManager.save(newNode.getId(),
+                QueueBrowserConfig.builder()
+                        .queueManager(queuesImportNode.getQueueMgr())
+                        .queuePattern("*")
+                        .descriptions(descriptions)
+                        .build());
+        refresh();
+        TreeItem item = nodeIdToTreeItem.get(newNode.getId());
+        if (item != null) {
+            tree.setSelection(item);
+            tree.showItem(item);
+        }
+        log.info("Added queue manager: {}", displayName);
     }
 
     public void editQueueBrowser(HierarchyNode hierarchyNode) {

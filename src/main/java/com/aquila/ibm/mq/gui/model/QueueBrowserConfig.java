@@ -23,7 +23,20 @@ public class QueueBrowserConfig {
 
     private String label;
     private String queueManager;
-    private String regularExpression;
+    /**
+     * Sequential queue request flag.
+     * When true, queue information is requested sequentially instead of in parallel.
+     * Default: false (parallel requests)
+     */
+    @lombok.Builder.Default
+    private boolean sequencialQueueRequest = false;
+    /**
+     * Queue filter pattern. Supports both:
+     * - IBM MQ wildcards: * (any chars), ? (single char) - e.g., "DEV.*"
+     * - Java regex patterns: full regex syntax - e.g., "QUEUE\\.(ONE|TWO)"
+     * Default: "*" (all queues)
+     */
+    private String queuePattern;
     private Map<String, QueueDescription> descriptions;
 
     public static QueueBrowserConfig fromFile(String key, String queueManager) {
@@ -36,7 +49,7 @@ public class QueueBrowserConfig {
             log.error("Failed to load QueueBrowserConfig: {}", key, e);
             QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()
                     .queueManager(queueManager)
-                    .regularExpression("*")
+                    .queuePattern("*")
                     .label("Default")
                     .build();
             queueBrowserConfig.save(key);

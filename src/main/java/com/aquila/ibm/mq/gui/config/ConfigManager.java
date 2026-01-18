@@ -1,6 +1,7 @@
 package com.aquila.ibm.mq.gui.config;
 
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
+import com.aquila.ibm.mq.gui.model.MessageTemplate;
 import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
@@ -8,8 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -19,12 +19,13 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class ConfigManager {
-    private static final Logger logger = LoggerFactory.getLogger(ConfigManager.class);
     public static final String CONFIG_DIR = System.getProperty("user.home") + File.separator + ".ibmmqgui";
     private static final String CONNECTIONS_FILE = "connections.json";
     private static final String THRESHOLDS_FILE = "thresholds.json";
     private static final String HIERARCHY_FILE = "hierarchy.json";
+    private static final String MESSAGE_TEMPLATES_FILE = "message_templates.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private Map<String, QueueManagerConfig> queueManagers = loadConnections();
     @Getter
@@ -39,17 +40,17 @@ public class ConfigManager {
             final Path configPath = Paths.get(CONFIG_DIR);
             if (!Files.exists(configPath)) {
                 Files.createDirectories(configPath);
-                logger.info("Created config directory: {}", CONFIG_DIR);
+                log.info("Created config directory: {}", CONFIG_DIR);
             }
         } catch (IOException e) {
-            logger.error("Failed to create config directory", e);
+            log.error("Failed to create config directory", e);
         }
     }
 
     public Map<String, QueueManagerConfig> loadConnections() {
         final File file = new File(CONFIG_DIR, CONNECTIONS_FILE);
         if (!file.exists()) {
-            logger.info("No connections file found, returning empty list");
+            log.info("No connections file found, returning empty list");
             return new HashMap<>();
         }
 
@@ -57,10 +58,10 @@ public class ConfigManager {
             final Type mapType = new TypeToken<Map<String, QueueManagerConfig>>() {
             }.getType();
             queueManagers = gson.fromJson(reader, mapType);
-            logger.info("Loaded {} connection(s)", queueManagers != null ? queueManagers.size() : 0);
+            log.info("Loaded {} connection(s)", queueManagers != null ? queueManagers.size() : 0);
             return queueManagers != null ? queueManagers : new HashMap<>();
         } catch (IOException e) {
-            logger.error("Failed to load connections", e);
+            log.error("Failed to load connections", e);
             return new HashMap<>();
         }
     }
@@ -69,9 +70,9 @@ public class ConfigManager {
         final File file = new File(CONFIG_DIR, CONNECTIONS_FILE);
         try (Writer writer = new FileWriter(file)) {
             gson.toJson(connections, writer);
-            logger.info("Saved {} connection(s)", connections.size());
+            log.info("Saved {} connection(s)", connections.size());
         } catch (IOException e) {
-            logger.error("Failed to save connections", e);
+            log.error("Failed to save connections", e);
         }
     }
 
@@ -90,13 +91,13 @@ public class ConfigManager {
     public void deleteConnection(String name) {
         queueManagers.remove(name);
         saveConnections(queueManagers);
-        logger.info("Deleted connection: {}", name);
+        log.info("Deleted connection: {}", name);
     }
 
     public Map<String, ThresholdConfig> loadThresholds() {
         final File file = new File(CONFIG_DIR, THRESHOLDS_FILE);
         if (!file.exists()) {
-            logger.info("No thresholds file found, returning empty map");
+            log.info("No thresholds file found, returning empty map");
             return new HashMap<>();
         }
 
@@ -104,10 +105,10 @@ public class ConfigManager {
             final Type mapType = new TypeToken<Map<String, ThresholdConfig>>() {
             }.getType();
             final Map<String, ThresholdConfig> thresholds = gson.fromJson(reader, mapType);
-            logger.info("Loaded {} threshold(s)", thresholds != null ? thresholds.size() : 0);
+            log.info("Loaded {} threshold(s)", thresholds != null ? thresholds.size() : 0);
             return thresholds != null ? thresholds : new HashMap<>();
         } catch (IOException e) {
-            logger.error("Failed to load thresholds", e);
+            log.error("Failed to load thresholds", e);
             return new HashMap<>();
         }
     }
@@ -116,9 +117,9 @@ public class ConfigManager {
         final File file = new File(CONFIG_DIR, THRESHOLDS_FILE);
         try (Writer writer = new FileWriter(file)) {
             gson.toJson(thresholds, writer);
-            logger.info("Saved {} threshold(s)", thresholds.size());
+            log.info("Saved {} threshold(s)", thresholds.size());
         } catch (IOException e) {
-            logger.error("Failed to save thresholds", e);
+            log.error("Failed to save thresholds", e);
         }
     }
 
@@ -140,18 +141,18 @@ public class ConfigManager {
      */
     public HierarchyConfig loadHierarchy() {
         final File file = new File(CONFIG_DIR, HIERARCHY_FILE);
-        logger.info("load hierarchy: {}", file);
+        log.info("load hierarchy: {}", file);
         if (!file.exists()) {
-            logger.info("No hierarchy file found");
+            log.info("No hierarchy file found");
             return null;
         }
 
         try (Reader reader = new FileReader(file)) {
             final HierarchyConfig hierarchyConfig = gson.fromJson(reader, HierarchyConfig.class);
-            logger.info("Loaded hierarchy with {} nodes", hierarchyConfig != null ? hierarchyConfig.getNodes().size() : 0);
+            log.info("Loaded hierarchy with {} nodes", hierarchyConfig != null ? hierarchyConfig.getNodes().size() : 0);
             if (!this.queueManagers.isEmpty() && hierarchyConfig != null && hierarchyConfig.getNodes() != null) {
                 hierarchyConfig.getNodes().entrySet().parallelStream()
-                        .filter(entry -> entry.getValue().isQueueBrowser())
+                        .filter(entry -> entry.getValue().isQueue())
                         .forEach(entry -> {
                             final String key = entry.getKey();
                             final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.fromFile(key,
@@ -162,7 +163,7 @@ public class ConfigManager {
             }
             return hierarchyConfig;
         } catch (IOException e) {
-            logger.error("Failed to load hierarchy", e);
+            log.error("Failed to load hierarchy", e);
             return null;
         }
     }
@@ -174,7 +175,7 @@ public class ConfigManager {
      */
     public void saveHierarchy(HierarchyConfig hierarchyConfig) {
         if (hierarchyConfig == null) {
-            logger.warn("Attempted to save null hierarchy");
+            log.warn("Attempted to save null hierarchy");
             return;
         }
         final File file = new File(CONFIG_DIR, HIERARCHY_FILE);
@@ -185,14 +186,14 @@ public class ConfigManager {
                 Files.copy(file.toPath(), backup.toPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
-                logger.warn("Failed to create backup of hierarchy file", e);
+                log.warn("Failed to create backup of hierarchy file", e);
             }
         }
         try (Writer writer = new FileWriter(file)) {
             gson.toJson(hierarchyConfig, writer);
-            logger.info("Saved hierarchy with {} nodes", hierarchyConfig.getNodes().size());
+            log.info("Saved hierarchy with {} nodes", hierarchyConfig.getNodes().size());
         } catch (IOException e) {
-            logger.error("Failed to save hierarchy", e);
+            log.error("Failed to save hierarchy", e);
         }
         if (!this.queueManagers.isEmpty() && hierarchyConfig.getNodes() != null) {
             hierarchyConfig.getNodes().entrySet().parallelStream().forEach(entry -> {
@@ -234,8 +235,56 @@ public class ConfigManager {
     }
 
     public void save(String id, QueueBrowserConfig queueBrowserConfig) {
-        logger.info("Save QueueBrowserConfig: {} -> \n{}", id, queueBrowserConfig);
+        log.info("Save QueueBrowserConfig: {} -> \n{}", id, queueBrowserConfig);
         queueBrowserConfig.save(id);
     }
 
+    public Map<String, MessageTemplate> loadMessageTemplates() {
+        final File file = new File(CONFIG_DIR, MESSAGE_TEMPLATES_FILE);
+        if (!file.exists()) {
+            log.info("No message templates file found, returning empty map");
+            return new HashMap<>();
+        }
+
+        try (Reader reader = new FileReader(file)) {
+            final Type mapType = new TypeToken<Map<String, MessageTemplate>>() {
+            }.getType();
+            final Map<String, MessageTemplate> templates = gson.fromJson(reader, mapType);
+            log.info("Loaded {} message template(s)", templates != null ? templates.size() : 0);
+            return templates != null ? templates : new HashMap<>();
+        } catch (IOException e) {
+            log.error("Failed to load message templates", e);
+            return new HashMap<>();
+        }
+    }
+
+    public void saveMessageTemplates(Map<String, MessageTemplate> templates) {
+        final File file = new File(CONFIG_DIR, MESSAGE_TEMPLATES_FILE);
+        try (Writer writer = new FileWriter(file)) {
+            gson.toJson(templates, writer);
+            log.info("Saved {} message template(s)", templates.size());
+        } catch (IOException e) {
+            log.error("Failed to save message templates", e);
+        }
+    }
+
+    public void saveMessageTemplate(MessageTemplate template) {
+        final Map<String, MessageTemplate> templates = loadMessageTemplates();
+        templates.put(template.getName(), template);
+        saveMessageTemplates(templates);
+    }
+
+    public void deleteMessageTemplate(String name) {
+        final Map<String, MessageTemplate> templates = loadMessageTemplates();
+        templates.remove(name);
+        saveMessageTemplates(templates);
+        log.info("Deleted message template: {}", name);
+    }
+
+    public MessageTemplate getMessageTemplate(String name) {
+        final Map<String, MessageTemplate> templates = loadMessageTemplates();
+        return templates.get(name);
+    }
+
 }
+

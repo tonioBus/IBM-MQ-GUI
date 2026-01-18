@@ -1,0 +1,58 @@
+{
+  "label": "test",
+  "queueManagers": {
+    "192.168.1.73(1414)": {
+      "name": "QM1",
+      "host": "192.168.1.73",
+      "port": 1414,
+      "channel": "DEV.APP.SVRCONN",
+      "queueManager": "QM1",
+      "username": "admin",
+      "password": "passw0rd",
+      "sslEnabled": false
+    },
+    "192.168.1.73(1415)": {
+      "name": "QM2",
+      "host": "192.168.1.73",
+      "port": 1415,
+      "channel": "DEV.APP.SVRCONN",
+      "queueManager": "QM2",
+      "username": "admin",
+      "password": "passw0rd",
+      "sslEnabled": false
+    }
+  },
+  "hierarchy": {
+    "MERCURY": {
+      "type": "FOLDER",
+      "children": {
+        "DEV": {
+          "type": "QUEUE",
+          "queueMgr": "192.168.1.73(1414)",
+          "children": {
+            "DEV.QUEUE.1": "D-10",
+            "DEV.QUEUE.2": "D-20",
+            "DEV.QUEUE.3": "D-23"
+          }
+        }
+      }
+    },
+    "XMEDIA": {
+      "type": "FOLDER",
+      "children": {
+        "DEV": {
+          "type": "FOLDER",
+          "children": {
+            "DEV1": {
+              "type": "QUEUE",
+              "queueMgr": "192.168.1.73(1414)",
+              "children": {
+                "DEV.QUEUE.1": "D-10"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

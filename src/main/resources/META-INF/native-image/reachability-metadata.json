@@ -331,6 +331,146 @@
       ]
     },
     {
+      "type": "com.aquila.ibm.mq.gui.importation.FolderImportNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChildren",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.ImportNode"
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.QueueManagerConfigNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChannel",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setHost",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPassword",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPort",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "name": "setQueueManager",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSslEnabled",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setUsername",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.QueuesImportNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChildren",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        },
+        {
+          "name": "setQueueMgr",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.RootImportNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setHierarchy",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        },
+        {
+          "name": "setLabel",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setQueueManagers",
+          "parameterTypes": [
+            "java.util.Map"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.importation.RootImportNodeTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "test",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImport",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.model.ConnectionConfig",
       "allDeclaredFields": true,
       "methods": [
@@ -351,6 +491,26 @@
         },
         {
           "name": "selectedNodeId"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.HierarchyImportNode",
+      "fields": [
+        {
+          "name": "children"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "type"
         }
       ],
       "methods": [
@@ -401,6 +561,23 @@
       ]
     },
     {
+      "type": "com.aquila.ibm.mq.gui.model.ImportConfig",
+      "fields": [
+        {
+          "name": "Hierarchy"
+        },
+        {
+          "name": "QueueManagers"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig",
       "fields": [
         {
@@ -416,7 +593,10 @@
           "name": "queueManager"
         },
         {
-          "name": "regularExpression"
+          "name": "queuePattern"
+        },
+        {
+          "name": "sequencialQueueRequest"
         }
       ]
     },
@@ -476,6 +656,271 @@
           "name": "username"
         }
       ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.util.ImportExportUtilTest",
+      "fields": [
+        {
+          "name": "tempDir"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setUp",
+          "parameterTypes": []
+        },
+        {
+          "name": "tearDown",
+          "parameterTypes": []
+        },
+        {
+          "name": "testConversionWithComplexHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "testExportToFile",
+          "parameterTypes": []
+        },
+        {
+          "name": "testExportWithNullHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImportFromFile",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImportHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "testImportNonExistentFile",
+          "parameterTypes": []
+        },
+        {
+          "name": "testRead",
+          "parameterTypes": []
+        },
+        {
+          "name": "testRoundTripConversion",
+          "parameterTypes": []
+        },
+        {
+          "name": "testWriteAndReadBack",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.util.OptimiseIBMQueuePatternTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCommonPrefixAndSuffix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCommonPrefixOnly",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEmptyArray",
+          "parameterTypes": []
+        },
+        {
+          "name": "testMixedEnvironments",
+          "parameterTypes": []
+        },
+        {
+          "name": "testNoCommonPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSimplePattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSystemQueues",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.util.QueueNameRegexCalculatorTest",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_EmptyList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_MultipleQueues",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_NullList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_SingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateExactMatchRegex_SpecialCharacters",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_ComplexPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_NoPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_NullList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_PrefixAndSuffix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_PrefixOnly",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateOptimizedRegex_SingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculatePrefixBasedRegex_CommonPrefix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculatePrefixBasedRegex_NoCommonPrefix",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculatePrefixBasedRegex_SingleQueue",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_AsteriskWildcard",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_ComplexPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_MixedWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_NullList",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCalculateWildcardRegex_QuestionMarkWildcard",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompilePattern_CaseInsensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompilePattern_CaseSensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_CaseInsensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_CaseSensitive",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_EmptyPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_IBMMQWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_JavaRegex",
+          "parameterTypes": []
+        },
+        {
+          "name": "testCompileSmartPattern_NullPattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "testConvertMQWildcardToRegex",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEdgeCase_EmptyStrings",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEdgeCase_SpecialRegexCharacters",
+          "parameterTypes": []
+        },
+        {
+          "name": "testEdgeCase_VeryLongQueueName",
+          "parameterTypes": []
+        },
+        {
+          "name": "testIsIBMMQWildcardPattern_JavaRegex",
+          "parameterTypes": []
+        },
+        {
+          "name": "testIsIBMMQWildcardPattern_NoWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testIsIBMMQWildcardPattern_SimpleWildcards",
+          "parameterTypes": []
+        },
+        {
+          "name": "testRealWorldScenario_IBMMQQueues",
+          "parameterTypes": []
+        },
+        {
+          "name": "testRealWorldScenario_WildcardPatterns",
+          "parameterTypes": []
+        },
+        {
+          "name": "testSmartPattern_RealWorldUsage",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.ext.Java7SupportImpl",
       "methods": [
         {
           "name": "<init>",
@@ -18327,6 +18772,9 @@
       "type": "jdk.management.jfr.SettingDescriptorInfo"
     },
     {
+      "type": "junit.framework.ComparisonFailure"
+    },
+    {
       "type": "kotlin.Metadata"
     },
     {
@@ -20214,6 +20662,9 @@
       "type": "org.junit.jupiter.api.Test"
     },
     {
+      "type": "org.junit.jupiter.api.io.TempDir"
+    },
+    {
       "type": "org.junit.jupiter.engine.JupiterTestEngine"
     },
     {
@@ -20552,6 +21003,12 @@
     },
     {
       "type": "sun.text.resources.cldr.FormatData"
+    },
+    {
+      "type": "sun.text.resources.cldr.FormatData_en"
+    },
+    {
+      "type": "sun.text.resources.cldr.FormatData_en_US"
     },
     {
       "type": "sun.util.resources.cldr.CalendarData"

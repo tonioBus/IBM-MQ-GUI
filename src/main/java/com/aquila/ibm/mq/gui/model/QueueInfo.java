@@ -1,14 +1,14 @@
 package com.aquila.ibm.mq.gui.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Builder
 @AllArgsConstructor
+@Setter
+@Getter
 public class QueueInfo {
     private String queue;
     private String label;
@@ -18,6 +18,7 @@ public class QueueInfo {
     private int openInputCount;
     private int openOutputCount;
     private String description;
+    private String baseQueueName;
     private Map<String, Object> attributes;
 
     public QueueInfo() {
@@ -29,76 +30,9 @@ public class QueueInfo {
         this.attributes = new HashMap<>();
     }
 
-    public String getQueue() {
-        return queue;
-    }
-
-    public void setQueue(String queue) {
-        this.queue = queue;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
+    public QueueInfo(String queue, String label) {
         this.label = label;
-    }
-
-    public int getQueueType() {
-        return queueType;
-    }
-
-    public void setQueueType(int queueType) {
-        this.queueType = queueType;
-    }
-
-    public int getCurrentDepth() {
-        return currentDepth;
-    }
-
-    public void setCurrentDepth(int currentDepth) {
-        this.currentDepth = currentDepth;
-    }
-
-    public int getMaxDepth() {
-        return maxDepth;
-    }
-
-    public void setMaxDepth(int maxDepth) {
-        this.maxDepth = maxDepth;
-    }
-
-    public int getOpenInputCount() {
-        return openInputCount;
-    }
-
-    public void setOpenInputCount(int openInputCount) {
-        this.openInputCount = openInputCount;
-    }
-
-    public int getOpenOutputCount() {
-        return openOutputCount;
-    }
-
-    public void setOpenOutputCount(int openOutputCount) {
-        this.openOutputCount = openOutputCount;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
+        this(queue);
     }
 
     public void setAttribute(String key, Object value) {

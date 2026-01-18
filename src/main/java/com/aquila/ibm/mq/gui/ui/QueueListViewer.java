@@ -3,6 +3,7 @@ package com.aquila.ibm.mq.gui.ui;
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
+import com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
@@ -94,25 +95,30 @@ public class QueueListViewer extends Composite {
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
 
+        TableColumn labelColumn = new TableColumn(table, SWT.LEFT);
+        labelColumn.setText("Label");
+        labelColumn.setWidth(150);
+        labelColumn.addListener(SWT.Selection, e -> sortBy(0));
+
         TableColumn nameColumn = new TableColumn(table, SWT.LEFT);
         nameColumn.setText("Queue Name");
         nameColumn.setWidth(250);
-        nameColumn.addListener(SWT.Selection, e -> sortBy(0));
+        nameColumn.addListener(SWT.Selection, e -> sortBy(1));
 
         TableColumn depthColumn = new TableColumn(table, SWT.RIGHT);
         depthColumn.setText("Depth");
         depthColumn.setWidth(80);
-        depthColumn.addListener(SWT.Selection, e -> sortBy(1));
+        depthColumn.addListener(SWT.Selection, e -> sortBy(2));
 
         TableColumn maxDepthColumn = new TableColumn(table, SWT.RIGHT);
         maxDepthColumn.setText("Max Depth");
         maxDepthColumn.setWidth(80);
-        maxDepthColumn.addListener(SWT.Selection, e -> sortBy(2));
+        maxDepthColumn.addListener(SWT.Selection, e -> sortBy(3));
 
         TableColumn percentColumn = new TableColumn(table, SWT.RIGHT);
         percentColumn.setText("% Full");
         percentColumn.setWidth(70);
-        percentColumn.addListener(SWT.Selection, e -> sortBy(3));
+        percentColumn.addListener(SWT.Selection, e -> sortBy(4));
 
         table.addListener(SWT.Selection, e -> {
             int index = table.getSelectionIndex();
@@ -196,10 +202,11 @@ public class QueueListViewer extends Composite {
     }
 
     private void updateTableItem(TableItem item, QueueInfo queue) {
-        item.setText(0, queue.getQueue());
-        item.setText(1, String.valueOf(queue.getCurrentDepth()));
-        item.setText(2, String.valueOf(queue.getMaxDepth()));
-        item.setText(3, String.format("%.1f%%", queue.getDepthPercentage()));
+        item.setText(0, queue.getLabel() != null ? queue.getLabel() : queue.getQueue());
+        item.setText(1, queue.getQueue());
+        item.setText(2, String.valueOf(queue.getCurrentDepth()));
+        item.setText(3, String.valueOf(queue.getMaxDepth()));
+        item.setText(4, String.format("%.1f%%", queue.getDepthPercentage()));
 
         ThresholdConfig.AlertLevel alertLevel = alertManager.getCurrentAlertLevel(queue.getQueue());
 
@@ -329,14 +336,22 @@ public class QueueListViewer extends Composite {
         String regexPattern = regexFilterText.getText().trim();
         int minDepth = depthFilterSpinner.getSelection();
 
-        // Compile regex pattern
+        // Compile pattern using smart pattern compiler
+        // Automatically detects and converts IBM MQ wildcards (*, ?) to Java regex
         Pattern pattern = null;
         if (!regexPattern.isEmpty()) {
             try {
-                pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
+                pattern = QueueNameRegexCalculator.compileSmartPattern(regexPattern, true);
                 regexFilterText.setBackground(null);  // Clear error indicator
             } catch (PatternSyntaxException e) {
                 // Invalid regex - show error and display all queues
+                regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
+                filteredQueues.addAll(queues);
+                sortQueues();
+                refresh();
+                return;
+            } catch (IllegalArgumentException e) {
+                // Empty pattern - shouldn't happen but handle gracefully
                 regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
                 filteredQueues.addAll(queues);
                 sortQueues();
@@ -394,9 +409,11 @@ public class QueueListViewer extends Composite {
 
     private void sortQueues() {
         Comparator<QueueInfo> comparator = switch (sortColumn) {
-            case 1 -> Comparator.comparingInt(QueueInfo::getCurrentDepth);
-            case 2 -> Comparator.comparingInt(QueueInfo::getMaxDepth);
-            case 3 -> Comparator.comparingDouble(QueueInfo::getDepthPercentage);
+            case 0 -> Comparator.comparing(q -> q.getLabel() != null ? q.getLabel() : "", String.CASE_INSENSITIVE_ORDER);
+            case 1 -> Comparator.comparing(QueueInfo::getQueue);
+            case 2 -> Comparator.comparingInt(QueueInfo::getCurrentDepth);
+            case 3 -> Comparator.comparingInt(QueueInfo::getMaxDepth);
+            case 4 -> Comparator.comparingDouble(QueueInfo::getDepthPercentage);
             default -> Comparator.comparing(QueueInfo::getQueue);
         };
 
