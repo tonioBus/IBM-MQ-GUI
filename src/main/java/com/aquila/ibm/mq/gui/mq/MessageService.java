@@ -106,36 +106,6 @@ public class MessageService {
         }
     }
 
-    public void putMessage(String queueName, byte[] messageData, int priority, int persistence) throws MQException, IOException {
-        MQQueueManager qm = connectionManager.getQueueManager();
-
-        int openOptions = MQConstants.MQOO_OUTPUT | MQConstants.MQOO_FAIL_IF_QUIESCING;
-        MQQueue queue = null;
-
-        try {
-            queue = qm.accessQueue(queueName, openOptions);
-
-            MQMessage message = new MQMessage();
-            message.format = MQConstants.MQFMT_NONE;
-            message.priority = priority;
-            message.persistence = persistence;
-            message.write(messageData);
-
-            MQPutMessageOptions pmo = new MQPutMessageOptions();
-            queue.put(message, pmo);
-
-            logger.info("Put binary message to queue {}, size: {} bytes", queueName, messageData.length);
-        } finally {
-            if (queue != null) {
-                try {
-                    queue.close();
-                } catch (MQException e) {
-                    logger.warn("Error closing queue: {}", e.getMessage());
-                }
-            }
-        }
-    }
-
     public int putMessages(String queueName, String messageData, int priority, int persistence,
                            int count, int delayMs, BatchCallback callback) throws MQException, IOException {
         MQQueueManager qm = connectionManager.getQueueManager();
@@ -192,35 +162,6 @@ public class MessageService {
         return sent;
     }
 
-    public MessageInfo getMessage(String queueName, byte[] messageId) throws MQException {
-        MQQueueManager qm = connectionManager.getQueueManager();
-
-        int openOptions = MQConstants.MQOO_INPUT_AS_Q_DEF | MQConstants.MQOO_FAIL_IF_QUIESCING;
-        MQQueue queue = null;
-
-        try {
-            queue = qm.accessQueue(queueName, openOptions);
-
-            MQMessage message = new MQMessage();
-            message.messageId = messageId;
-
-            MQGetMessageOptions gmo = new MQGetMessageOptions();
-            gmo.options = MQConstants.MQGMO_NO_WAIT;
-            gmo.matchOptions = MQConstants.MQMO_MATCH_MSG_ID;
-
-            queue.get(message, gmo);
-
-            return createMessageInfo(message);
-        } finally {
-            if (queue != null) {
-                try {
-                    queue.close();
-                } catch (MQException e) {
-                    logger.warn("Error closing queue: {}", e.getMessage());
-                }
-            }
-        }
-    }
 
     private MessageInfo createMessageInfo(MQMessage message) {
         MessageInfo msgInfo = new MessageInfo();
@@ -241,9 +182,7 @@ public class MessageService {
             message.readFully(messageBytes);
             msgInfo.setMessageBytes(messageBytes);
 
-            if (message.format.trim().equals(MQConstants.MQFMT_STRING) ||
-//                message.characterSet == MQConstants.CCSID_UTF8 ||
-                message.characterSet == 1208) {
+            if (message.format.trim().equals(MQConstants.MQFMT_STRING) || message.characterSet == 1208) {
                 String messageData = new String(messageBytes, StandardCharsets.UTF_8);
                 msgInfo.setMessageData(messageData);
             } else {
@@ -257,23 +196,4 @@ public class MessageService {
         return msgInfo;
     }
 
-    public int getMessageCount(String queueName) throws MQException {
-        MQQueueManager qm = connectionManager.getQueueManager();
-
-        int openOptions = MQConstants.MQOO_INQUIRE | MQConstants.MQOO_FAIL_IF_QUIESCING;
-        MQQueue queue = null;
-
-        try {
-            queue = qm.accessQueue(queueName, openOptions);
-            return queue.getCurrentDepth();
-        } finally {
-            if (queue != null) {
-                try {
-                    queue.close();
-                } catch (MQException e) {
-                    logger.warn("Error closing queue: {}", e.getMessage());
-                }
-            }
-        }
-    }
 }

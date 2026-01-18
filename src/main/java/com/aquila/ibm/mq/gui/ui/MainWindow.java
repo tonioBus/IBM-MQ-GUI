@@ -50,6 +50,9 @@ public class MainWindow {
     private QueueHandlesPanel queueHandlesPanel;
     private Label statusLabel;
     private Label alertLabel;
+    private Button autoRefreshButton;
+    private Combo refreshIntervalCombo;
+    private boolean autoRefreshEnabled = false;
 
     private QueueInfo selectedQueue;
 
@@ -247,7 +250,7 @@ public class MainWindow {
     private void createStatusBar() {
         Composite statusBar = new Composite(shell, SWT.NONE);
         statusBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        GridLayout layout = new GridLayout(2, false);
+        GridLayout layout = new GridLayout(6, false);
         layout.marginHeight = 2;
         statusBar.setLayout(layout);
 
@@ -258,6 +261,59 @@ public class MainWindow {
         alertLabel = new Label(statusBar, SWT.NONE);
         alertLabel.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
         alertLabel.setText("");
+
+        new Label(statusBar, SWT.SEPARATOR | SWT.VERTICAL)
+                .setLayoutData(new GridData(SWT.CENTER, SWT.FILL, false, false));
+
+        Label refreshLabel = new Label(statusBar, SWT.NONE);
+        refreshLabel.setText("Refresh:");
+
+        refreshIntervalCombo = new Combo(statusBar, SWT.READ_ONLY);
+        refreshIntervalCombo.add("1s");
+        refreshIntervalCombo.add("5s");
+        refreshIntervalCombo.add("10s");
+        refreshIntervalCombo.add("30s");
+        refreshIntervalCombo.add("1min");
+        refreshIntervalCombo.add("5min");
+        refreshIntervalCombo.select(1);
+        refreshIntervalCombo.addListener(SWT.Selection, e -> updateRefreshInterval());
+
+        autoRefreshButton = new Button(statusBar, SWT.TOGGLE);
+        autoRefreshButton.setText("Auto");
+        autoRefreshButton.setToolTipText("Toggle automatic refresh of queue information");
+        autoRefreshButton.addListener(SWT.Selection, e -> {
+            autoRefreshEnabled = autoRefreshButton.getSelection();
+            toggleAutoRefresh(autoRefreshEnabled);
+            updateAutoRefreshButtonState();
+        });
+    }
+
+    private void updateAutoRefreshButtonState() {
+        if (autoRefreshEnabled) {
+            autoRefreshButton.setText("Auto ON");
+        } else {
+            autoRefreshButton.setText("Auto");
+        }
+    }
+
+    private void updateRefreshInterval() {
+        if (queueMonitor != null && queueMonitor.isRunning()) {
+            int intervalMs = getSelectedRefreshInterval();
+            queueMonitor.setRefreshInterval(intervalMs);
+        }
+    }
+
+    private int getSelectedRefreshInterval() {
+        int index = refreshIntervalCombo.getSelectionIndex();
+        return switch (index) {
+            case 0 -> 1000;
+            case 1 -> 5000;
+            case 2 -> 10000;
+            case 3 -> 30000;
+            case 4 -> 60000;
+            case 5 -> 300000;
+            default -> 10000;
+        };
     }
 
     private void showConnectionDialog() {
@@ -345,7 +401,8 @@ public class MainWindow {
 
     private void startMonitoring() {
         if (queueMonitor == null || !queueMonitor.isRunning()) {
-            queueMonitor = new QueueMonitor(queueService, alertManager);
+            queueMonitor = new QueueMonitor(this, queueService, alertManager);
+            queueMonitor.setRefreshInterval(getSelectedRefreshInterval());
             queueMonitor.setMonitoredQueues(queueListViewer.getQueues());
             queueMonitor.setListener(new QueueMonitor.QueueMonitorListener() {
                 @Override
@@ -417,71 +474,88 @@ public class MainWindow {
         } else if (event.type == HierarchyTreeViewer.SelectionType.QUEUE_BROWSER) {
             final QueueBrowserConfig queueBrowserConfig = event.node.getQueueBrowserConfig();
             final String connectionId = queueBrowserConfig.getQueueManager();
-            if (queueBrowserConfig.getDescriptions() == null) {
-                log.error("queueBrowserConfig.getDescriptions() null for {}", queueBrowserConfig);
+            refreshQueueList(queueBrowserConfig, connectionId, event.node.getName(), event.node.getId());
+        }
+    }
+
+    public void refreshQueueList() {
+        HierarchyNode node = this.hierarchyTreeViewer.getLastSelectedNode();
+        log.info("refreshQueueList: {}", node);
+        if (node != null && node.getQueueBrowserConfig() != null) {
+            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
+            refreshQueueList(queueBrowserConfig, queueBrowserConfig.getQueueManager(), node.getName(), node.getId());
+        }
+    }
+
+    private void refreshQueueList(final QueueBrowserConfig queueBrowserConfig,
+                                  final String connectionId,
+                                  final String nodeName,
+                                  final String nodeId) {
+        if (queueBrowserConfig.getDescriptions() == null) {
+            log.error("queueBrowserConfig.getDescriptions() null for {}", queueBrowserConfig);
+            return;
+        }
+        final List<QueueInfo> queueInfos = queueBrowserConfig.getDescriptions().entrySet().stream()
+                .map(e -> new QueueInfo(e.getKey(), e.getValue().label()))
+                .toList();
+        log.info("number of queues to retrieve: {}", queueInfos.size());
+        if (!connectionManager.isConnected(connectionId)) {
+            QueueManagerConfig config = findConnectionConfig(connectionId);
+            if (config == null) {
+                showError("Configuration Not Found",
+                        "Connection configuration not found for: " + connectionId);
                 return;
             }
-            final List<QueueInfo> queueInfos = queueBrowserConfig.getDescriptions().entrySet().stream()
-                    .map(e -> new QueueInfo(e.getKey(), e.getValue().label()))
-                    .toList();
-            log.info("number of queues to retrieve: {}", queueInfos.size());
-            if (!connectionManager.isConnected(connectionId)) {
-                QueueManagerConfig config = findConnectionConfig(connectionId);
-                if (config == null) {
-                    showError("Configuration Not Found",
-                            "Connection configuration not found for: " + connectionId);
-                    return;
+
+            // Show progress immediately
+            queueListViewer.showProgress("Connecting to " + nodeName + "...");
+
+            // Run connection in background thread
+            new Thread(() -> {
+                try {
+                    // BLOCKING CALL - but on background thread
+                    connectionManager.connect(connectionId, config);
+
+                    // Update icon on UI thread
+                    display.asyncExec(() -> {
+                        hierarchyTreeViewer.updateNodeIcon(nodeId);
+                        queueListViewer.updateProgress("Loading queues...");
+                    });
+
+                    // Set active and load queues (BLOCKING)
+                    connectionManager.setActiveConnection(connectionId);
+                    queueService.populateQueueInfos(queueInfos, queueBrowserConfig.isSequencialQueueRequest());
+
+                    // Update UI on UI thread
+                    display.asyncExec(() -> {
+                        queueListViewer.setQueues(queueInfos);
+                        queueListViewer.hideProgress();
+                        updateStatus("Connected to " + nodeName);
+
+                        // Update panels
+                        if (depthChartPanel != null) {
+                            depthChartPanel.setQueues(queueInfos);
+                        }
+                    });
+
+                } catch (Exception e) {
+                    log.error("Connection failed", e);
+                    display.asyncExec(() -> {
+                        queueListViewer.hideProgress();
+                        showError("Connection Failed", e.getMessage());
+                        hierarchyTreeViewer.updateNodeIcon(nodeId);
+                    });
                 }
-
-                // Show progress immediately
-                queueListViewer.showProgress("Connecting to " + event.node.getName() + "...");
-
-                // Run connection in background thread
-                String qmName = event.node.getName();
-                String nodeId = event.node.getId();
-                new Thread(() -> {
-                    try {
-                        // BLOCKING CALL - but on background thread
-                        connectionManager.connect(connectionId, config);
-
-                        // Update icon on UI thread
-                        display.asyncExec(() -> {
-                            hierarchyTreeViewer.updateNodeIcon(nodeId);
-                            queueListViewer.updateProgress("Loading queues...");
-                        });
-
-                        // Set active and load queues (BLOCKING)
-                        connectionManager.setActiveConnection(connectionId);
-                        queueService.populateQueueInfos(queueInfos, queueBrowserConfig.isSequencialQueueRequest());
-
-                        // Update UI on UI thread
-                        display.asyncExec(() -> {
-                            queueListViewer.setQueues(queueInfos);
-                            queueListViewer.hideProgress();
-                            updateStatus("Connected to " + qmName);
-
-                            // Update panels
-                            if (depthChartPanel != null) {
-                                depthChartPanel.setQueues(queueInfos);
-                            }
-                        });
-
-                    } catch (Exception e) {
-                        log.error("Connection failed", e);
-                        display.asyncExec(() -> {
-                            queueListViewer.hideProgress();
-                            showError("Connection Failed", e.getMessage());
-                            hierarchyTreeViewer.updateNodeIcon(nodeId);
-                        });
-                    }
-                }).start();
-                return; // Don't continue with synchronous flow
-            }
-
-            // If already connected, just set active and load queues
-            connectionManager.setActiveConnection(connectionId);
-            loadQueuesAsync(event.node.getName(), queueInfos, queueBrowserConfig.isSequencialQueueRequest());
+            }).start();
+            return;
         }
+        // If already connected, just set active and load queues
+        connectionManager.setActiveConnection(connectionId);
+        Display.getDefault().syncExec(new Runnable() {
+            public void run() {
+                loadQueuesAsync(nodeName, queueInfos, queueBrowserConfig.isSequencialQueueRequest());
+            }
+        });
     }
 
     private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos, boolean sequentialQueueRequest) {

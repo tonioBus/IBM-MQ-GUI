@@ -6,6 +6,7 @@ import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
+import lombok.Getter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.*;
 import org.eclipse.swt.events.KeyAdapter;
@@ -45,6 +46,8 @@ public class HierarchyTreeViewer extends Composite {
     private Image folderIcon;
     private Image connectedIcon;
     private Image errorIcon;
+    @Getter
+    private HierarchyNode lastSelectedNode;
 
     /**
      * Event fired when a tree node is selected.
@@ -476,7 +479,7 @@ public class HierarchyTreeViewer extends Composite {
 //            final String description = queueBrowserConfig == null || queueBrowserConfig.getQueueManager() == null ? "?" : queueBrowserConfig.getQueueManager();
 //            item.setText(String.format("%s %s", description, node.getName()));
 //        } else
-            item.setText(node.getName());
+        item.setText(node.getName());
         item.setImage(getNodeIcon(node));
 
         // Store mappings
@@ -532,6 +535,7 @@ public class HierarchyTreeViewer extends Composite {
             fireSelectionEvent(node, SelectionType.FOLDER);
         } else {
             fireSelectionEvent(node, SelectionType.QUEUE_BROWSER);
+            this.lastSelectedNode = node;
         }
     }
 
