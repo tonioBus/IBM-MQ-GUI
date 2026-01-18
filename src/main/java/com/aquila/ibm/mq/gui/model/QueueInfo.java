@@ -18,6 +18,7 @@ public class QueueInfo {
     private int openInputCount;
     private int openOutputCount;
     private String description;
+    private String baseQueueName;
     private Map<String, Object> attributes;
 
     public QueueInfo() {

@@ -641,7 +641,7 @@ public class HierarchyTreeViewer extends Composite {
                 selectedNode.getId() :
                 null;
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
-                getShell(), configManager, null, false);
+                getShell(), configManager, selectedNode, false);
         final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
         log.info("addQueueBrowser: {}", queueBrowserConfig);
         if (queueBrowserConfig != null) {

@@ -1,5 +1,6 @@
 package com.aquila.ibm.mq.gui.mq;
 
+import com.aquila.ibm.mq.gui.model.QueueHandle;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator;
 import com.ibm.mq.MQException;
@@ -12,15 +13,12 @@ import com.ibm.mq.headers.pcf.PCFException;
 import com.ibm.mq.headers.pcf.PCFMessage;
 import com.ibm.mq.headers.pcf.PCFMessageAgent;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 
 @Slf4j
 public class QueueService {
-    private static final Logger log = LoggerFactory.getLogger(QueueService.class);
     private final MQConnectionManager connectionManager;
 
     public QueueService(MQConnectionManager connectionManager) {
@@ -67,7 +65,7 @@ public class QueueService {
 
         // Request all queues (use wildcard)
         request.addParameter(CMQC.MQCA_Q_NAME, "*");
-        request.addParameter(MQConstants.MQIA_Q_TYPE, MQConstants.MQQT_LOCAL);
+        request.addParameter(MQConstants.MQIA_Q_TYPE, CMQC.MQQT_ALL); //  | MQConstants.MQQT_ALIAS | MQConstants.MQQT_REMOTE);
 
         // Specify which attributes to retrieve
         request.addParameter(CMQCFC.MQIACF_Q_ATTRS, new int[]{
@@ -83,14 +81,15 @@ public class QueueService {
         for (PCFMessage response : responses) {
             try {
                 final String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
-                int queueType = response.getIntParameterValue(CMQC.MQIA_Q_TYPE);
-                int currentDepth = response.getIntParameterValue(CMQC.MQIA_CURRENT_Q_DEPTH);
-                int maxDepth = response.getIntParameterValue(CMQC.MQIA_MAX_Q_DEPTH);
-
                 final QueueInfo queueInfo = new QueueInfo(queueName);
+                int queueType = response.getIntParameterValue(CMQC.MQIA_Q_TYPE);
+                if (queueType == CMQC.MQQT_LOCAL) {
+                    int currentDepth = response.getIntParameterValue(CMQC.MQIA_CURRENT_Q_DEPTH);
+                    int maxDepth = response.getIntParameterValue(CMQC.MQIA_MAX_Q_DEPTH);
+                    queueInfo.setCurrentDepth(currentDepth);
+                    queueInfo.setMaxDepth(maxDepth);
+                }
                 queueInfo.setQueueType(queueType);
-                queueInfo.setCurrentDepth(currentDepth);
-                queueInfo.setMaxDepth(maxDepth);
                 queueInfo.setQueueType(queueType);
                 queues.add(queueInfo);
             } catch (Exception e) {
@@ -100,7 +99,7 @@ public class QueueService {
         return queues;
     }
 
-    public QueueInfo getQueueInfo(String queueName) throws MQException, IOException, MQDataException {
+    public QueueInfo getQueueInfo(String queueName) throws IOException, MQDataException {
         final MQQueueManager qm = connectionManager.getQueueManager();
 
         final PCFMessageAgent agent = new PCFMessageAgent(qm);
@@ -150,7 +149,8 @@ public class QueueService {
             List<String> optimizedIBMMQPatterns = QueueNameRegexCalculator.createOptimizedIBMMQPatterns(queueNames);
             for (final String optimizedIBMMQPattern : optimizedIBMMQPatterns) {
                 final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-                request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
+                //request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
+                request.addParameter(MQConstants.MQCA_Q_NAME, "DEV.QUEUE.*");
                 log.info("Before agent.send() optimise ({})", optimizedIBMMQPattern);
                 final PCFMessage[] responses = agent.send(request);
                 log.info("After agent.send() optimise responses;{}", responses.length);
@@ -172,7 +172,8 @@ public class QueueService {
                 if (queueInfo != null) {
                     log.info("populateQueueInfo({}) -> {}", queueName, queueInfo);
                     populateQueueInfo(queueInfo, response);
-                } else log.error("QueueName:{} not found on PCF agent response", queueName);
+                } else
+                    log.warn("QueueName:{} found on PCF agent response but not part of the list: ignored", queueName);
             } catch (PCFException e) {
                 log.error("Can not retrieve queue name", e);
             }
@@ -181,24 +182,36 @@ public class QueueService {
 
     private void populateQueueInfo(QueueInfo queueInfo, PCFMessage response) {
         try {
-            queueInfo.setCurrentDepth(response.getIntParameterValue(MQConstants.MQIA_CURRENT_Q_DEPTH));
-            queueInfo.setMaxDepth(response.getIntParameterValue(MQConstants.MQIA_MAX_Q_DEPTH));
             queueInfo.setQueueType(response.getIntParameterValue(MQConstants.MQIA_Q_TYPE));
-            queueInfo.setOpenInputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_INPUT_COUNT));
-            queueInfo.setOpenOutputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_OUTPUT_COUNT));
-
+            if(queueInfo.getQueueType() == CMQC.MQQT_LOCAL) {
+                queueInfo.setCurrentDepth(response.getIntParameterValue(MQConstants.MQIA_CURRENT_Q_DEPTH));
+                queueInfo.setMaxDepth(response.getIntParameterValue(MQConstants.MQIA_MAX_Q_DEPTH));
+                queueInfo.setOpenInputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_INPUT_COUNT));
+                queueInfo.setOpenOutputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_OUTPUT_COUNT));
+            }
             final String desc = response.getStringParameterValue(MQConstants.MQCA_Q_DESC);
             queueInfo.setDescription(desc != null ? desc.trim() : "");
 
-            queueInfo.setAttribute("CreationDate", response.getStringParameterValue(MQConstants.MQCA_CREATION_DATE));
-            queueInfo.setAttribute("CreationTime", response.getStringParameterValue(MQConstants.MQCA_CREATION_TIME));
+            // Retrieve base queue name for alias queues
+            if (queueInfo.getQueueType() == MQConstants.MQQT_ALIAS) {
+                try {
+                    final String baseQueueName = response.getStringParameterValue(MQConstants.MQCA_BASE_Q_NAME);
+                    queueInfo.setBaseQueueName(baseQueueName != null ? baseQueueName.trim() : null);
+                } catch (PCFException e) {
+                    log.debug("Base queue name not available for {}", queueInfo.getQueue());
+                }
+            }
+            if (queueInfo.getQueueType() == MQConstants.MQQT_LOCAL) {
+                queueInfo.setAttribute("CreationDate", response.getStringParameterValue(MQConstants.MQCA_CREATION_DATE));
+                queueInfo.setAttribute("CreationTime", response.getStringParameterValue(MQConstants.MQCA_CREATION_TIME));
+                queueInfo.setAttribute("Shareability", response.getIntParameterValue(MQConstants.MQIA_SHAREABILITY));
+                queueInfo.setAttribute("TriggerControl", response.getIntParameterValue(MQConstants.MQIA_TRIGGER_CONTROL));
+                queueInfo.setAttribute("MaxMsgLength", response.getIntParameterValue(MQConstants.MQIA_MAX_MSG_LENGTH));
+            }
             queueInfo.setAttribute("InhibitPut", response.getIntParameterValue(MQConstants.MQIA_INHIBIT_PUT));
             queueInfo.setAttribute("InhibitGet", response.getIntParameterValue(MQConstants.MQIA_INHIBIT_GET));
-            queueInfo.setAttribute("Shareability", response.getIntParameterValue(MQConstants.MQIA_SHAREABILITY));
             queueInfo.setAttribute("DefPriority", response.getIntParameterValue(MQConstants.MQIA_DEF_PRIORITY));
             queueInfo.setAttribute("DefPersistence", response.getIntParameterValue(MQConstants.MQIA_DEF_PERSISTENCE));
-            queueInfo.setAttribute("TriggerControl", response.getIntParameterValue(MQConstants.MQIA_TRIGGER_CONTROL));
-            queueInfo.setAttribute("MaxMsgLength", response.getIntParameterValue(MQConstants.MQIA_MAX_MSG_LENGTH));
 
         } catch (Exception e) {
             log.warn("Error populating queue info for {}", queueInfo.getQueue(), e);
@@ -242,6 +255,137 @@ public class QueueService {
             case CMQC.MQQT_CLUSTER -> "CLUSTER";
             default -> "UNKNOWN";
         };
+    }
+
+    /**
+     * Get all handles (processes/applications) currently using a queue.
+     *
+     * @param queueName The name of the queue to query
+     * @return List of QueueHandle objects representing each connection to the queue
+     */
+    public List<QueueHandle> getQueueHandles(String queueName) throws IOException, MQDataException {
+        final List<QueueHandle> handles = new ArrayList<>();
+        final MQQueueManager qm = connectionManager.getQueueManager();
+        final PCFMessageAgent agent = new PCFMessageAgent(qm);
+
+        try {
+            final PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q_STATUS);
+            request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
+            // MQQSOT_HANDLE = 1 (handle status type)
+            request.addParameter(CMQCFC.MQIACF_Q_STATUS_TYPE, 1);
+
+            final PCFMessage[] responses = agent.send(request);
+            log.info("Found {} handles for queue {}", responses.length, queueName);
+
+            for (PCFMessage response : responses) {
+                try {
+                    QueueHandle handle = parseQueueHandle(response, queueName);
+                    handles.add(handle);
+                } catch (Exception e) {
+                    log.warn("Error parsing handle for queue {}", queueName, e);
+                }
+            }
+        } catch (PCFException e) {
+            // MQRCCF_CHL_STATUS_NOT_FOUND or similar - no handles open
+            if (e.getReason() == MQConstants.MQRCCF_CHL_STATUS_NOT_FOUND ||
+                    e.getReason() == MQConstants.MQRC_UNKNOWN_OBJECT_NAME) {
+                log.debug("No handles found for queue {}", queueName);
+            } else {
+                throw e;
+            }
+        } finally {
+            agent.disconnect();
+        }
+
+        return handles;
+    }
+
+    /**
+     * Get all handles for all queues on the queue manager.
+     *
+     * @return List of QueueHandle objects for all queues
+     */
+    public List<QueueHandle> getAllQueueHandles() throws IOException, MQDataException {
+        return getQueueHandles("*");
+    }
+
+    private QueueHandle parseQueueHandle(PCFMessage response, String queueName) {
+        QueueHandle.QueueHandleBuilder builder = QueueHandle.builder();
+
+        // Queue name (may differ from input if wildcard was used)
+        try {
+            builder.queueName(response.getStringParameterValue(MQConstants.MQCA_Q_NAME).trim());
+        } catch (PCFException e) {
+            builder.queueName(queueName);
+        }
+
+        // Application name/tag
+        try {
+            builder.applicationName(response.getStringParameterValue(MQConstants.MQCACF_APPL_TAG).trim());
+        } catch (PCFException e) {
+            builder.applicationName("Unknown");
+        }
+
+        // Process ID
+        try {
+            builder.processId(response.getIntParameterValue(MQConstants.MQIACF_PROCESS_ID));
+        } catch (PCFException e) {
+            builder.processId(0);
+        }
+
+        // Thread ID
+        try {
+            builder.threadId(response.getIntParameterValue(MQConstants.MQIACF_THREAD_ID));
+        } catch (PCFException e) {
+            builder.threadId(0);
+        }
+
+        // User ID
+        try {
+            builder.userId(response.getStringParameterValue(MQConstants.MQCACF_USER_IDENTIFIER).trim());
+        } catch (PCFException e) {
+            builder.userId("Unknown");
+        }
+
+        // Channel name (for client connections)
+        try {
+            builder.channelName(response.getStringParameterValue(MQConstants.MQCACH_CHANNEL_NAME).trim());
+        } catch (PCFException e) {
+            builder.channelName("");
+        }
+
+        // Connection ID
+        try {
+            byte[] connId = response.getBytesParameterValue(MQConstants.MQBACF_CONNECTION_ID);
+            builder.connectionId(bytesToHex(connId));
+        } catch (PCFException e) {
+            builder.connectionId("");
+        }
+
+        // Open options
+        try {
+            int openOptions = response.getIntParameterValue(MQConstants.MQIACF_OPEN_OPTIONS);
+            builder.openOptions(openOptions);
+            builder.openForInput((openOptions & MQConstants.MQOO_INPUT_AS_Q_DEF) != 0 ||
+                    (openOptions & MQConstants.MQOO_INPUT_SHARED) != 0 ||
+                    (openOptions & MQConstants.MQOO_INPUT_EXCLUSIVE) != 0);
+            builder.openForOutput((openOptions & MQConstants.MQOO_OUTPUT) != 0);
+            builder.openForBrowse((openOptions & MQConstants.MQOO_BROWSE) != 0);
+            builder.openForInquire((openOptions & MQConstants.MQOO_INQUIRE) != 0);
+        } catch (PCFException e) {
+            builder.openOptions(0);
+        }
+
+        return builder.build();
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        if (bytes == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
     }
 
 }

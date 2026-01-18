@@ -129,12 +129,13 @@ public class QueueBrowserDialog {
         selectedQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         if (this.hierarchyNode != null) {
             java.util.List<QueueInfo> queues = new ArrayList<>();
-            this.hierarchyNode.getQueueBrowserConfig().getDescriptions().entrySet().forEach(entry -> {
-                queues.add(QueueInfo.builder()
-                        .queue(entry.getKey())
-                        .label(entry.getValue().label())
-                        .build());
-            });
+            if (this.hierarchyNode.getQueueBrowserConfig() != null)
+                this.hierarchyNode.getQueueBrowserConfig().getDescriptions().entrySet().forEach(entry -> {
+                    queues.add(QueueInfo.builder()
+                            .queue(entry.getKey())
+                            .label(entry.getValue().label())
+                            .build());
+                });
             selectedQueuesViewer.setQueues(queues);
         }
     }
@@ -150,8 +151,7 @@ public class QueueBrowserDialog {
         if (edit && hierarchyNode.getQueueBrowserConfig() != null && hierarchyNode.getQueueBrowserConfig().getLabel() != null) {
             labelSz = hierarchyNode.getQueueBrowserConfig().getLabel();
         } else {
-            assert hierarchyNode.getQueueBrowserConfig() != null;
-            labelSz = hierarchyNode.getQueueBrowserConfig().getQueueManager();
+            labelSz = "DEFAULT";
         }
         label.setText(labelSz);
     }

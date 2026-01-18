@@ -46,13 +46,14 @@ public class QueuePropertiesPanel extends Composite {
         }
 
         addProperty("Queue Name", currentQueue.getQueue());
+        addProperty("Queue Type", getQueueTypeName(currentQueue.getQueueType()));
+        addProperty("Base Queue Name", currentQueue.getBaseQueueName());
+        addProperty("Description", currentQueue.getDescription());
         addProperty("Current Depth", String.valueOf(currentQueue.getCurrentDepth()));
         addProperty("Max Depth", String.valueOf(currentQueue.getMaxDepth()));
         addProperty("Depth Percentage", String.format("%.2f%%", currentQueue.getDepthPercentage()));
         addProperty("Open Input Count", String.valueOf(currentQueue.getOpenInputCount()));
         addProperty("Open Output Count", String.valueOf(currentQueue.getOpenOutputCount()));
-        addProperty("Queue Type", getQueueTypeName(currentQueue.getQueueType()));
-        addProperty("Description", currentQueue.getDescription());
 
         addSeparator();
 

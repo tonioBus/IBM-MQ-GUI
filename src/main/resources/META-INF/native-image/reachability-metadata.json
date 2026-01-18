@@ -594,6 +594,9 @@
         },
         {
           "name": "queuePattern"
+        },
+        {
+          "name": "sequencialQueueRequest"
         }
       ]
     },
