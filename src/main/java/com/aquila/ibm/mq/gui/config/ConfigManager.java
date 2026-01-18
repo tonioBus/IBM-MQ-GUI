@@ -1,6 +1,7 @@
 package com.aquila.ibm.mq.gui.config;
 
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
+import com.aquila.ibm.mq.gui.model.MessageTemplate;
 import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
@@ -24,6 +25,7 @@ public class ConfigManager {
     private static final String CONNECTIONS_FILE = "connections.json";
     private static final String THRESHOLDS_FILE = "thresholds.json";
     private static final String HIERARCHY_FILE = "hierarchy.json";
+    private static final String MESSAGE_TEMPLATES_FILE = "message_templates.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private Map<String, QueueManagerConfig> queueManagers = loadConnections();
     @Getter
@@ -237,4 +239,52 @@ public class ConfigManager {
         queueBrowserConfig.save(id);
     }
 
+    public Map<String, MessageTemplate> loadMessageTemplates() {
+        final File file = new File(CONFIG_DIR, MESSAGE_TEMPLATES_FILE);
+        if (!file.exists()) {
+            log.info("No message templates file found, returning empty map");
+            return new HashMap<>();
+        }
+
+        try (Reader reader = new FileReader(file)) {
+            final Type mapType = new TypeToken<Map<String, MessageTemplate>>() {
+            }.getType();
+            final Map<String, MessageTemplate> templates = gson.fromJson(reader, mapType);
+            log.info("Loaded {} message template(s)", templates != null ? templates.size() : 0);
+            return templates != null ? templates : new HashMap<>();
+        } catch (IOException e) {
+            log.error("Failed to load message templates", e);
+            return new HashMap<>();
+        }
+    }
+
+    public void saveMessageTemplates(Map<String, MessageTemplate> templates) {
+        final File file = new File(CONFIG_DIR, MESSAGE_TEMPLATES_FILE);
+        try (Writer writer = new FileWriter(file)) {
+            gson.toJson(templates, writer);
+            log.info("Saved {} message template(s)", templates.size());
+        } catch (IOException e) {
+            log.error("Failed to save message templates", e);
+        }
+    }
+
+    public void saveMessageTemplate(MessageTemplate template) {
+        final Map<String, MessageTemplate> templates = loadMessageTemplates();
+        templates.put(template.getName(), template);
+        saveMessageTemplates(templates);
+    }
+
+    public void deleteMessageTemplate(String name) {
+        final Map<String, MessageTemplate> templates = loadMessageTemplates();
+        templates.remove(name);
+        saveMessageTemplates(templates);
+        log.info("Deleted message template: {}", name);
+    }
+
+    public MessageTemplate getMessageTemplate(String name) {
+        final Map<String, MessageTemplate> templates = loadMessageTemplates();
+        return templates.get(name);
+    }
+
 }
+

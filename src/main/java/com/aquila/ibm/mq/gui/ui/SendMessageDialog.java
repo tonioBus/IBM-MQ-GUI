@@ -1,5 +1,7 @@
 package com.aquila.ibm.mq.gui.ui;
 
+import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.model.MessageTemplate;
 import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.ibm.mq.constants.MQConstants;
 import org.eclipse.swt.SWT;
@@ -9,12 +11,14 @@ import org.eclipse.swt.widgets.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SendMessageDialog {
     private static final Logger logger = LoggerFactory.getLogger(SendMessageDialog.class);
     private final Shell parent;
     private final MessageService messageService;
+    private final ConfigManager configManager;
     private Shell shell;
     private String queueName;
     private Text messageText;
@@ -27,12 +31,14 @@ public class SendMessageDialog {
     private Composite progressPanel;
     private Button sendButton;
     private Button closeButton;
+    private Combo templateCombo;
     private final AtomicBoolean cancelled = new AtomicBoolean(false);
     private volatile boolean isSending = false;
 
-    public SendMessageDialog(Shell parent, MessageService messageService) {
+    public SendMessageDialog(Shell parent, MessageService messageService, ConfigManager configManager) {
         this.parent = parent;
         this.messageService = messageService;
+        this.configManager = configManager;
     }
 
     public void open(String queueName) {
@@ -41,8 +47,9 @@ public class SendMessageDialog {
         shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.RESIZE);
         shell.setText("Send Message to " + queueName);
         shell.setLayout(new GridLayout(1, false));
-        shell.setSize(600, 550);
+        shell.setSize(600, 600);
 
+        createTemplateArea();
         createMessageArea();
         createOptionsArea();
         createBatchOptionsArea();
@@ -50,6 +57,107 @@ public class SendMessageDialog {
         createButtons();
 
         shell.open();
+    }
+
+    private void createTemplateArea() {
+        Group templateGroup = new Group(shell, SWT.NONE);
+        templateGroup.setText("Template");
+        templateGroup.setLayout(new GridLayout(4, false));
+        templateGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        new Label(templateGroup, SWT.NONE).setText("Template:");
+        templateCombo = new Combo(templateGroup, SWT.READ_ONLY);
+        templateCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        refreshTemplateCombo();
+        templateCombo.addListener(SWT.Selection, e -> loadSelectedTemplate());
+
+        Button saveTemplateButton = new Button(templateGroup, SWT.PUSH);
+        saveTemplateButton.setText("Save...");
+        saveTemplateButton.addListener(SWT.Selection, e -> saveTemplate());
+
+        Button deleteTemplateButton = new Button(templateGroup, SWT.PUSH);
+        deleteTemplateButton.setText("Delete");
+        deleteTemplateButton.addListener(SWT.Selection, e -> deleteSelectedTemplate());
+    }
+
+    private void refreshTemplateCombo() {
+        templateCombo.removeAll();
+        templateCombo.add("");
+        Map<String, MessageTemplate> templates = configManager.loadMessageTemplates();
+        for (String name : templates.keySet()) {
+            templateCombo.add(name);
+        }
+        templateCombo.select(0);
+    }
+
+    private void loadSelectedTemplate() {
+        String selected = templateCombo.getText();
+        if (selected == null || selected.isEmpty()) {
+            return;
+        }
+
+        MessageTemplate template = configManager.getMessageTemplate(selected);
+        if (template != null) {
+            messageText.setText(template.getContent() != null ? template.getContent() : "");
+            prioritySpinner.setSelection(template.getPriority());
+            persistenceCombo.select(getPersistenceIndex(template.getPersistence()));
+            messageCountSpinner.setSelection(template.getMessageCount() > 0 ? template.getMessageCount() : 1);
+            delaySpinner.setSelection(template.getDelayMs());
+        }
+    }
+
+    private int getPersistenceIndex(int persistence) {
+        return switch (persistence) {
+            case MQConstants.MQPER_NOT_PERSISTENT -> 0;
+            case MQConstants.MQPER_PERSISTENT -> 1;
+            default -> 2;
+        };
+    }
+
+    private void saveTemplate() {
+        InputDialog dialog = new InputDialog(shell, "Save Template", "Enter template name:", "");
+        String name = dialog.open();
+        if (name != null && !name.trim().isEmpty()) {
+            MessageTemplate template = new MessageTemplate(
+                    name.trim(),
+                    messageText.getText(),
+                    prioritySpinner.getSelection(),
+                    getPersistenceValue(),
+                    messageCountSpinner.getSelection(),
+                    delaySpinner.getSelection()
+            );
+            configManager.saveMessageTemplate(template);
+            refreshTemplateCombo();
+            selectTemplate(name.trim());
+            showInfo("Template saved successfully");
+        }
+    }
+
+    private void selectTemplate(String name) {
+        String[] items = templateCombo.getItems();
+        for (int i = 0; i < items.length; i++) {
+            if (items[i].equals(name)) {
+                templateCombo.select(i);
+                break;
+            }
+        }
+    }
+
+    private void deleteSelectedTemplate() {
+        String selected = templateCombo.getText();
+        if (selected == null || selected.isEmpty()) {
+            showError("Please select a template to delete");
+            return;
+        }
+
+        MessageBox confirmBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
+        confirmBox.setText("Confirm Delete");
+        confirmBox.setMessage("Delete template '" + selected + "'?");
+        if (confirmBox.open() == SWT.YES) {
+            configManager.deleteMessageTemplate(selected);
+            refreshTemplateCombo();
+            showInfo("Template deleted");
+        }
     }
 
     private void createMessageArea() {
@@ -249,6 +357,7 @@ public class SendMessageDialog {
         persistenceCombo.setEnabled(enabled);
         messageCountSpinner.setEnabled(enabled);
         delaySpinner.setEnabled(enabled);
+        templateCombo.setEnabled(enabled);
         closeButton.setEnabled(enabled);
     }
 
@@ -278,5 +387,65 @@ public class SendMessageDialog {
         box.setText("Success");
         box.setMessage(message);
         box.open();
+    }
+
+    private static class InputDialog {
+        private final Shell parent;
+        private final String title;
+        private final String message;
+        private final String initialValue;
+        private String result;
+
+        public InputDialog(Shell parent, String title, String message, String initialValue) {
+            this.parent = parent;
+            this.title = title;
+            this.message = message;
+            this.initialValue = initialValue;
+        }
+
+        public String open() {
+            Shell dialog = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+            dialog.setText(title);
+            dialog.setLayout(new GridLayout(2, false));
+
+            Label label = new Label(dialog, SWT.NONE);
+            label.setText(message);
+            label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
+
+            Text text = new Text(dialog, SWT.BORDER);
+            text.setText(initialValue);
+            GridData textData = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+            textData.widthHint = 250;
+            text.setLayoutData(textData);
+
+            Button okButton = new Button(dialog, SWT.PUSH);
+            okButton.setText("OK");
+            okButton.setLayoutData(new GridData(SWT.END, SWT.CENTER, true, false));
+            okButton.addListener(SWT.Selection, e -> {
+                result = text.getText();
+                dialog.close();
+            });
+
+            Button cancelButton = new Button(dialog, SWT.PUSH);
+            cancelButton.setText("Cancel");
+            cancelButton.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+            cancelButton.addListener(SWT.Selection, e -> {
+                result = null;
+                dialog.close();
+            });
+
+            dialog.setDefaultButton(okButton);
+            dialog.pack();
+            dialog.open();
+
+            Display display = parent.getDisplay();
+            while (!dialog.isDisposed()) {
+                if (!display.readAndDispatch()) {
+                    display.sleep();
+                }
+            }
+
+            return result;
+        }
     }
 }

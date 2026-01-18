@@ -538,7 +538,7 @@ public class MainWindow {
     }
 
     private void handleSendMessage(QueueInfo queue) {
-        SendMessageDialog dialog = new SendMessageDialog(shell, messageService);
+        SendMessageDialog dialog = new SendMessageDialog(shell, messageService, configManager);
         dialog.open(queue.getQueue());
     }
 
