@@ -5,8 +5,8 @@ import org.eclipse.swt.widgets.Display;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Main {
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+public class IBMMQViewer {
+    private static final Logger logger = LoggerFactory.getLogger(IBMMQViewer.class);
 
     public static void main(String[] args) {
         logger.info("Starting IBM MQ GUI Application");

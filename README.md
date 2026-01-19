@@ -34,7 +34,7 @@ mvn clean package
 ## Running the Application
 
 ```bash
-mvn exec:java -Dexec.mainClass="com.aquila.ibm.mq.gui.Main"
+mvn exec:java -Dexec.mainClass="com.aquila.ibm.mq.gui.IBMMQViewer"
 ```
 
 Or after building:

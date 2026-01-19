@@ -71,12 +71,12 @@ public class MainWindow {
         shell.setSize(1600, 800);
         shell.setLayout(new GridLayout());
         try {
-            InputStream iconStream = getClass().getResourceAsStream("/icons/tonio.png");
-            if (iconStream != null) {
-                Image icon = new Image(shell.getDisplay(), iconStream);
-                shell.setImage(icon);
-                shell.addListener(SWT.Dispose, e -> icon.dispose());
-            }
+            shell.setImages(new Image[] {
+                    new Image(display, getClass().getResourceAsStream("/icons/Aquila-16.png")),
+                    new Image(display, getClass().getResourceAsStream("/icons/Aquila-32.png")),
+                    new Image(display, getClass().getResourceAsStream("/icons/Aquila-48.png")),
+                    new Image(display, getClass().getResourceAsStream("/icons/Aquila-256.png"))
+            });
         } catch (Exception e) {
             log.warn("Impossible de charger l'icône de l'application", e);
         }

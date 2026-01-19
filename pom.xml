@@ -118,7 +118,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
+                <version>3.5.4</version>
                 <configuration>
                     <argLine>-agentlib:native-image-agent=config-merge-dir=src/main/resources/META-INF/native-image
                     </argLine>
@@ -144,14 +144,43 @@
                                 </goals>
                                 <phase>package</phase>
                                 <configuration>
-                                    <imageName>Main</imageName>
-                                    <mainClass>com.aquila.ibm.mq.gui.Main</mainClass>
+                                    <imageName>IBMMQViewer</imageName>
+                                    <mainClass>com.aquila.ibm.mq.gui.IBMMQViewer</mainClass>
                                     <fallback>false</fallback>
                                     <verbose>true</verbose>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
+                    <!-- plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.4.1</version>
+                        <executions>
+                            <execution>
+                                <id>add-windows-icon</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>ResourceHacker.exe</executable>
+                                    <arguments>
+                                        <argument>-open</argument>
+                                        <argument>${project.build.directory}/target/IBMMQViewer.exe</argument>
+                                        <argument>-save</argument>
+                                        <argument>${project.build.directory}/target/IBMMQViewer-with-icon.exe</argument>
+                                        <argument>-action</argument>
+                                        <argument>addoverwrite</argument>
+                                        <argument>-res</argument>
+                                        <argument>${project.basedir}src/main/resources/icons/Aquila-32.ico</argument>
+                                        <argument>-mask</argument>
+                                        <argument>ICONGROUP,MAINICON,</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin-->
                 </plugins>
             </build>
         </profile>
