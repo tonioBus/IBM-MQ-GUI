@@ -12,8 +12,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -243,11 +242,13 @@ public class QueueListViewer extends Composite {
     }
 
     public QueueInfo getSelectedQueue() {
-        int index = table.getSelectionIndex();
-        if (index >= 0 && index < queues.size()) {
-            return queues.get(index);
+        final Optional<TableItem> tableItem = Arrays.stream(table.getSelection()).findFirst();
+        if(tableItem.isEmpty()) {
+            return null;
         }
-        return null;
+        final String queue = tableItem.get().getText(1);
+        final Optional<QueueInfo> queueInfoOpt = queues.parallelStream().filter(q -> q.getQueue().equals(queue)).findFirst();
+        return queueInfoOpt.orElse(null);
     }
 
     private void createContextMenu() {
