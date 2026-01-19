@@ -18,12 +18,14 @@ import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -68,7 +70,16 @@ public class MainWindow {
         shell.setText("IBM MQ Queue Manager GUI");
         shell.setSize(1600, 800);
         shell.setLayout(new GridLayout());
-
+        try {
+            InputStream iconStream = getClass().getResourceAsStream("/icons/tonio.png");
+            if (iconStream != null) {
+                Image icon = new Image(shell.getDisplay(), iconStream);
+                shell.setImage(icon);
+                shell.addListener(SWT.Dispose, e -> icon.dispose());
+            }
+        } catch (Exception e) {
+            log.warn("Impossible de charger l'icône de l'application", e);
+        }
         createMenuBar();
         createMainContent();
         createStatusBar();
@@ -337,7 +348,7 @@ public class MainWindow {
                     queueListViewer.updateProgress("Loading queues...");
                 });
 
-                List<QueueInfo> queues = queueService.getAllQueues();
+                List<QueueInfo> queues = queueService.getAllQueues("*");
 
                 display.asyncExec(() -> {
                     queueListViewer.setQueues(queues);
@@ -372,7 +383,7 @@ public class MainWindow {
 
         new Thread(() -> {
             try {
-                List<QueueInfo> queues = queueService.getAllQueues();
+                List<QueueInfo> queues = queueService.getAllQueues("*");
 
                 display.asyncExec(() -> {
                     queueListViewer.setQueues(queues);
@@ -725,7 +736,7 @@ public class MainWindow {
     private void showAbout() {
         MessageBox box = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
         box.setText("About");
-        box.setMessage("IBM MQ Queue Visualizer GUI\nVersion 1.0\n\n(c) Aquila");
+        box.setMessage("IBM MQ Queue Visualizer GUI\nVersion 1.0\n\n(c) AQUILA 2025");
         box.open();
     }
 

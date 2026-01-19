@@ -237,12 +237,13 @@ public class QueueBrowserDialog {
             connectionManager.connect(queueManagerConfig);
             availableQueuesViewer.updateProgress("Retrieving queues...");
             QueueService queueService = new QueueService(connectionManager);
-            java.util.List<QueueInfo> queues = queueService.getAllQueues();
+            java.util.List<QueueInfo> queues = queueService.getAllQueues(queuePattern.getText());
             log.info("queues:\n{}", queues);
             this.availableQueuesViewer.setQueues(queues);
             availableQueuesViewer.hideProgress();
             connectionManager.disconnect();
         } catch (MQException | IOException | MQDataException ex) {
+            log.error("Error retrieving queues from Queue Manager: {}", selection, ex);
             availableQueuesViewer.hideProgress();
         }
     }

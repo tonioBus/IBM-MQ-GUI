@@ -28,16 +28,16 @@ public class QueueService {
     /**
      * Get all queues for the active connection.
      */
-    public List<QueueInfo> getAllQueues() throws MQException, IOException, MQDataException {
-        return getAllQueues(false);
+    public List<QueueInfo> getAllQueues(String ibmPattern) throws MQException, IOException, MQDataException {
+        return getAllQueues(ibmPattern, false);
     }
 
     /**
      * Get all queues for the active connection.
      */
-    public List<QueueInfo> getAllQueues(boolean includeSystemQueues) throws MQException, IOException, MQDataException {
+    public List<QueueInfo> getAllQueues(String ibmPattern, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
         final MQQueueManager qm = connectionManager.getQueueManager();
-        return getAllQueuesForManager(qm, includeSystemQueues);
+        return getAllQueuesForManager(qm, ibmPattern, includeSystemQueues);
     }
 
     /**
@@ -46,15 +46,15 @@ public class QueueService {
      * @param connectionId        The connection ID
      * @param includeSystemQueues Whether to include system queues
      */
-    public List<QueueInfo> getAllQueues(String connectionId, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
+    public List<QueueInfo> getAllQueues(String connectionId, String ibmPattern, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
         final MQQueueManager qm = connectionManager.getQueueManager(connectionId);
-        return getAllQueuesForManager(qm, includeSystemQueues);
+        return getAllQueuesForManager(qm, ibmPattern, includeSystemQueues);
     }
 
     /**
      * Internal method to get all queues for a given queue manager.
      */
-    private List<QueueInfo> getAllQueuesForManager(MQQueueManager qm, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
+    private List<QueueInfo> getAllQueuesForManager(MQQueueManager qm, String ibmPattern, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
         final List<QueueInfo> queues = new ArrayList<>();
 
         // Create PCF Message Agent
@@ -64,7 +64,8 @@ public class QueueService {
         final PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
 
         // Request all queues (use wildcard)
-        request.addParameter(CMQC.MQCA_Q_NAME, "*");
+        log.info("Using IBM Pattern: {}", ibmPattern);
+        request.addParameter(CMQC.MQCA_Q_NAME, ibmPattern);
         request.addParameter(MQConstants.MQIA_Q_TYPE, CMQC.MQQT_ALL); //  | MQConstants.MQQT_ALIAS | MQConstants.MQQT_REMOTE);
 
         // Specify which attributes to retrieve
@@ -77,7 +78,7 @@ public class QueueService {
         // Send request and get responses
         log.info("Before agent.send()");
         final PCFMessage[] responses = agent.send(request);
-        log.info("\nFound  {} queues.", responses.length);
+        log.info("After agent.send() -> Found  {} queues.", responses.length);
         for (final PCFMessage response : responses) {
             try {
                 final String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
@@ -149,12 +150,15 @@ public class QueueService {
             List<String> optimizedIBMMQPatterns = QueueNameRegexCalculator.createOptimizedIBMMQPatterns(queueNames);
             for (final String optimizedIBMMQPattern : optimizedIBMMQPatterns) {
                 final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-                //request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
-                request.addParameter(MQConstants.MQCA_Q_NAME, "DEV.QUEUE.*");
+                request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
                 log.info("Before agent.send() optimise ({})", optimizedIBMMQPattern);
-                final PCFMessage[] responses = agent.send(request);
-                log.info("After agent.send() optimise responses;{}", responses.length);
-                populateQueueInfos(queueInfos, responses);
+                try {
+                    final PCFMessage[] responses = agent.send(request);
+                    log.info("After agent.send() optimise responses: {}", responses.length);
+                    populateQueueInfos(queueInfos, responses);
+                } catch(Exception e) {
+                    log.error("Error retrieving queues for pattern: {} ", optimizedIBMMQPattern, e);
+                }
             }
         }
         long endTime = System.currentTimeMillis();
@@ -230,7 +234,7 @@ public class QueueService {
     }
 
     public void refreshAllQueues(List<QueueInfo> queues) throws MQException, IOException, MQDataException {
-        final List<QueueInfo> refreshed = getAllQueues();
+        final List<QueueInfo> refreshed = getAllQueues("*");
 
         for (final QueueInfo queueInfo : queues) {
             for (final QueueInfo updated : refreshed) {
