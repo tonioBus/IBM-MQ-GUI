@@ -17663,7 +17663,12 @@
     },
     {
       "type": "com.ibm.mq.constants.MQConstants",
-      "allPublicFields": true
+      "allPublicFields": true,
+      "fields": [
+        {
+          "name": "sccsid"
+        }
+      ]
     },
     {
       "type": "com.ibm.mq.constants.MQPropertyIdentifiers",
@@ -17931,6 +17936,15 @@
           "parameterTypes": [
             "java.lang.Exception"
           ]
+        }
+      ]
+    },
+    {
+      "type": "com.ibm.mq.headers.MQRFH2",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
         }
       ]
     },
@@ -18886,6 +18900,9 @@
       "type": "org.eclipse.swt.dnd.DropTarget$3"
     },
     {
+      "type": "org.eclipse.swt.dnd.OleEnumFORMATETC$2"
+    },
+    {
       "type": "org.eclipse.swt.graphics.Device"
     },
     {
@@ -19174,6 +19191,27 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.ole.win32.FORMATETC",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cfFormat"
+        },
+        {
+          "name": "dwAspect"
+        },
+        {
+          "name": "lindex"
+        },
+        {
+          "name": "ptd"
+        },
+        {
+          "name": "tymed"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.ole.win32.GUID",
       "jniAccessible": true,
       "fields": [
@@ -19188,6 +19226,21 @@
         },
         {
           "name": "Data4"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.ole.win32.STGMEDIUM",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "pUnkForRelease"
+        },
+        {
+          "name": "tymed"
+        },
+        {
+          "name": "unionField"
         }
       ]
     },
@@ -20511,6 +20564,36 @@
         },
         {
           "name": "nTrackPos"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.SHDRAGIMAGE",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "crColorKey"
+        },
+        {
+          "name": "hbmpDragImage"
+        },
+        {
+          "name": "ptOffset"
+        },
+        {
+          "name": "sizeDragImage"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.SIZE",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cx"
+        },
+        {
+          "name": "cy"
         }
       ]
     },
