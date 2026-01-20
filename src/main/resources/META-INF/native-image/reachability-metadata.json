@@ -17924,6 +17924,17 @@
       ]
     },
     {
+      "type": "com.ibm.mq.headers.MQExceptionWrapper",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Exception"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.ibm.mq.headers.internal.MQMessageWrapper",
       "methods": [
         {
