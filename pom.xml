@@ -148,6 +148,11 @@
                                     <mainClass>com.aquila.ibm.mq.gui.IBMMQViewer</mainClass>
                                     <fallback>false</fallback>
                                     <verbose>true</verbose>
+                                    <buildArgs>
+                                        <buildArg>-O3</buildArg>
+                                        <buildArg>--future-defaults=all</buildArg>
+                                        <buildArg>-march=native</buildArg>
+                                    </buildArgs>
                                 </configuration>
                             </execution>
                         </executions>
