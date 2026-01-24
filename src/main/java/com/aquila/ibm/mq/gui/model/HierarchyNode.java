@@ -42,6 +42,13 @@ public class HierarchyNode {
         this.name = name;
     }
 
+    public String getName() {
+        return switch(type) {
+            case FOLDER -> name;
+            case QUEUE -> queueBrowserConfig.getLabel();
+        };
+    }
+
     public boolean isFolder() {
         return type == NodeType.FOLDER;
     }

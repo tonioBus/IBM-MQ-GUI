@@ -346,9 +346,6 @@ public class HierarchyTreeViewer extends Composite {
                     }
 
                     newParentId = targetNodeId;
-                } else {
-                    // Drop on empty area - move to root
-                    newParentId = null;
                 }
 
                 // Perform the move
@@ -474,11 +471,6 @@ public class HierarchyTreeViewer extends Composite {
             item = new TreeItem(parent, SWT.NONE);
         }
 
-//        if (node.isQueue()) {
-//            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
-//            final String description = queueBrowserConfig == null || queueBrowserConfig.getQueueManager() == null ? "?" : queueBrowserConfig.getQueueManager();
-//            item.setText(String.format("%s %s", description, node.getName()));
-//        } else
         item.setText(node.getName());
         item.setImage(getNodeIcon(node));
 
@@ -503,11 +495,9 @@ public class HierarchyTreeViewer extends Composite {
      */
     private Image getNodeIcon(HierarchyNode node) {
         if (node.isFolder()) {
-            // Use folder icon
             return folderIcon;
         } else {
             return connectedIcon;
-            // return errorIcon;
         }
     }
 
@@ -666,8 +656,7 @@ public class HierarchyTreeViewer extends Composite {
     }
 
     public void addQueues(String key, QueuesImportNode queuesImportNode, String parentId) {
-        final String displayName = key;
-        final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, displayName);
+        final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, key);
         hierarchyConfig.addNode(newNode, parentId);
         configManager.saveHierarchy(hierarchyConfig);
         final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
@@ -686,7 +675,7 @@ public class HierarchyTreeViewer extends Composite {
             tree.setSelection(item);
             tree.showItem(item);
         }
-        log.info("Added queue manager: {}", displayName);
+        log.info("Added queue manager: {}", key);
     }
 
     public void editQueueBrowser(HierarchyNode hierarchyNode) {

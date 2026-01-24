@@ -562,11 +562,7 @@ public class MainWindow {
         }
         // If already connected, just set active and load queues
         connectionManager.setActiveConnection(connectionId);
-        Display.getDefault().syncExec(new Runnable() {
-            public void run() {
-                loadQueuesAsync(nodeName, queueInfos, queueBrowserConfig.isSequencialQueueRequest());
-            }
-        });
+        Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueBrowserConfig.isSequencialQueueRequest()));
     }
 
     private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos, boolean sequentialQueueRequest) {
@@ -816,8 +812,8 @@ public class MainWindow {
     }
 
     private void processRecursive(Map<String, ImportNode> importChildrens, String parentId) {
-        importChildrens.forEach((key, value) -> {
-            switch (value) {
+        importChildrens.forEach((key, importNode) -> {
+            switch (importNode) {
                 case FolderImportNode folder -> {
                     HierarchyNode hierarchyNode = this.hierarchyTreeViewer.addFolder(key, parentId);
                     processRecursive(folder.getChildren(), hierarchyNode.getId());
@@ -825,7 +821,7 @@ public class MainWindow {
                 case QueuesImportNode queuesImportNode -> {
                     this.hierarchyTreeViewer.addQueues(key, queuesImportNode, parentId);
                 }
-                default -> throw new IllegalStateException("Unexpected value: " + value);
+                default -> throw new IllegalStateException("Unexpected value: " + importNode);
             }
         });
 
