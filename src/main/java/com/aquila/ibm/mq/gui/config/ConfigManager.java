@@ -78,7 +78,7 @@ public class ConfigManager {
 
     public void saveConnection(QueueManagerConfig connection) {
         boolean updated = false;
-        final String label = connection.getLabel();
+        final String label = connection.toString();
         if (!queueManagers.containsKey(label)) {
             queueManagers.put(label, connection);
             updated = true;

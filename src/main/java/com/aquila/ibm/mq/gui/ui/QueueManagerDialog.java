@@ -80,10 +80,6 @@ public class QueueManagerDialog {
         connGroup.setLayout(new GridLayout(2, false));
         connGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        new Label(connGroup, SWT.NONE).setText("Profile Name:");
-        nameText = new Text(connGroup, SWT.BORDER);
-        nameText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
         new Label(connGroup, SWT.NONE).setText("Host:");
         hostText = new Text(connGroup, SWT.BORDER);
         hostText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -145,7 +141,7 @@ public class QueueManagerDialog {
         profileCombo.removeAll();
         profileCombo.add("-- New Connection --");
         connections.values().forEach(q -> {
-            final String label = String.format("%s %s", q.getName(), q.getLabel());
+            final String label = q.toString();
             profileCombo.add(label);
         });
         profileCombo.select(0);
@@ -162,8 +158,8 @@ public class QueueManagerDialog {
         Map<String, QueueManagerConfig> connections = configManager.loadConnections();
 
         for (QueueManagerConfig config : connections.values()) {
-            if (config.getName().equals(profileName)) {
-                nameText.setText(config.getName());
+            if (config.toString().equals(profileName)) {
+
                 hostText.setText(config.getHost());
                 portText.setText(String.valueOf(config.getPort()));
                 channelText.setText(config.getChannel());
@@ -187,14 +183,10 @@ public class QueueManagerDialog {
 
     private void saveProfile() {
         final QueueManagerConfig config = getConnectionConfig();
-        if (config.getName() == null || config.getName().isEmpty()) {
-            showError("Please enter a profile name");
-            return;
-        }
         configManager.saveConnection(config);
         loadProfiles();
         for (int i = 0; i < profileCombo.getItemCount(); i++) {
-            if (profileCombo.getItem(i).equals(config.getName())) {
+            if (profileCombo.getItem(i).equals(config.toString())) {
                 profileCombo.select(i);
                 break;
             }
@@ -240,7 +232,6 @@ public class QueueManagerDialog {
 
     private QueueManagerConfig getConnectionConfig() {
         QueueManagerConfig config = new QueueManagerConfig();
-        config.setName(nameText.getText().trim());
         config.setHost(hostText.getText().trim());
 
         try {

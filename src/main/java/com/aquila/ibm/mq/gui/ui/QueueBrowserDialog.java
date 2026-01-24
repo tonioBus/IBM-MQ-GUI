@@ -231,7 +231,7 @@ public class QueueBrowserDialog {
 
         availableQueuesViewer.showProgress(String.format("Connecting to Queue Manager: %s", selection));
         MQConnectionManager connectionManager = new MQConnectionManager();
-        QueueManagerConfig queueManagerConfig = this.connections.get(selection.split(" ")[1]);
+        QueueManagerConfig queueManagerConfig = this.connections.get(selection);
         try {
             log.info("Connecting to Queue Manager:{}", queueManagerConfig);
             connectionManager.connect(queueManagerConfig);
@@ -313,7 +313,7 @@ public class QueueBrowserDialog {
 
     private QueueBrowserConfig getQueueBrowserConfig() {
         final int selectionIndex = this.queueManagerList.getSelectionIndex();
-        final String queueManagerKey = this.queueManagerList.getItem(selectionIndex).split(" ")[1];
+        final String queueManagerKey = this.queueManagerList.getItem(selectionIndex);
 
         final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
         this.selectedQueuesViewer.getQueues().forEach(queueInfo -> {
@@ -331,18 +331,14 @@ public class QueueBrowserDialog {
         return queueBrowserConfig;
     }
 
-    private void clear() {
-        log.info("clear");
-    }
-
     private void loadQueueManager(List queueManagerCombo) {
         this.connections = configManager.loadConnections();
         queueManagerCombo.removeAll();
         final AtomicInteger index = new AtomicInteger(0);
         connections.values().forEach(q -> {
-            final String label = String.format("%s %s", q.getName(), q.getLabel());
+            final String label =q.toString();
             queueManagerCombo.add(label);
-            if (edit && this.hierarchyNode.getQueueBrowserConfig().getQueueManager().equals(q.getLabel()))
+            if (edit && this.hierarchyNode.getQueueBrowserConfig().getQueueManager().equals(q.toString()))
                 queueManagerCombo.select(index.get());
             index.incrementAndGet();
         });

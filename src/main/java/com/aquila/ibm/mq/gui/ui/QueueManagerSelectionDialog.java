@@ -105,10 +105,7 @@ public class QueueManagerSelectionDialog {
         connectionList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         for (QueueManagerConfig config : availableConnections) {
-            String displayName = config.getName() != null && !config.getName().isEmpty()
-                    ? config.getName()
-                    : config.getQueueManager() + "@" + config.getHost();
-            connectionList.add(displayName);
+            connectionList.add(config.toString());
         }
 
         // Double-click to select
