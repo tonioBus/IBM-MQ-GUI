@@ -3,6 +3,7 @@ package com.aquila.ibm.mq.gui.ui;
 import com.aquila.ibm.mq.gui.config.ConfigManager;
 import com.aquila.ibm.mq.gui.model.MessageTemplate;
 import com.aquila.ibm.mq.gui.mq.MessageService;
+import com.aquila.ibm.mq.gui.util.TemplateProcessor;
 import com.ibm.mq.constants.MQConstants;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -162,12 +163,73 @@ public class SendMessageDialog {
 
     private void createMessageArea() {
         Group messageGroup = new Group(shell, SWT.NONE);
-        messageGroup.setText("Message Content");
-        messageGroup.setLayout(new GridLayout());
+        messageGroup.setText("Message Content (supports template variables)");
+        messageGroup.setLayout(new GridLayout(2, false));
         messageGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         messageText = new Text(messageGroup, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
         messageText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        Composite helpPanel = new Composite(messageGroup, SWT.NONE);
+        helpPanel.setLayout(new GridLayout(1, false));
+        helpPanel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
+
+        Button helpButton = new Button(helpPanel, SWT.PUSH);
+        helpButton.setText("?");
+        helpButton.setToolTipText("Show template variables help");
+        helpButton.addListener(SWT.Selection, e -> showTemplateHelp());
+
+        Button previewButton = new Button(helpPanel, SWT.PUSH);
+        previewButton.setText("Preview");
+        previewButton.setToolTipText("Preview message with variables replaced");
+        previewButton.addListener(SWT.Selection, e -> previewMessage());
+    }
+
+    private void showTemplateHelp() {
+        Shell helpShell = new Shell(shell, SWT.DIALOG_TRIM | SWT.RESIZE);
+        helpShell.setText("Template Variables Help");
+        helpShell.setLayout(new GridLayout(1, false));
+        helpShell.setSize(400, 450);
+
+        Text helpText = new Text(helpShell, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.READ_ONLY);
+        helpText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        helpText.setText(TemplateProcessor.getHelpText());
+
+        Button closeBtn = new Button(helpShell, SWT.PUSH);
+        closeBtn.setText("Close");
+        closeBtn.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+        closeBtn.addListener(SWT.Selection, e -> helpShell.close());
+
+        helpShell.open();
+    }
+
+    private void previewMessage() {
+        String content = messageText.getText();
+        if (content.isEmpty()) {
+            showInfo("No message content to preview");
+            return;
+        }
+
+        TemplateProcessor processor = new TemplateProcessor();
+        processor.setSequenceNumber(0);
+        processor.setTotalCount(messageCountSpinner.getSelection());
+        String preview = processor.process(content);
+
+        Shell previewShell = new Shell(shell, SWT.DIALOG_TRIM | SWT.RESIZE);
+        previewShell.setText("Message Preview");
+        previewShell.setLayout(new GridLayout(1, false));
+        previewShell.setSize(500, 400);
+
+        Text previewText = new Text(previewShell, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL | SWT.READ_ONLY);
+        previewText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        previewText.setText(preview);
+
+        Button closeBtn = new Button(previewShell, SWT.PUSH);
+        closeBtn.setText("Close");
+        closeBtn.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+        closeBtn.addListener(SWT.Selection, e -> previewShell.close());
+
+        previewShell.open();
     }
 
     private void createOptionsArea() {
@@ -272,7 +334,12 @@ public class SendMessageDialog {
 
     private void sendSingleMessage(String content, int priority, int persistence) {
         try {
-            messageService.putMessage(queueName, content, priority, persistence);
+            TemplateProcessor processor = new TemplateProcessor();
+            processor.setSequenceNumber(0);
+            processor.setTotalCount(1);
+            String processedContent = processor.process(content);
+
+            messageService.putMessage(queueName, processedContent, priority, persistence);
             showInfo("Message sent successfully");
             shell.close();
         } catch (Exception e) {
@@ -298,8 +365,13 @@ public class SendMessageDialog {
             Exception error = null;
 
             try {
-                sent = messageService.putMessages(queueName, content, priority, persistence,
-                        messageCount, delayMs, new MessageService.BatchCallback() {
+                TemplateProcessor processor = new TemplateProcessor();
+                processor.setTotalCount(messageCount);
+
+                sent = messageService.putMessages(queueName, index -> {
+                    processor.setSequenceNumber(index);
+                    return processor.process(content);
+                }, priority, persistence, messageCount, delayMs, new MessageService.BatchCallback() {
                             @Override
                             public boolean isCancelled() {
                                 return cancelled.get();

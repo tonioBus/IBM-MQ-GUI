@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 
 public class MessageService {
     private static final Logger logger = LoggerFactory.getLogger(MessageService.class);
@@ -108,6 +109,11 @@ public class MessageService {
 
     public int putMessages(String queueName, String messageData, int priority, int persistence,
                            int count, int delayMs, BatchCallback callback) throws MQException, IOException {
+        return putMessages(queueName, index -> messageData, priority, persistence, count, delayMs, callback);
+    }
+
+    public int putMessages(String queueName, IntFunction<String> messageSupplier, int priority, int persistence,
+                           int count, int delayMs, BatchCallback callback) throws MQException, IOException {
         MQQueueManager qm = connectionManager.getQueueManager();
 
         int openOptions = MQConstants.MQOO_OUTPUT | MQConstants.MQOO_FAIL_IF_QUIESCING;
@@ -124,6 +130,7 @@ public class MessageService {
                     break;
                 }
 
+                String messageData = messageSupplier.apply(i);
                 MQMessage message = new MQMessage();
                 message.format = MQConstants.MQFMT_STRING;
                 message.priority = priority;
@@ -148,7 +155,7 @@ public class MessageService {
                 }
             }
 
-            logger.info("Put {} messages to queue {}, size: {} bytes each", sent, queueName, messageData.length());
+            logger.info("Put {} messages to queue {}", sent, queueName);
         } finally {
             if (queue != null) {
                 try {
