@@ -1,10 +1,6 @@
 package com.aquila.ibm.mq.gui.config;
 
-import com.aquila.ibm.mq.gui.model.HierarchyConfig;
-import com.aquila.ibm.mq.gui.model.MessageTemplate;
-import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
-import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
-import com.aquila.ibm.mq.gui.model.ThresholdConfig;
+import com.aquila.ibm.mq.gui.model.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -20,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-public class ConfigManager {
+public class Configuration {
     public static final String CONFIG_DIR = System.getProperty("user.home") + File.separator + ".ibmmqgui";
     private static final String CONNECTIONS_FILE = "connections.json";
     private static final String THRESHOLDS_FILE = "thresholds.json";
@@ -29,9 +25,9 @@ public class ConfigManager {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private Map<String, QueueManagerConfig> queueManagers = loadConnections();
     @Getter
-    private Map<String, QueueBrowserConfig> queueBrowserConfigMap = new HashMap<>();
+    private Map<String, QueueNode> queueBrowserConfigMap = new HashMap<>();
 
-    public ConfigManager() {
+    public Configuration() {
         initConfigDirectory();
     }
 
@@ -123,12 +119,6 @@ public class ConfigManager {
         }
     }
 
-    public void saveThreshold(String queueName, ThresholdConfig threshold) {
-        final Map<String, ThresholdConfig> thresholds = loadThresholds();
-        thresholds.put(queueName, threshold);
-        saveThresholds(thresholds);
-    }
-
     public ThresholdConfig getThreshold(String queueName) {
         final Map<String, ThresholdConfig> thresholds = loadThresholds();
         return thresholds.getOrDefault(queueName, new ThresholdConfig());
@@ -155,10 +145,10 @@ public class ConfigManager {
                         .filter(entry -> entry.getValue().isQueue())
                         .forEach(entry -> {
                             final String key = entry.getKey();
-                            final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.fromFile(key,
-                                    this.queueManagers.values().stream().toList().get(0).getQueueManager());
-                            hierarchyConfig.getNode(key).setQueueBrowserConfig(queueBrowserConfig);
-                            this.queueBrowserConfigMap.put(key, queueBrowserConfig);
+                            final QueueNode queueNode = QueueNode.fromFile(key, entry.getValue().getName(),
+                                    this.queueManagers.values().stream().toList().getFirst().getQueueManager());
+                            hierarchyConfig.getNode(key).setQueueNode(queueNode);
+                            this.queueBrowserConfigMap.put(key, queueNode);
                         });
             }
             return hierarchyConfig;
@@ -198,8 +188,8 @@ public class ConfigManager {
         if (!this.queueManagers.isEmpty() && hierarchyConfig.getNodes() != null) {
             hierarchyConfig.getNodes().entrySet().parallelStream().forEach(entry -> {
                 final String key = entry.getKey();
-                final QueueBrowserConfig queueBrowserConfig = this.queueBrowserConfigMap.get(key);
-                if (queueBrowserConfig != null) save(key, queueBrowserConfig);
+                final QueueNode queueNode = this.queueBrowserConfigMap.get(key);
+                if (queueNode != null) save(key, queueNode);
             });
         }
     }
@@ -234,9 +224,9 @@ public class ConfigManager {
         return hierarchy;
     }
 
-    public void save(String id, QueueBrowserConfig queueBrowserConfig) {
-        log.info("Save QueueBrowserConfig: {} -> \n{}", id, queueBrowserConfig);
-        queueBrowserConfig.save(id);
+    public void save(String id, QueueNode queueNode) {
+        log.info("Save QueueNode: {} -> \n{}", id, queueNode);
+        queueNode.save(id);
     }
 
     public Map<String, MessageTemplate> loadMessageTemplates() {

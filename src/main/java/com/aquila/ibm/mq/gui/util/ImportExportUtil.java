@@ -1,6 +1,7 @@
 package com.aquila.ibm.mq.gui.util;
 
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
+import com.aquila.ibm.mq.gui.model.HierarchyNode;
 import com.aquila.ibm.mq.gui.model.ImportConfig;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,35 @@ public class ImportExportUtil {
         }
 
         return importConfig.toHierarchyConfig();
+    }
+
+    /**
+     * Export a selected node (subtree) to a file.
+     * Only includes queue managers that are referenced by the exported hierarchy.
+     *
+     * @param filePath          Path where to save the export JSON file
+     * @param selectedNode      The node to export (and all its children)
+     * @param hierarchyConfig   The full hierarchy configuration
+     * @param queueManagers     All available queue manager configurations
+     * @return true if export succeeds, false otherwise
+     */
+    public static boolean exportSelectedToFile(String filePath,
+                                                HierarchyNode selectedNode,
+                                                HierarchyConfig hierarchyConfig,
+                                                Map<String, QueueManagerConfig> queueManagers) {
+        log.info("Exporting selected node '{}' to: {}", selectedNode.getName(), filePath);
+
+        ImportConfig importConfig = ImportConfig.fromSelectedNode(selectedNode, hierarchyConfig, queueManagers);
+
+        boolean success = importConfig.toFile(filePath);
+
+        if (success) {
+            log.info("Successfully exported selected node '{}' with {} queue manager(s)",
+                selectedNode.getName(),
+                importConfig.getQueueManagers() != null ? importConfig.getQueueManagers().size() : 0);
+        }
+
+        return success;
     }
 
 }

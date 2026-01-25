@@ -23,7 +23,7 @@ public class HierarchyNode {
     }
 
     private String id;
-    private transient QueueBrowserConfig queueBrowserConfig;
+    private transient QueueNode queueNode;
     private NodeType type;
     private String name;
     private String parentId;            // Parent node ID (null for root nodes)
@@ -43,9 +43,9 @@ public class HierarchyNode {
     }
 
     public String getName() {
-        return switch(type) {
+        return switch (type) {
             case FOLDER -> name;
-            case QUEUE -> queueBrowserConfig.getLabel();
+            case QUEUE -> queueNode == null ? "N : A" : queueNode.getLabel();
         };
     }
 

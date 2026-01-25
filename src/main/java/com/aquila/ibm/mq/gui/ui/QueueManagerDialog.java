@@ -1,6 +1,6 @@
 package com.aquila.ibm.mq.gui.ui;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import org.eclipse.swt.SWT;
@@ -15,7 +15,7 @@ import java.util.Map;
 public class QueueManagerDialog {
     private static final Logger logger = LoggerFactory.getLogger(QueueManagerDialog.class);
     private final Shell parent;
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private Shell shell;
     private QueueManagerConfig result;
 
@@ -29,9 +29,9 @@ public class QueueManagerDialog {
     private Text passwordText;
     private Button saveProfileButton;
 
-    public QueueManagerDialog(Shell parent, ConfigManager configManager) {
+    public QueueManagerDialog(Shell parent, Configuration configuration) {
         this.parent = parent;
-        this.configManager = configManager;
+        this.configuration = configuration;
     }
 
     public QueueManagerConfig open() {
@@ -137,7 +137,7 @@ public class QueueManagerDialog {
     }
 
     private void loadProfiles() {
-        final Map<String, QueueManagerConfig> connections = configManager.loadConnections();
+        final Map<String, QueueManagerConfig> connections = configuration.loadConnections();
         profileCombo.removeAll();
         profileCombo.add("-- New Connection --");
         connections.values().forEach(q -> {
@@ -155,7 +155,7 @@ public class QueueManagerDialog {
         }
 
         String profileName = profileCombo.getItem(index);
-        Map<String, QueueManagerConfig> connections = configManager.loadConnections();
+        Map<String, QueueManagerConfig> connections = configuration.loadConnections();
 
         for (QueueManagerConfig config : connections.values()) {
             if (config.toString().equals(profileName)) {
@@ -183,7 +183,7 @@ public class QueueManagerDialog {
 
     private void saveProfile() {
         final QueueManagerConfig config = getConnectionConfig();
-        configManager.saveConnection(config);
+        configuration.saveConnection(config);
         loadProfiles();
         for (int i = 0; i < profileCombo.getItemCount(); i++) {
             if (profileCombo.getItem(i).equals(config.toString())) {
@@ -204,7 +204,7 @@ public class QueueManagerDialog {
         confirm.setText("Confirm Delete");
         confirm.setMessage("Delete profile '" + profileName + "'?");
         if (confirm.open() == SWT.YES) {
-            configManager.deleteConnection(profileName);
+            configuration.deleteConnection(profileName);
             loadProfiles();
             clearFields();
         }

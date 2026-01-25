@@ -65,7 +65,7 @@ public class HierarchyConfig {
             }
         }
 
-        log.debug("Added node: {} to parent: {}", node.getName(), parentId);
+        log.debug("Added node: {} to parent: {}", node, parentId);
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.aquila.ibm.mq.gui.ui;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.model.MessageTemplate;
 import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.aquila.ibm.mq.gui.util.TemplateProcessor;
@@ -19,7 +19,7 @@ public class SendMessageDialog {
     private static final Logger logger = LoggerFactory.getLogger(SendMessageDialog.class);
     private final Shell parent;
     private final MessageService messageService;
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private Shell shell;
     private String queueName;
     private Text messageText;
@@ -36,10 +36,10 @@ public class SendMessageDialog {
     private final AtomicBoolean cancelled = new AtomicBoolean(false);
     private volatile boolean isSending = false;
 
-    public SendMessageDialog(Shell parent, MessageService messageService, ConfigManager configManager) {
+    public SendMessageDialog(Shell parent, MessageService messageService, Configuration configuration) {
         this.parent = parent;
         this.messageService = messageService;
-        this.configManager = configManager;
+        this.configuration = configuration;
     }
 
     public void open(String queueName) {
@@ -84,7 +84,7 @@ public class SendMessageDialog {
     private void refreshTemplateCombo() {
         templateCombo.removeAll();
         templateCombo.add("");
-        Map<String, MessageTemplate> templates = configManager.loadMessageTemplates();
+        Map<String, MessageTemplate> templates = configuration.loadMessageTemplates();
         for (String name : templates.keySet()) {
             templateCombo.add(name);
         }
@@ -97,7 +97,7 @@ public class SendMessageDialog {
             return;
         }
 
-        MessageTemplate template = configManager.getMessageTemplate(selected);
+        MessageTemplate template = configuration.getMessageTemplate(selected);
         if (template != null) {
             messageText.setText(template.getContent() != null ? template.getContent() : "");
             prioritySpinner.setSelection(template.getPriority());
@@ -127,7 +127,7 @@ public class SendMessageDialog {
                     messageCountSpinner.getSelection(),
                     delaySpinner.getSelection()
             );
-            configManager.saveMessageTemplate(template);
+            configuration.saveMessageTemplate(template);
             refreshTemplateCombo();
             selectTemplate(name.trim());
             showInfo("Template saved successfully");
@@ -155,7 +155,7 @@ public class SendMessageDialog {
         confirmBox.setText("Confirm Delete");
         confirmBox.setMessage("Delete template '" + selected + "'?");
         if (confirmBox.open() == SWT.YES) {
-            configManager.deleteMessageTemplate(selected);
+            configuration.deleteMessageTemplate(selected);
             refreshTemplateCombo();
             showInfo("Template deleted");
         }

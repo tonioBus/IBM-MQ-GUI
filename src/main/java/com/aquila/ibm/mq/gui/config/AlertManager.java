@@ -12,21 +12,21 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AlertManager {
     private static final Logger logger = LoggerFactory.getLogger(AlertManager.class);
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private final SoundPlayer soundPlayer;
     private final Map<String, ThresholdConfig.AlertLevel> currentAlertLevels;
     private final List<AlertEvent> alertHistory;
     private boolean soundEnabled = true;
 
-    public AlertManager(ConfigManager configManager) {
-        this.configManager = configManager;
+    public AlertManager(Configuration configuration) {
+        this.configuration = configuration;
         this.soundPlayer = new SoundPlayer();
         this.currentAlertLevels = new ConcurrentHashMap<>();
         this.alertHistory = Collections.synchronizedList(new ArrayList<>());
     }
 
     public ThresholdConfig.AlertLevel checkQueue(QueueInfo queueInfo) {
-        ThresholdConfig threshold = configManager.getThreshold(queueInfo.getQueue());
+        ThresholdConfig threshold = configuration.getThreshold(queueInfo.getQueue());
         ThresholdConfig.AlertLevel newLevel = threshold.getAlertLevel(queueInfo);
         ThresholdConfig.AlertLevel currentLevel = currentAlertLevels.getOrDefault(
             queueInfo.getQueue(), ThresholdConfig.AlertLevel.NONE);

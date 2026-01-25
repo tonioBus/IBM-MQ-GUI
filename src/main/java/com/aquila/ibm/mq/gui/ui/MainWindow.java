@@ -1,7 +1,7 @@
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.importation.*;
 import com.aquila.ibm.mq.gui.model.*;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
@@ -25,7 +25,6 @@ import org.eclipse.swt.widgets.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +34,7 @@ public class MainWindow {
     private final Display display;
     @Getter
     private final Shell shell;
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private final MQConnectionManager connectionManager;
     private final QueueService queueService;
     private final MessageService messageService;
@@ -60,11 +59,11 @@ public class MainWindow {
 
     public MainWindow(Display display) {
         this.display = display;
-        this.configManager = new ConfigManager();
+        this.configuration = new Configuration();
         this.connectionManager = new MQConnectionManager();
         this.queueService = new QueueService(connectionManager);
         this.messageService = new MessageService(connectionManager);
-        this.alertManager = new AlertManager(configManager);
+        this.alertManager = new AlertManager(configuration);
 
         shell = new Shell(display);
         shell.setText("IBM MQ Queue Manager GUI");
@@ -114,6 +113,10 @@ public class MainWindow {
         MenuItem exportItem = new MenuItem(fileMenu, SWT.PUSH);
         exportItem.setText("&Export Configuration...");
         exportItem.addListener(SWT.Selection, e -> exportConfiguration());
+
+        MenuItem exportSelectedItem = new MenuItem(fileMenu, SWT.PUSH);
+        exportSelectedItem.setText("Export &Selected...");
+        exportSelectedItem.addListener(SWT.Selection, e -> exportSelectedConfiguration());
 
         new MenuItem(fileMenu, SWT.SEPARATOR);
 
@@ -190,7 +193,7 @@ public class MainWindow {
 
         // NEW: Queue Manager Tree (20%)
         hierarchyTreeViewer = new HierarchyTreeViewer(
-                sashForm, SWT.BORDER, connectionManager, configManager);
+                sashForm, SWT.BORDER, connectionManager, configuration);
         hierarchyTreeViewer.addSelectionListener(this::onTreeSelection);
 
         // EXISTING: Queue List (30%)
@@ -328,7 +331,7 @@ public class MainWindow {
     }
 
     private void showConnectionDialog() {
-        QueueManagerDialog dialog = new QueueManagerDialog(shell, configManager);
+        QueueManagerDialog dialog = new QueueManagerDialog(shell, configuration);
         QueueManagerConfig config = dialog.open();
 
         if (config != null) {
@@ -483,30 +486,30 @@ public class MainWindow {
             updateStatus("Folder selected: " + event.node.getName());
 
         } else if (event.type == HierarchyTreeViewer.SelectionType.QUEUE_BROWSER) {
-            final QueueBrowserConfig queueBrowserConfig = event.node.getQueueBrowserConfig();
-            final String connectionId = queueBrowserConfig.getQueueManager();
-            refreshQueueList(queueBrowserConfig, connectionId, event.node.getName(), event.node.getId());
+            final QueueNode queueNode = event.node.getQueueNode();
+            final String connectionId = queueNode.getQueueManager();
+            refreshQueueList(queueNode, connectionId, event.node.getName(), event.node.getId());
         }
     }
 
     public void refreshQueueList() {
         HierarchyNode node = this.hierarchyTreeViewer.getLastSelectedNode();
         log.info("refreshQueueList: {}", node);
-        if (node != null && node.getQueueBrowserConfig() != null) {
-            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
-            refreshQueueList(queueBrowserConfig, queueBrowserConfig.getQueueManager(), node.getName(), node.getId());
+        if (node != null && node.getQueueNode() != null) {
+            final QueueNode queueNode = node.getQueueNode();
+            refreshQueueList(queueNode, queueNode.getQueueManager(), node.getName(), node.getId());
         }
     }
 
-    private void refreshQueueList(final QueueBrowserConfig queueBrowserConfig,
+    private void refreshQueueList(final QueueNode queueNode,
                                   final String connectionId,
                                   final String nodeName,
                                   final String nodeId) {
-        if (queueBrowserConfig.getDescriptions() == null) {
-            log.error("queueBrowserConfig.getDescriptions() null for {}", queueBrowserConfig);
+        if (queueNode.getDescriptions() == null) {
+            log.error("queueBrowserConfig.getDescriptions() null for {}", queueNode);
             return;
         }
-        final List<QueueInfo> queueInfos = queueBrowserConfig.getDescriptions().entrySet().stream()
+        final List<QueueInfo> queueInfos = queueNode.getDescriptions().entrySet().stream()
                 .map(e -> new QueueInfo(e.getKey(), e.getValue().label()))
                 .toList();
         log.info("number of queues to retrieve: {}", queueInfos.size());
@@ -535,7 +538,7 @@ public class MainWindow {
 
                     // Set active and load queues (BLOCKING)
                     connectionManager.setActiveConnection(connectionId);
-                    queueService.populateQueueInfos(queueInfos, queueBrowserConfig.isSequencialQueueRequest());
+                    queueService.populateQueueInfos(queueInfos, queueNode.isSequencialQueueRequest());
 
                     // Update UI on UI thread
                     display.asyncExec(() -> {
@@ -562,7 +565,7 @@ public class MainWindow {
         }
         // If already connected, just set active and load queues
         connectionManager.setActiveConnection(connectionId);
-        Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueBrowserConfig.isSequencialQueueRequest()));
+        Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueNode.isSequencialQueueRequest()));
     }
 
     private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos, boolean sequentialQueueRequest) {
@@ -591,22 +594,22 @@ public class MainWindow {
     }
 
     private QueueManagerConfig findConnectionConfig(String name) {
-        return configManager.loadConnections().get(name);
+        return configuration.loadConnections().get(name);
     }
 
     private void loadHierarchy() {
-        HierarchyConfig hierarchy = configManager.loadHierarchy();
+        HierarchyConfig hierarchy = configuration.loadHierarchy();
         if (hierarchy == null) {
             // First time: create default hierarchy from existing connections
-            Map<String, QueueManagerConfig> connections = configManager.loadConnections();
-            hierarchy = configManager.createDefaultHierarchy(connections);
-            configManager.saveHierarchy(hierarchy);
+            Map<String, QueueManagerConfig> connections = configuration.loadConnections();
+            hierarchy = configuration.createDefaultHierarchy(connections);
+            configuration.saveHierarchy(hierarchy);
         }
-        hierarchyTreeViewer.setHierarchyConfig(hierarchy);
+        hierarchyTreeViewer.setHierarchyConfig(configuration, hierarchy);
     }
 
     private void showThresholdDialog() {
-        ThresholdConfigDialog dialog = new ThresholdConfigDialog(shell, configManager, queueListViewer.getQueues());
+        ThresholdConfigDialog dialog = new ThresholdConfigDialog(shell, configuration, queueListViewer.getQueues());
         dialog.open();
     }
 
@@ -619,7 +622,7 @@ public class MainWindow {
     }
 
     private void handleSendMessage(QueueInfo queue) {
-        SendMessageDialog dialog = new SendMessageDialog(shell, messageService, configManager);
+        SendMessageDialog dialog = new SendMessageDialog(shell, messageService, configuration);
         dialog.open(queue.getQueue());
     }
 
@@ -762,7 +765,7 @@ public class MainWindow {
         // Import queue managers
         final Map<String, QueueManagerConfigNode> importedQueueManagers = rootImportNode.getQueueManagers();
         if (importedQueueManagers != null && !importedQueueManagers.isEmpty()) {
-            Map<String, QueueManagerConfig> existingQueueManagers = configManager.loadConnections();
+            Map<String, QueueManagerConfig> existingQueueManagers = configuration.loadConnections();
 
             int newCount = 0;
             for (Map.Entry<String, QueueManagerConfigNode> entry : importedQueueManagers.entrySet()) {
@@ -773,7 +776,7 @@ public class MainWindow {
             }
 
             if (newCount > 0) {
-                configManager.saveConnections(existingQueueManagers);
+                configuration.saveConnections(existingQueueManagers);
                 log.info("Imported {} new queue manager(s)", newCount);
             }
         }
@@ -796,8 +799,8 @@ public class MainWindow {
                     log.info("YES ...");
                     HierarchyConfig importedHierarchy = toHierarchyConfig(rootImportNode, currentHierarchy.getSelectedNodeId());
                     // Save and refresh
-                    configManager.saveHierarchy(currentHierarchy);
-                    hierarchyTreeViewer.setHierarchyConfig(currentHierarchy);
+                    configuration.saveHierarchy(currentHierarchy);
+                    hierarchyTreeViewer.setHierarchyConfig(configuration, currentHierarchy);
                     log.info("Successfully imported hierarchy");
                 }
             }
@@ -806,7 +809,6 @@ public class MainWindow {
 
     public HierarchyConfig toHierarchyConfig(RootImportNode rootImportNode, String parentId) {
         final HierarchyConfig hierarchyConfig = new HierarchyConfig();
-        final Map<String, HierarchyNode> nodes = hierarchyConfig.getNodes();
         processRecursive(rootImportNode.getHierarchy(), parentId);
         return hierarchyConfig;
     }
@@ -855,7 +857,7 @@ public class MainWindow {
         // Import queue managers
         Map<String, QueueManagerConfig> importedQueueManagers = importConfig.getQueueManagers();
         if (importedQueueManagers != null && !importedQueueManagers.isEmpty()) {
-            Map<String, QueueManagerConfig> existingQueueManagers = configManager.loadConnections();
+            Map<String, QueueManagerConfig> existingQueueManagers = configuration.loadConnections();
 
             int newCount = 0;
             for (Map.Entry<String, QueueManagerConfig> entry : importedQueueManagers.entrySet()) {
@@ -866,7 +868,7 @@ public class MainWindow {
             }
 
             if (newCount > 0) {
-                configManager.saveConnections(existingQueueManagers);
+                configuration.saveConnections(existingQueueManagers);
                 log.info("Imported {} new queue manager(s)", newCount);
             }
         }
@@ -917,8 +919,8 @@ public class MainWindow {
                 }
 
                 // Save and refresh
-                configManager.saveHierarchy(currentHierarchy);
-                hierarchyTreeViewer.setHierarchyConfig(currentHierarchy);
+                configuration.saveHierarchy(currentHierarchy);
+                hierarchyTreeViewer.setHierarchyConfig(configuration, currentHierarchy);
 
                 log.info("Successfully imported hierarchy");
             }
@@ -938,14 +940,14 @@ public class MainWindow {
                                     HierarchyConfig targetHierarchy, String targetParentId) {
         // Create a copy of the node
         HierarchyNode newNode = new HierarchyNode(sourceNode.getType(), sourceNode.getName());
-        newNode.setQueueBrowserConfig(sourceNode.getQueueBrowserConfig());
+        newNode.setQueueNode(sourceNode.getQueueNode());
 
         // Add to target hierarchy
         targetHierarchy.addNode(newNode, targetParentId);
 
         // Copy queue browser config if it exists
-        if (sourceNode.getQueueBrowserConfig() != null) {
-            configManager.save(newNode.getId(), sourceNode.getQueueBrowserConfig());
+        if (sourceNode.getQueueNode() != null) {
+            configuration.save(newNode.getId(), sourceNode.getQueueNode());
         }
 
         // Recursively merge children
@@ -977,7 +979,15 @@ public class MainWindow {
 
         // Get current configuration
         HierarchyConfig hierarchyConfig = hierarchyTreeViewer.getHierarchyConfig();
-        Map<String, QueueManagerConfig> queueManagers = configManager.loadConnections();
+        Map<String, QueueManagerConfig> queueManagers = configuration.loadConnections();
+
+        // Ensure all QueueBrowserConfigs are loaded for all nodes
+        for (String rootId : hierarchyConfig.getRootNodeIds()) {
+            HierarchyNode rootNode = hierarchyConfig.getNode(rootId);
+            if (rootNode != null) {
+                loadQueueBrowserConfigsForSubtree(rootNode, hierarchyConfig);
+            }
+        }
 
         // Export
         boolean success = ImportExportUtil.exportToFile(filePath, hierarchyConfig, queueManagers);
@@ -992,10 +1002,82 @@ public class MainWindow {
         }
     }
 
+    /**
+     * Export selected hierarchy node (and all its children) to a JSON file.
+     * Only includes queue managers that are referenced by the exported hierarchy.
+     */
+    private void exportSelectedConfiguration() {
+        // Get the selected node
+        HierarchyNode selectedNode = hierarchyTreeViewer.getSelectedNode();
+
+        if (selectedNode == null) {
+            showError("No Selection", "Please select a folder or queue browser to export.");
+            return;
+        }
+
+        // Show file dialog to select export location
+        org.eclipse.swt.widgets.FileDialog dialog = new org.eclipse.swt.widgets.FileDialog(shell, SWT.SAVE);
+        dialog.setText("Export Selected Configuration");
+        dialog.setFilterExtensions(new String[]{"*.json", "*.*"});
+        dialog.setFilterNames(new String[]{"JSON Files (*.json)", "All Files (*.*)"});
+        dialog.setFileName(selectedNode.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + ".json");
+
+        String filePath = dialog.open();
+        if (filePath == null) {
+            return; // User cancelled
+        }
+
+        log.info("Exporting selected node '{}' to: {}", selectedNode.getName(), filePath);
+
+        // Get current configuration
+        HierarchyConfig hierarchyConfig = hierarchyTreeViewer.getHierarchyConfig();
+        Map<String, QueueManagerConfig> queueManagers = configuration.loadConnections();
+
+        // Ensure all QueueBrowserConfigs are loaded for the subtree
+        loadQueueBrowserConfigsForSubtree(selectedNode, hierarchyConfig);
+
+        // Export the selected node
+        boolean success = ImportExportUtil.exportSelectedToFile(filePath, selectedNode, hierarchyConfig, queueManagers);
+
+        if (success) {
+            MessageBox successBox = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
+            successBox.setText("Export Complete");
+            successBox.setMessage("Selected configuration exported successfully to:\n" + filePath);
+            successBox.open();
+        } else {
+            showError("Export Failed", "Failed to export configuration. Please check the file path and permissions.");
+        }
+    }
+
+    /**
+     * Recursively load QueueBrowserConfigs for all QUEUE nodes in the subtree.
+     */
+    private void loadQueueBrowserConfigsForSubtree(HierarchyNode node, HierarchyConfig hierarchyConfig) {
+        if (node == null) {
+            return;
+        }
+
+        // If this is a QUEUE node, ensure its QueueBrowserConfig is loaded
+        if (node.isQueue() && node.getQueueNode() == null) {
+            QueueNode config = configuration.getQueueBrowserConfigMap().get(node.getId());
+            if (config != null) {
+                node.setQueueNode(config);
+            }
+        }
+
+        // Recursively process children
+        for (String childId : node.getChildIds()) {
+            HierarchyNode childNode = hierarchyConfig.getNode(childId);
+            if (childNode != null) {
+                loadQueueBrowserConfigsForSubtree(childNode, hierarchyConfig);
+            }
+        }
+    }
+
     private void cleanup() {
         // Save hierarchy state (expansion, selection)
         if (hierarchyTreeViewer != null) {
-            configManager.saveHierarchy(hierarchyTreeViewer.getHierarchyConfig());
+            configuration.saveHierarchy(hierarchyTreeViewer.getHierarchyConfig());
         }
 
         stopMonitoring();

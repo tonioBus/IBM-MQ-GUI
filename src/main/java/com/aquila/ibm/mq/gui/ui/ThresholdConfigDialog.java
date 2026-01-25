@@ -1,6 +1,6 @@
 package com.aquila.ibm.mq.gui.ui;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import org.eclipse.swt.SWT;
@@ -17,15 +17,15 @@ import java.util.Map;
 public class ThresholdConfigDialog {
     private static final Logger logger = LoggerFactory.getLogger(ThresholdConfigDialog.class);
     private final Shell parent;
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private final List<QueueInfo> queues;
     private Shell shell;
     private Table table;
     private Map<String, ThresholdConfig> thresholds;
 
-    public ThresholdConfigDialog(Shell parent, ConfigManager configManager, List<QueueInfo> queues) {
+    public ThresholdConfigDialog(Shell parent, Configuration configuration, List<QueueInfo> queues) {
         this.parent = parent;
-        this.configManager = configManager;
+        this.configuration = configuration;
         this.queues = queues;
     }
 
@@ -35,7 +35,7 @@ public class ThresholdConfigDialog {
         shell.setLayout(new GridLayout());
         shell.setSize(700, 500);
 
-        thresholds = configManager.loadThresholds();
+        thresholds = configuration.loadThresholds();
 
         createInstructions();
         createTable();
@@ -243,7 +243,7 @@ public class ThresholdConfigDialog {
     }
 
     private void save() {
-        configManager.saveThresholds(thresholds);
+        configuration.saveThresholds(thresholds);
         showInfo("Thresholds saved successfully");
         shell.close();
     }

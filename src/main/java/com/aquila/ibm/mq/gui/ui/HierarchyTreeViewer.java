@@ -1,10 +1,10 @@
 package com.aquila.ibm.mq.gui.ui;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.importation.QueuesImportNode;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.HierarchyNode;
-import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
+import com.aquila.ibm.mq.gui.model.QueueNode;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import lombok.Getter;
 import org.eclipse.swt.SWT;
@@ -33,7 +33,7 @@ public class HierarchyTreeViewer extends Composite {
     private Tree tree;
     private HierarchyConfig hierarchyConfig;
     private final MQConnectionManager connectionManager;
-    private final ConfigManager configManager;
+    private Configuration configuration;
 
     // Map TreeItem to HierarchyNode ID for quick lookup
     private final Map<TreeItem, String> treeItemToNodeId;
@@ -70,10 +70,10 @@ public class HierarchyTreeViewer extends Composite {
 
     public HierarchyTreeViewer(Composite parent, int style,
                                MQConnectionManager connectionManager,
-                               ConfigManager configManager) {
+                               Configuration configuration) {
         super(parent, style);
         this.connectionManager = connectionManager;
-        this.configManager = configManager;
+        this.configuration = configuration;
         this.treeItemToNodeId = new HashMap<>();
         this.nodeIdToTreeItem = new HashMap<>();
 
@@ -352,7 +352,7 @@ public class HierarchyTreeViewer extends Composite {
                 boolean success = hierarchyConfig.moveNode(draggedNodeId, newParentId);
 
                 if (success) {
-                    configManager.saveHierarchy(hierarchyConfig);
+                    configuration.saveHierarchy(hierarchyConfig);
                     refresh();
 
                     // Reselect the moved node
@@ -412,7 +412,8 @@ public class HierarchyTreeViewer extends Composite {
     /**
      * Set the hierarchy and render the tree.
      */
-    public void setHierarchyConfig(HierarchyConfig hierarchyConfig) {
+    public void setHierarchyConfig(Configuration configuration, HierarchyConfig hierarchyConfig) {
+        this.configuration = configuration;
         this.hierarchyConfig = hierarchyConfig;
         refresh();
     }
@@ -445,6 +446,12 @@ public class HierarchyTreeViewer extends Composite {
         // Build tree from root nodes
         List<HierarchyNode> rootNodes = hierarchyConfig.getChildren(null);
         for (HierarchyNode node : rootNodes) {
+            if (node.getQueueNode() == null) {
+                if (node.getType() == HierarchyNode.NodeType.QUEUE) {
+                    log.error("QueueNode null for:{}", node);
+                    // node.setQueueBrowserConfig(this.configManager.getQueueBrowserConfigMap().get(node.));
+                }
+            }
             createTreeItem(null, node);
         }
 
@@ -614,7 +621,7 @@ public class HierarchyTreeViewer extends Composite {
         final HierarchyNode newFolder = new HierarchyNode(HierarchyNode.NodeType.FOLDER, folderName);
         hierarchyConfig.addNode(newFolder, parentId);
         // Save and refresh
-        configManager.saveHierarchy(hierarchyConfig);
+        configuration.saveHierarchy(hierarchyConfig);
         refresh();
         // Select the new folder
         TreeItem item = nodeIdToTreeItem.get(newFolder.getId());
@@ -635,16 +642,16 @@ public class HierarchyTreeViewer extends Composite {
                 selectedNode.getId() :
                 null;
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
-                getShell(), configManager, selectedNode, false);
-        final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
-        log.info("addQueueBrowser: {}", queueBrowserConfig);
-        if (queueBrowserConfig != null) {
-            final String displayName = queueBrowserConfig.getLabel();
+                getShell(), configuration, selectedNode, false);
+        final QueueNode queueNode = queueBrowserDialog.open();
+        log.info("addQueueBrowser: {}", queueNode);
+        if (queueNode != null) {
+            final String displayName = queueNode.getLabel();
             final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, displayName);
-            newNode.setQueueBrowserConfig(queueBrowserConfig);
+            newNode.setQueueNode(queueNode);
             hierarchyConfig.addNode(newNode, parentId);
-            configManager.saveHierarchy(hierarchyConfig);
-            this.configManager.save(newNode.getId(), queueBrowserConfig);
+            configuration.saveHierarchy(hierarchyConfig);
+            this.configuration.save(newNode.getId(), queueNode);
             refresh();
             TreeItem item = nodeIdToTreeItem.get(newNode.getId());
             if (item != null) {
@@ -658,17 +665,19 @@ public class HierarchyTreeViewer extends Composite {
     public void addQueues(String key, QueuesImportNode queuesImportNode, String parentId) {
         final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, key);
         hierarchyConfig.addNode(newNode, parentId);
-        configManager.saveHierarchy(hierarchyConfig);
-        final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
-        queuesImportNode.getChildren().forEach((key1, value) -> {
-            descriptions.put(key1, new QueueBrowserConfig.QueueDescription(value));
+        configuration.saveHierarchy(hierarchyConfig);
+        final Map<String, QueueNode.QueueDescription> descriptions = new HashMap<>();
+        queuesImportNode.getChildren().forEach((key1, label) -> {
+            descriptions.put(key1, new QueueNode.QueueDescription(label));
         });
-        this.configManager.save(newNode.getId(),
-                QueueBrowserConfig.builder()
-                        .queueManager(queuesImportNode.getQueueMgr())
-                        .queuePattern("*")
-                        .descriptions(descriptions)
-                        .build());
+        QueueNode queueNode = QueueNode.builder()
+                .queueManager(queuesImportNode.getQueueMgr())
+                .queuePattern("*")
+                .descriptions(descriptions)
+                .build();
+        newNode.setQueueNode(queueNode);
+        log.info("add queueBrowser:{} to newNode:{}", queueNode.getQueueManager(), newNode.getName());
+        this.configuration.save(newNode.getId(), queueNode);
         refresh();
         TreeItem item = nodeIdToTreeItem.get(newNode.getId());
         if (item != null) {
@@ -681,12 +690,12 @@ public class HierarchyTreeViewer extends Composite {
     public void editQueueBrowser(HierarchyNode hierarchyNode) {
         log.info("editQueueBrowser: {}", hierarchyNode);
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
-                getShell(), configManager, hierarchyNode, true);
-        final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
-        log.info("editQueueBrowser: {}", queueBrowserConfig);
-        if (queueBrowserConfig == null) return;
-        hierarchyNode.setQueueBrowserConfig(queueBrowserConfig);
-        this.configManager.save(hierarchyNode.getId(), queueBrowserConfig);
+                getShell(), configuration, hierarchyNode, true);
+        final QueueNode queueNode = queueBrowserDialog.open();
+        log.info("editQueueBrowser: {}", queueNode);
+        if (queueNode == null) return;
+        hierarchyNode.setQueueNode(queueNode);
+        this.configuration.save(hierarchyNode.getId(), queueNode);
         refresh();
     }
 
@@ -706,7 +715,7 @@ public class HierarchyTreeViewer extends Composite {
 
             if (newName != null && !newName.equals(node.getName())) {
                 node.setName(newName);
-                configManager.saveHierarchy(hierarchyConfig);
+                configuration.saveHierarchy(hierarchyConfig);
 
                 // Update tree item
                 TreeItem item = nodeIdToTreeItem.get(node.getId());
@@ -758,10 +767,10 @@ public class HierarchyTreeViewer extends Composite {
         if (confirmBox.open() == SWT.YES) {
             // Remove from hierarchy
             hierarchyConfig.removeNode(node.getId());
-            configManager.saveHierarchy(hierarchyConfig);
+            configuration.saveHierarchy(hierarchyConfig);
             refresh();
 
-            log.info("Deleted node: {}", node.getName());
+            log.info("Deleted node: {}/{}", node.getType(), node.getName());
         }
     }
 

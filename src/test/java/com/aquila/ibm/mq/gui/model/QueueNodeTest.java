@@ -12,15 +12,15 @@ import java.io.Reader;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-class QueueBrowserConfigTest {
+class QueueNodeTest {
 
     @Test
     void testSerDeser() throws FileNotFoundException {
         final Gson gson = new GsonBuilder().setPrettyPrinting().create();
         final String file = "doc/41f85a24-11ca-42d9-8a9d-59c539d158c5.json";
         final Reader reader = new FileReader(file);
-        final QueueBrowserConfig queueBrowserConfig = gson.fromJson(reader, QueueBrowserConfig.class);
-        assertNotNull(queueBrowserConfig);
-        log.info("queueBrowserConfig:\n{}",  gson.toJson(queueBrowserConfig));
+        final QueueNode queueNode = gson.fromJson(reader, QueueNode.class);
+        assertNotNull(queueNode);
+        log.info("queueBrowserConfig:\n{}",  gson.toJson(queueNode));
     }
 }

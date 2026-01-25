@@ -1,6 +1,6 @@
 package com.aquila.ibm.mq.gui.ui;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import org.eclipse.swt.SWT;
@@ -21,16 +21,16 @@ public class QueueManagerSelectionDialog {
     private static final Logger logger = LoggerFactory.getLogger(QueueManagerSelectionDialog.class);
 
     private final Shell parentShell;
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private final HierarchyConfig hierarchy;
     private Shell shell;
     private org.eclipse.swt.widgets.List connectionList;
     private List<QueueManagerConfig> availableConnections;
     private QueueManagerConfig selectedConnection;
 
-    public QueueManagerSelectionDialog(Shell parent, ConfigManager configManager, HierarchyConfig hierarchy) {
+    public QueueManagerSelectionDialog(Shell parent, Configuration configuration, HierarchyConfig hierarchy) {
         this.parentShell = parent;
-        this.configManager = configManager;
+        this.configuration = configuration;
         this.hierarchy = hierarchy;
     }
 
@@ -47,7 +47,7 @@ public class QueueManagerSelectionDialog {
             box.setMessage("No Queue Manager detected.\n\nWould you like to create a new connection first?");
 
             if (box.open() == SWT.YES) {
-                QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configManager);
+                QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configuration);
                 QueueManagerConfig newConfig = dialog.open();
                 return newConfig;
             }
@@ -79,7 +79,7 @@ public class QueueManagerSelectionDialog {
     }
 
     private void loadAvailableConnections() {
-        final Map<String, QueueManagerConfig> allConnections = configManager.loadConnections();
+        final Map<String, QueueManagerConfig> allConnections = configuration.loadConnections();
         availableConnections = new ArrayList<>();
 
         // Filter out connections already in the hierarchy
@@ -153,7 +153,7 @@ public class QueueManagerSelectionDialog {
     }
 
     private void onNewConnection() {
-        QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configManager);
+        QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configuration);
         QueueManagerConfig newConfig = dialog.open();
 
         if (newConfig != null) {

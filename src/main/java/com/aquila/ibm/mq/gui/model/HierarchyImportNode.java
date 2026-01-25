@@ -79,7 +79,8 @@ public class HierarchyImportNode {
         Map<String, Object> map = new HashMap<>();
 
         if (type != null) {
-            map.put("type", type.toString());
+            // Use lowercase type names to match import.json format
+            map.put("type", type.toString().toLowerCase());
         }
 
         if (queueMgr != null) {

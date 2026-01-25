@@ -24,10 +24,10 @@
   },
   "hierarchy": {
     "MERCURY": {
-      "type": "FOLDER",
+      "type": "folder",
       "children": {
         "DEV": {
-          "type": "QUEUE",
+          "type": "queue",
           "queueMgr": "192.168.1.73(1414)",
           "children": {
             "DEV.QUEUE.1": "D-10",
@@ -38,13 +38,13 @@
       }
     },
     "XMEDIA": {
-      "type": "FOLDER",
+      "type": "folder",
       "children": {
         "DEV": {
-          "type": "FOLDER",
+          "type": "folder",
           "children": {
             "DEV1": {
-              "type": "QUEUE",
+              "type": "queue",
               "queueMgr": "192.168.1.73(1414)",
               "children": {
                 "DEV.QUEUE.1": "D-10"
