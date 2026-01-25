@@ -151,7 +151,7 @@ public class QueueBrowserDialog {
         if (edit && hierarchyNode.getQueueNode() != null && hierarchyNode.getQueueNode().getLabel() != null) {
             labelSz = hierarchyNode.getQueueNode().getLabel();
         } else {
-            labelSz = "DEFAULT";
+            labelSz = "Default";
         }
         label.setText(labelSz);
     }
@@ -215,9 +215,7 @@ public class QueueBrowserDialog {
 
         Button fill = new Button(buttonBar, SWT.PUSH);
         fill.setText("Fill");
-        fill.addListener(SWT.Selection, e -> {
-            fill(e);
-        });
+        fill.addListener(SWT.Selection, this::fill);
     }
 
     private void fill(Event e) {

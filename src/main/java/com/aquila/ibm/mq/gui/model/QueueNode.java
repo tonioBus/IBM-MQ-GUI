@@ -39,11 +39,17 @@ public class QueueNode {
     private String queuePattern;
     private Map<String, QueueDescription> descriptions;
 
-    public static QueueNode fromFile(String key, String label, String queueManager) {
+    /**
+     * Read QueueNode from the file <strong>key.json</strong>
+     * @param key
+     * @param label
+     * @param queueManager
+     * @return
+     */
+    public static QueueNode fromFile(String key,  String queueManager) {
         final File file = new File(Configuration.CONFIG_DIR, String.format("%s.json", key));
         try (Reader reader = new FileReader(file)) {
             final QueueNode queueNode = gson.fromJson(reader, QueueNode.class);
-            queueNode.label = label;
             log.info("QueueNode:\n{}", gson.toJson(queueNode));
             return queueNode;
         } catch (IOException e) {

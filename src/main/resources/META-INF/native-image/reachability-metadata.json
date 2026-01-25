@@ -343,24 +343,6 @@
       ]
     },
     {
-      "type": "com.aquila.ibm.mq.gui.config.AlertManager"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.config.AlertManager$AlertEvent"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.config.ConfigManager"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.config.ConfigManager$1"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.config.ConfigManager$2"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.config.ConfigManager$3"
-    },
-    {
       "type": "com.aquila.ibm.mq.gui.importation.FolderImportNode",
       "methods": [
         {
@@ -611,9 +593,6 @@
       ]
     },
     {
-      "type": "com.aquila.ibm.mq.gui.model.MessageInfo"
-    },
-    {
       "type": "com.aquila.ibm.mq.gui.model.MessageTemplate",
       "fields": [
         {
@@ -666,9 +645,6 @@
       ]
     },
     {
-      "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig$QueueBrowserConfigBuilder"
-    },
-    {
       "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig$QueueDescription",
       "methods": [
         {
@@ -695,18 +671,6 @@
           "parameterTypes": []
         }
       ]
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.model.QueueHandle"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.model.QueueHandle$QueueHandleBuilder"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.model.QueueInfo"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.model.QueueInfo$QueueInfoBuilder"
     },
     {
       "type": "com.aquila.ibm.mq.gui.model.QueueManagerConfig",
@@ -742,120 +706,6 @@
           "parameterTypes": []
         }
       ]
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.model.ThresholdConfig"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.model.ThresholdConfig$AlertLevel"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.mq.MQConnectionManager"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.mq.MessageService"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.mq.MessageService$BatchCallback"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.mq.QueueMonitor"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.mq.QueueMonitor$QueueMonitorListener"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.mq.QueueService"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.DepthChartPanel"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.DepthChartPanel$DataPoint"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.FolderDialog"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.HierarchyTreeViewer"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.HierarchyTreeViewer$1"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.HierarchyTreeViewer$2"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.HierarchyTreeViewer$3"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.HierarchyTreeViewer$SelectionEvent"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.HierarchyTreeViewer$SelectionType"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.InspectedQueueViewer"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.InspectedQueueViewer$1"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.InspectedQueueViewer$ContextMenuActionListener"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.MainWindow"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.MainWindow$1"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.MainWindow$2"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.MessageBrowserPanel"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueueBrowserDialog"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueueHandlesPanel"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueueListViewer"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueueListViewer$1"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueueListViewer$ContextMenuActionListener"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueueManagerDialog"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueueManagerSelectionDialog"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.QueuePropertiesPanel"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.SelectedQueuesViewer"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.SendMessageDialog"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.SendMessageDialog$1"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.SendMessageDialog$InputDialog"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.ui.ThresholdConfigDialog"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.util.ImportExportUtil"
     },
     {
       "type": "com.aquila.ibm.mq.gui.util.ImportExportUtilTest",
@@ -955,9 +805,6 @@
           "parameterTypes": []
         }
       ]
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator"
     },
     {
       "type": "com.aquila.ibm.mq.gui.util.QueueNameRegexCalculatorTest",
@@ -1117,12 +964,6 @@
       ]
     },
     {
-      "type": "com.aquila.ibm.mq.gui.util.SoundPlayer"
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.util.TemplateProcessor"
-    },
-    {
       "type": "com.fasterxml.jackson.databind.ext.Java7SupportImpl",
       "methods": [
         {
@@ -1130,9 +971,6 @@
           "parameterTypes": []
         }
       ]
-    },
-    {
-      "type": "com.google.gson.reflect.TypeToken"
     },
     {
       "type": "com.ibm.mq.MQJavaComponent",
@@ -17825,7 +17663,12 @@
     },
     {
       "type": "com.ibm.mq.constants.MQConstants",
-      "allPublicFields": true
+      "allPublicFields": true,
+      "fields": [
+        {
+          "name": "sccsid"
+        }
+      ]
     },
     {
       "type": "com.ibm.mq.constants.MQPropertyIdentifiers",
@@ -18374,15 +18217,6 @@
       ]
     },
     {
-      "type": "com.intellij.junit5.JUnit5IdeaTestRunner",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "com.intellij.junit6.JUnit6IdeaTestRunner",
       "methods": [
         {
@@ -18545,9 +18379,6 @@
       ]
     },
     {
-      "type": "java.io.Serializable"
-    },
-    {
       "type": "java.lang.Boolean",
       "jniAccessible": true,
       "fields": [
@@ -18594,9 +18425,6 @@
       ]
     },
     {
-      "type": "java.lang.Comparable"
-    },
-    {
       "type": "java.lang.Deprecated"
     },
     {
@@ -18606,9 +18434,6 @@
           "name": "TYPE"
         }
       ]
-    },
-    {
-      "type": "java.lang.Enum"
     },
     {
       "type": "java.lang.Float",
@@ -18648,9 +18473,6 @@
     },
     {
       "type": "java.lang.Record"
-    },
-    {
-      "type": "java.lang.Runnable"
     },
     {
       "type": "java.lang.RuntimePermission"
@@ -18707,9 +18529,6 @@
           "name": "TYPE"
         }
       ]
-    },
-    {
-      "type": "java.lang.constant.Constable"
     },
     {
       "type": "java.lang.management.BufferPoolMXBean"
@@ -18855,9 +18674,6 @@
     },
     {
       "type": "java.util.Date"
-    },
-    {
-      "type": "java.util.EventListener"
     },
     {
       "type": "java.util.HashMap"
@@ -19078,40 +18894,16 @@
       "type": "org.eclipse.swt.dnd.DragSource$4"
     },
     {
-      "type": "org.eclipse.swt.dnd.DragSourceAdapter"
-    },
-    {
-      "type": "org.eclipse.swt.dnd.DragSourceListener"
-    },
-    {
       "type": "org.eclipse.swt.dnd.DropTarget"
     },
     {
       "type": "org.eclipse.swt.dnd.DropTarget$3"
     },
     {
-      "type": "org.eclipse.swt.dnd.DropTargetAdapter"
-    },
-    {
-      "type": "org.eclipse.swt.dnd.DropTargetListener"
-    },
-    {
       "type": "org.eclipse.swt.dnd.OleEnumFORMATETC$2"
     },
     {
-      "type": "org.eclipse.swt.events.KeyAdapter"
-    },
-    {
-      "type": "org.eclipse.swt.events.KeyListener"
-    },
-    {
       "type": "org.eclipse.swt.graphics.Device"
-    },
-    {
-      "type": "org.eclipse.swt.graphics.Drawable"
-    },
-    {
-      "type": "org.eclipse.swt.internal.SWTEventListener"
     },
     {
       "type": "org.eclipse.swt.internal.gdip.GdiplusStartupInput",
@@ -21241,12 +21033,6 @@
       ]
     },
     {
-      "type": "org.eclipse.swt.widgets.Composite"
-    },
-    {
-      "type": "org.eclipse.swt.widgets.Control"
-    },
-    {
       "type": "org.eclipse.swt.widgets.Display",
       "jniAccessible": true,
       "methods": [
@@ -21285,12 +21071,6 @@
           ]
         }
       ]
-    },
-    {
-      "type": "org.eclipse.swt.widgets.Scrollable"
-    },
-    {
-      "type": "org.eclipse.swt.widgets.Widget"
     },
     {
       "type": "org.junit.internal.AssumptionViolatedException"

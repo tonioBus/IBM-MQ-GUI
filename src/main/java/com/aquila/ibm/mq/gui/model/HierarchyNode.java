@@ -45,7 +45,8 @@ public class HierarchyNode {
     public String getName() {
         return switch (type) {
             case FOLDER -> name;
-            case QUEUE -> queueNode == null ? "N : A" : queueNode.getLabel();
+            case QUEUE -> queueNode.getLabel();
+            // case QUEUE -> queueNode == null ? "N / A" : queueNode.getLabel();
         };
     }
 

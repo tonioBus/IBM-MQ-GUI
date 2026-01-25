@@ -145,8 +145,9 @@ public class Configuration {
                         .filter(entry -> entry.getValue().isQueue())
                         .forEach(entry -> {
                             final String key = entry.getKey();
-                            final QueueNode queueNode = QueueNode.fromFile(key, entry.getValue().getName(),
+                            final QueueNode queueNode = QueueNode.fromFile(key,
                                     this.queueManagers.values().stream().toList().getFirst().getQueueManager());
+
                             hierarchyConfig.getNode(key).setQueueNode(queueNode);
                             this.queueBrowserConfigMap.put(key, queueNode);
                         });
