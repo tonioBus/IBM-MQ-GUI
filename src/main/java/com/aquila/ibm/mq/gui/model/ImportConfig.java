@@ -1,5 +1,7 @@
 package com.aquila.ibm.mq.gui.model;
 
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.gson.Gson;
@@ -161,7 +163,6 @@ public class ImportConfig {
                         .map(entry -> descriptions.put((String) entry.getValue(), new QueueNode.QueueDescription(entry.getKey())));
                 final QueueNode queueNode = QueueNode.builder()
                         .descriptions(descriptions)
-                        .label(importNode.getName())
                         .queuePattern("*")
                         .queueManager(importNode.getQueueMgr())
                         .build();
@@ -261,8 +262,8 @@ public class ImportConfig {
      * Recursively collect all queue manager references from a node and its children.
      */
     private static void collectQueueManagerReferences(HierarchyNode node,
-                                                       HierarchyConfig hierarchyConfig,
-                                                       Set<String> queueManagerRefs) {
+                                                      HierarchyConfig hierarchyConfig,
+                                                      Set<String> queueManagerRefs) {
         if (node == null) {
             return;
         }

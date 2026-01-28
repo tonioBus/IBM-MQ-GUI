@@ -1,5 +1,6 @@
 package com.aquila.ibm.mq.gui.model;
 
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;

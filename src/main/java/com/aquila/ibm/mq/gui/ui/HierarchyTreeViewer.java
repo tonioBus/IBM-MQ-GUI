@@ -3,8 +3,8 @@ package com.aquila.ibm.mq.gui.ui;
 import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.importation.QueuesImportNode;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
-import com.aquila.ibm.mq.gui.model.HierarchyNode;
-import com.aquila.ibm.mq.gui.model.QueueNode;
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import lombok.Getter;
 import org.eclipse.swt.SWT;
@@ -643,10 +643,12 @@ public class HierarchyTreeViewer extends Composite {
                 null;
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
                 getShell(), configuration, selectedNode, false);
-        final QueueNode queueNode = queueBrowserDialog.open();
-        log.info("addQueueBrowser: {}", queueNode);
+        QueueBrowserDialog.ReturnQueueBrowserDialog returnQueueBrowserDialog = queueBrowserDialog.open();
+        final QueueNode queueNode = returnQueueBrowserDialog.queueNode();
+        final String queueNodeName =  returnQueueBrowserDialog.label();
+        log.info("addQueueBrowser: {} -> {}", queueNodeName, queueNode);
         if (queueNode != null) {
-            final String displayName = queueNode.getLabel();
+            final String displayName = selectedNode.getName();
             final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, displayName);
             newNode.setQueueNode(queueNode);
             hierarchyConfig.addNode(newNode, parentId);
@@ -691,10 +693,13 @@ public class HierarchyTreeViewer extends Composite {
         log.info("editQueueBrowser: {}", hierarchyNode);
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
                 getShell(), configuration, hierarchyNode, true);
-        final QueueNode queueNode = queueBrowserDialog.open();
-        log.info("editQueueBrowser: {}", queueNode);
+        QueueBrowserDialog.ReturnQueueBrowserDialog returnQueueBrowserDialog = queueBrowserDialog.open();
+        final QueueNode queueNode = returnQueueBrowserDialog.queueNode();
+        final String nodeName = returnQueueBrowserDialog.label();
+        log.info("editQueueBrowser: {} -> {}", nodeName, queueNode);
         if (queueNode == null) return;
         hierarchyNode.setQueueNode(queueNode);
+        hierarchyNode.setName(nodeName);
         this.configuration.save(hierarchyNode.getId(), queueNode);
         refresh();
     }

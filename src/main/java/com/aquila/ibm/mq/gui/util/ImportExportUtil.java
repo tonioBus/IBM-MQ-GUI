@@ -1,7 +1,7 @@
 package com.aquila.ibm.mq.gui.util;
 
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
-import com.aquila.ibm.mq.gui.model.HierarchyNode;
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
 import com.aquila.ibm.mq.gui.model.ImportConfig;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import lombok.extern.slf4j.Slf4j;

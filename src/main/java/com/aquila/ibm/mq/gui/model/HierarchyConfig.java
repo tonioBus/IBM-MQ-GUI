@@ -1,5 +1,6 @@
 package com.aquila.ibm.mq.gui.model;
 
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

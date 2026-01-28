@@ -4,6 +4,8 @@ import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.importation.*;
 import com.aquila.ibm.mq.gui.model.*;
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import com.aquila.ibm.mq.gui.mq.MessageService;
 import com.aquila.ibm.mq.gui.mq.QueueMonitor;

@@ -1,6 +1,7 @@
 package com.aquila.ibm.mq.gui.config;
 
 import com.aquila.ibm.mq.gui.model.*;
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;

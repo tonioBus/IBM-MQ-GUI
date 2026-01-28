@@ -1,4 +1,4 @@
-package com.aquila.ibm.mq.gui.model;
+package com.aquila.ibm.mq.gui.model.node;
 
 import com.aquila.ibm.mq.gui.config.Configuration;
 import com.google.gson.Gson;
@@ -21,7 +21,6 @@ public class QueueNode {
     public record QueueDescription(String label) {
     }
 
-    private String label;
     private String queueManager;
     /**
      * Sequential queue request flag.
@@ -57,7 +56,6 @@ public class QueueNode {
             QueueNode queueNode = QueueNode.builder()
                     .queueManager(queueManager)
                     .queuePattern("*")
-                    .label("Default")
                     .build();
             queueNode.save(key);
             return queueNode;
