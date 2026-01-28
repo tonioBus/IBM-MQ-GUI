@@ -1,6 +1,6 @@
-package com.aquila.ibm.mq.gui.model;
+package com.aquila.ibm.mq.gui.model.node;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.Builder;
@@ -15,13 +15,12 @@ import java.util.Map;
 @Getter
 @ToString
 @Builder
-public class QueueBrowserConfig {
+public class QueueNode {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public record QueueDescription(String label) {
     }
 
-    private String label;
     private String queueManager;
     /**
      * Sequential queue request flag.
@@ -39,32 +38,38 @@ public class QueueBrowserConfig {
     private String queuePattern;
     private Map<String, QueueDescription> descriptions;
 
-    public static QueueBrowserConfig fromFile(String key, String queueManager) {
-        final File file = new File(ConfigManager.CONFIG_DIR, String.format("%s.json", key));
+    /**
+     * Read QueueNode from the file <strong>key.json</strong>
+     * @param key
+     * @param label
+     * @param queueManager
+     * @return
+     */
+    public static QueueNode fromFile(String key,  String queueManager) {
+        final File file = new File(Configuration.CONFIG_DIR, String.format("%s.json", key));
         try (Reader reader = new FileReader(file)) {
-            final QueueBrowserConfig queueBrowserConfig = gson.fromJson(reader, QueueBrowserConfig.class);
-            log.info("queueBrowserConfig:\n{}", gson.toJson(queueBrowserConfig));
-            return queueBrowserConfig;
+            final QueueNode queueNode = gson.fromJson(reader, QueueNode.class);
+            log.info("QueueNode:\n{}", gson.toJson(queueNode));
+            return queueNode;
         } catch (IOException e) {
-            log.error("Failed to load QueueBrowserConfig: {}", key, e);
-            QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()
+            log.error("Failed to load QueueNode: {}", key, e);
+            QueueNode queueNode = QueueNode.builder()
                     .queueManager(queueManager)
                     .queuePattern("*")
-                    .label("Default")
                     .build();
-            queueBrowserConfig.save(key);
-            return queueBrowserConfig;
+            queueNode.save(key);
+            return queueNode;
         }
     }
 
     public void save(String key) {
         String filename = String.format("%s.json", key);
-        final File file = new File(ConfigManager.CONFIG_DIR, filename);
+        final File file = new File(Configuration.CONFIG_DIR, filename);
         try (Writer writer = new FileWriter(file)) {
             gson.toJson(this, writer);
-            log.info("Saved queueBrowserConfig: {}", file);
+            log.info("Saved QueueNode: {}", file);
         } catch (IOException e1) {
-            log.error("Failed to save queueBrowserConfig", e1);
+            log.error("Failed to save QueueNode", e1);
         }
     }
 

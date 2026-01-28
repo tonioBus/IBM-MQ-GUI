@@ -1,5 +1,6 @@
 package com.aquila.ibm.mq.gui.model;
 
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -65,7 +66,7 @@ public class HierarchyConfig {
             }
         }
 
-        log.debug("Added node: {} to parent: {}", node.getName(), parentId);
+        log.debug("Added node: {} to parent: {}", node, parentId);
     }
 
     /**

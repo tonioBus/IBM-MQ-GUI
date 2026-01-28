@@ -28,16 +28,16 @@ public class QueueService {
     /**
      * Get all queues for the active connection.
      */
-    public List<QueueInfo> getAllQueues() throws MQException, IOException, MQDataException {
-        return getAllQueues(false);
+    public List<QueueInfo> getAllQueues(String ibmPattern) throws MQException, IOException, MQDataException {
+        return getAllQueues(ibmPattern, false);
     }
 
     /**
      * Get all queues for the active connection.
      */
-    public List<QueueInfo> getAllQueues(boolean includeSystemQueues) throws MQException, IOException, MQDataException {
+    public List<QueueInfo> getAllQueues(String ibmPattern, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
         final MQQueueManager qm = connectionManager.getQueueManager();
-        return getAllQueuesForManager(qm, includeSystemQueues);
+        return getAllQueuesForManager(qm, ibmPattern, includeSystemQueues);
     }
 
     /**
@@ -46,15 +46,15 @@ public class QueueService {
      * @param connectionId        The connection ID
      * @param includeSystemQueues Whether to include system queues
      */
-    public List<QueueInfo> getAllQueues(String connectionId, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
+    public List<QueueInfo> getAllQueues(String connectionId, String ibmPattern, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
         final MQQueueManager qm = connectionManager.getQueueManager(connectionId);
-        return getAllQueuesForManager(qm, includeSystemQueues);
+        return getAllQueuesForManager(qm, ibmPattern, includeSystemQueues);
     }
 
     /**
      * Internal method to get all queues for a given queue manager.
      */
-    private List<QueueInfo> getAllQueuesForManager(MQQueueManager qm, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
+    private List<QueueInfo> getAllQueuesForManager(MQQueueManager qm, String ibmPattern, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
         final List<QueueInfo> queues = new ArrayList<>();
 
         // Create PCF Message Agent
@@ -64,7 +64,8 @@ public class QueueService {
         final PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
 
         // Request all queues (use wildcard)
-        request.addParameter(CMQC.MQCA_Q_NAME, "*");
+        log.info("Using IBM Pattern: {}", ibmPattern);
+        request.addParameter(CMQC.MQCA_Q_NAME, ibmPattern);
         request.addParameter(MQConstants.MQIA_Q_TYPE, CMQC.MQQT_ALL); //  | MQConstants.MQQT_ALIAS | MQConstants.MQQT_REMOTE);
 
         // Specify which attributes to retrieve
@@ -77,7 +78,7 @@ public class QueueService {
         // Send request and get responses
         log.info("Before agent.send()");
         final PCFMessage[] responses = agent.send(request);
-        log.info("\nFound  {} queues.", responses.length);
+        log.info("After agent.send() -> Found  {} queues.", responses.length);
         for (final PCFMessage response : responses) {
             try {
                 final String queueName = response.getStringParameterValue(CMQC.MQCA_Q_NAME).trim();
@@ -103,20 +104,23 @@ public class QueueService {
         final MQQueueManager qm = connectionManager.getQueueManager();
 
         final PCFMessageAgent agent = new PCFMessageAgent(qm);
+        final QueueInfo queueInfo = new QueueInfo(queueName);
         try {
             final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
             request.addParameter(MQConstants.MQCA_Q_NAME, queueName);
 
             final PCFMessage[] responses = agent.send(request);
-
             if (responses.length > 0) {
-                final QueueInfo queueInfo = new QueueInfo(queueName);
                 populateQueueInfo(queueInfo, responses[0]);
                 return queueInfo;
             }
-
             log.warn("Queue not found: {}", queueName);
-            return null;
+            queueInfo.setAttribute("Exception", "Queue not found");
+            return queueInfo;
+        } catch(PCFException e) {
+            log.error("Queue not found: {}", queueName, e);
+            queueInfo.setAttribute("Exception", e.getMessage());
+            return queueInfo;
         } finally {
             agent.disconnect();
         }
@@ -140,21 +144,28 @@ public class QueueService {
                 final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
                 request.addParameter(MQConstants.MQCA_Q_NAME, queueInfo.getQueue());
                 log.info("Before agent.send()");
-                final PCFMessage[] responses = agent.send(request);
-                log.info("After agent.send() responses;{}", responses.length);
-                populateQueueInfo(queueInfo, responses[0]);
+                try {
+                    final PCFMessage[] responses = agent.send(request);
+                    log.info("After agent.send() responses;{}", responses.length);
+                    populateQueueInfo(queueInfo, responses[0]);
+                } catch (Exception e) {
+                    log.error("Error retrieving queues: {} ", queueInfo.getQueue(), e);
+                }
             }
         } else {
             List<String> queueNames = queueInfos.stream().map(QueueInfo::getQueue).toList();
             List<String> optimizedIBMMQPatterns = QueueNameRegexCalculator.createOptimizedIBMMQPatterns(queueNames);
             for (final String optimizedIBMMQPattern : optimizedIBMMQPatterns) {
                 final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-                //request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
-                request.addParameter(MQConstants.MQCA_Q_NAME, "DEV.QUEUE.*");
+                request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
                 log.info("Before agent.send() optimise ({})", optimizedIBMMQPattern);
-                final PCFMessage[] responses = agent.send(request);
-                log.info("After agent.send() optimise responses;{}", responses.length);
-                populateQueueInfos(queueInfos, responses);
+                try {
+                    final PCFMessage[] responses = agent.send(request);
+                    log.info("After agent.send() optimise responses: {}", responses.length);
+                    populateQueueInfos(queueInfos, responses);
+                } catch (Exception e) {
+                    log.error("Error retrieving queues for pattern: {} ", optimizedIBMMQPattern, e);
+                }
             }
         }
         long endTime = System.currentTimeMillis();
@@ -183,11 +194,11 @@ public class QueueService {
     private void populateQueueInfo(QueueInfo queueInfo, PCFMessage response) {
         try {
             queueInfo.setQueueType(response.getIntParameterValue(MQConstants.MQIA_Q_TYPE));
-            if(queueInfo.getQueueType() == CMQC.MQQT_LOCAL) {
-                queueInfo.setCurrentDepth(response.getIntParameterValue(MQConstants.MQIA_CURRENT_Q_DEPTH));
-                queueInfo.setMaxDepth(response.getIntParameterValue(MQConstants.MQIA_MAX_Q_DEPTH));
-                queueInfo.setOpenInputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_INPUT_COUNT));
-                queueInfo.setOpenOutputCount(response.getIntParameterValue(MQConstants.MQIA_OPEN_OUTPUT_COUNT));
+            if (queueInfo.getQueueType() == CMQC.MQQT_LOCAL) {
+                queueInfo.setCurrentDepth(retrieveIntParameter(queueInfo, response, MQConstants.MQIA_CURRENT_Q_DEPTH, "MQIA_CURRENT_Q_DEPTH"));
+                queueInfo.setMaxDepth(retrieveIntParameter(queueInfo, response, MQConstants.MQIA_MAX_Q_DEPTH, "MQIA_MAX_Q_DEPTH"));
+                queueInfo.setOpenInputCount(retrieveIntParameter(queueInfo, response, MQConstants.MQIA_OPEN_INPUT_COUNT, "MQIA_OPEN_INPUT_COUNT"));
+                queueInfo.setOpenOutputCount(retrieveIntParameter(queueInfo, response, MQConstants.MQIA_OPEN_OUTPUT_COUNT, "MQIA_OPEN_OUTPUT_COUNT"));
             }
             final String desc = response.getStringParameterValue(MQConstants.MQCA_Q_DESC);
             queueInfo.setDescription(desc != null ? desc.trim() : "");
@@ -198,23 +209,44 @@ public class QueueService {
                     final String baseQueueName = response.getStringParameterValue(MQConstants.MQCA_BASE_Q_NAME);
                     queueInfo.setBaseQueueName(baseQueueName != null ? baseQueueName.trim() : null);
                 } catch (PCFException e) {
+                    queueInfo.setAttribute("Exception", e.getMessage());
                     log.debug("Base queue name not available for {}", queueInfo.getQueue());
                 }
             }
             if (queueInfo.getQueueType() == MQConstants.MQQT_LOCAL) {
                 queueInfo.setAttribute("CreationDate", response.getStringParameterValue(MQConstants.MQCA_CREATION_DATE));
                 queueInfo.setAttribute("CreationTime", response.getStringParameterValue(MQConstants.MQCA_CREATION_TIME));
-                queueInfo.setAttribute("Shareability", response.getIntParameterValue(MQConstants.MQIA_SHAREABILITY));
-                queueInfo.setAttribute("TriggerControl", response.getIntParameterValue(MQConstants.MQIA_TRIGGER_CONTROL));
-                queueInfo.setAttribute("MaxMsgLength", response.getIntParameterValue(MQConstants.MQIA_MAX_MSG_LENGTH));
+                setQueueInfoSetIntAttribute(queueInfo, response, "Shareability", MQConstants.MQIA_SHAREABILITY);
+                setQueueInfoSetIntAttribute(queueInfo, response, "TriggerControl", MQConstants.MQIA_TRIGGER_CONTROL);
+                setQueueInfoSetIntAttribute(queueInfo, response, "MaxMsgLength", MQConstants.MQIA_MAX_MSG_LENGTH);
             }
-            queueInfo.setAttribute("InhibitPut", response.getIntParameterValue(MQConstants.MQIA_INHIBIT_PUT));
-            queueInfo.setAttribute("InhibitGet", response.getIntParameterValue(MQConstants.MQIA_INHIBIT_GET));
-            queueInfo.setAttribute("DefPriority", response.getIntParameterValue(MQConstants.MQIA_DEF_PRIORITY));
-            queueInfo.setAttribute("DefPersistence", response.getIntParameterValue(MQConstants.MQIA_DEF_PERSISTENCE));
+            setQueueInfoSetIntAttribute(queueInfo, response, "InhibitPut", MQConstants.MQIA_INHIBIT_PUT);
+            setQueueInfoSetIntAttribute(queueInfo, response, "InhibitGet", MQConstants.MQIA_INHIBIT_GET);
+            setQueueInfoSetIntAttribute(queueInfo, response, "DefPriority", MQConstants.MQIA_DEF_PRIORITY);
+            setQueueInfoSetIntAttribute(queueInfo, response, "DefPersistence", MQConstants.MQIA_DEF_PERSISTENCE);
 
         } catch (Exception e) {
+            queueInfo.setAttribute("Exception", e.getMessage());
             log.warn("Error populating queue info for {}", queueInfo.getQueue(), e);
+        }
+    }
+
+    private int retrieveIntParameter(QueueInfo queueInfo, PCFMessage response, int ibmParameter, String mqiaCurrentQDepth) {
+        try {
+            return response.getIntParameterValue(ibmParameter);
+        } catch (PCFException e) {
+            queueInfo.setAttribute("Exception", e.getMessage());
+            log.warn("Attribute {} not available for {}", mqiaCurrentQDepth, queueInfo.getQueue());
+            return -1;
+        }
+    }
+
+    private void setQueueInfoSetIntAttribute(QueueInfo queueInfo, PCFMessage response, String queueInfoParameter, int ibmParameter) {
+        try {
+            queueInfo.setAttribute(queueInfoParameter, response.getIntParameterValue(ibmParameter));
+        } catch (PCFException e) {
+            queueInfo.setAttribute("Exception", e.getMessage());
+            log.warn("Attribute {} not available for {}", queueInfoParameter, queueInfo.getQueue());
         }
     }
 
@@ -230,7 +262,7 @@ public class QueueService {
     }
 
     public void refreshAllQueues(List<QueueInfo> queues) throws MQException, IOException, MQDataException {
-        final List<QueueInfo> refreshed = getAllQueues();
+        final List<QueueInfo> refreshed = getAllQueues("*");
 
         for (final QueueInfo queueInfo : queues) {
             for (final QueueInfo updated : refreshed) {

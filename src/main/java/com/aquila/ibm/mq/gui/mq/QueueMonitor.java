@@ -2,6 +2,7 @@ package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
+import com.aquila.ibm.mq.gui.ui.MainWindow;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,12 +17,14 @@ public class QueueMonitor extends Thread {
     private final List<QueueInfo> monitoredQueues;
     private final AtomicBoolean running;
     private final AtomicBoolean paused;
+    private final MainWindow mainWindow;
     private int refreshInterval = 5000;
     @Setter
     private QueueMonitorListener listener;
 
-    public QueueMonitor(QueueService queueService, AlertManager alertManager) {
+    public QueueMonitor(MainWindow mainWindow, QueueService queueService, AlertManager alertManager) {
         super("QueueMonitor");
+        this.mainWindow = mainWindow;
         this.queueService = queueService;
         this.alertManager = alertManager;
         this.monitoredQueues = new CopyOnWriteArrayList<>();
@@ -38,12 +41,12 @@ public class QueueMonitor extends Thread {
         while (running.get()) {
             try {
                 if (!paused.get() && !monitoredQueues.isEmpty()) {
-                    log.info("updateQueues();");
-                    // updateQueues();
+                    log.info("mainWindow.refreshQueueList();");
+                    mainWindow.refreshQueueList();
                 }
                 Thread.sleep(refreshInterval);
             } catch (InterruptedException e) {
-                log.info("Queue monitor interrupted");
+                log.info("Queue monitor interrupted ", e);
                 break;
             } catch (Exception e) {
                 log.error("Error in queue monitor", e);
@@ -114,12 +117,14 @@ public class QueueMonitor extends Thread {
     }
 
     public void setRefreshInterval(int refreshInterval) {
-        this.refreshInterval = Math.max(1000, Math.min(60000, refreshInterval));
+        this.refreshInterval = Math.max(1000, Math.min(300000, refreshInterval));
         log.info("Refresh interval set to {} ms", this.refreshInterval);
+        //interrupt();
     }
 
     public interface QueueMonitorListener {
         void onQueuesUpdated(List<QueueInfo> queues);
+
         void onMonitorError(Exception e);
     }
 }

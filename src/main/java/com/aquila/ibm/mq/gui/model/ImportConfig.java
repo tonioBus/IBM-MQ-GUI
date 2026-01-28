@@ -1,5 +1,7 @@
 package com.aquila.ibm.mq.gui.model;
 
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.gson.Gson;
@@ -11,7 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * POJO for importing/exporting IBM MQ GUI configuration.
@@ -154,16 +158,15 @@ public class ImportConfig {
         // Process children
         if (importNode.getChildren() != null) {
             if (importNode.getType() == HierarchyNode.NodeType.QUEUE) {
-                final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
+                final Map<String, QueueNode.QueueDescription> descriptions = new HashMap<>();
                 importNode.getChildren().entrySet().stream()
-                        .map(entry -> descriptions.put((String) entry.getValue(), new QueueBrowserConfig.QueueDescription(entry.getKey())));
-                final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()
+                        .map(entry -> descriptions.put((String) entry.getValue(), new QueueNode.QueueDescription(entry.getKey())));
+                final QueueNode queueNode = QueueNode.builder()
                         .descriptions(descriptions)
-                        .label(importNode.getName())
                         .queuePattern("*")
                         .queueManager(importNode.getQueueMgr())
                         .build();
-                node.setQueueBrowserConfig(queueBrowserConfig);
+                node.setQueueNode(queueNode);
             } else
                 for (Map.Entry<String, Object> entry : importNode.getChildren().entrySet()) {
                     final String childName = entry.getKey();
@@ -214,6 +217,75 @@ public class ImportConfig {
     }
 
     /**
+     * Create an ImportConfig from a selected node in the hierarchy (subtree export).
+     * Only includes queue managers that are referenced by the exported hierarchy.
+     *
+     * @param selectedNode      The node to export (and all its children)
+     * @param hierarchyConfig   The full hierarchy configuration
+     * @param allQueueManagers  All available queue manager configurations
+     * @return ImportConfig object containing only the selected subtree and referenced queue managers
+     */
+    public static ImportConfig fromSelectedNode(HierarchyNode selectedNode,
+                                                 HierarchyConfig hierarchyConfig,
+                                                 Map<String, QueueManagerConfig> allQueueManagers) {
+        final ImportConfig importConfig = new ImportConfig();
+
+        if (selectedNode == null) {
+            return importConfig;
+        }
+
+        // Collect all queue manager references used in the subtree
+        final Set<String> usedQueueManagers = new HashSet<>();
+        collectQueueManagerReferences(selectedNode, hierarchyConfig, usedQueueManagers);
+
+        // Filter queue managers to only include those referenced in the subtree
+        final Map<String, QueueManagerConfig> filteredQueueManagers = new HashMap<>();
+        if (allQueueManagers != null) {
+            for (String qmKey : usedQueueManagers) {
+                if (allQueueManagers.containsKey(qmKey)) {
+                    filteredQueueManagers.put(qmKey, allQueueManagers.get(qmKey));
+                }
+            }
+        }
+        importConfig.setQueueManagers(filteredQueueManagers);
+
+        // Build hierarchy map with the selected node as root
+        final Map<String, Object> hierarchyMap = new HashMap<>();
+        HierarchyImportNode importNode = convertToImportNode(selectedNode, hierarchyConfig);
+        hierarchyMap.put(selectedNode.getName(), importNode.toMap());
+        importConfig.setHierarchy(hierarchyMap);
+
+        return importConfig;
+    }
+
+    /**
+     * Recursively collect all queue manager references from a node and its children.
+     */
+    private static void collectQueueManagerReferences(HierarchyNode node,
+                                                      HierarchyConfig hierarchyConfig,
+                                                      Set<String> queueManagerRefs) {
+        if (node == null) {
+            return;
+        }
+
+        // If this is a queue node, add its queue manager reference
+        if (node.isQueue() && node.getQueueNode() != null) {
+            String qmRef = node.getQueueNode().getQueueManager();
+            if (qmRef != null && !qmRef.isEmpty()) {
+                queueManagerRefs.add(qmRef);
+            }
+        }
+
+        // Recursively process children
+        for (String childId : node.getChildIds()) {
+            HierarchyNode childNode = hierarchyConfig.getNode(childId);
+            if (childNode != null) {
+                collectQueueManagerReferences(childNode, hierarchyConfig, queueManagerRefs);
+            }
+        }
+    }
+
+    /**
      * Recursively convert HierarchyNode to HierarchyImportNode.
      */
     private static HierarchyImportNode convertToImportNode(HierarchyNode node, HierarchyConfig hierarchyConfig) {
@@ -224,35 +296,25 @@ public class ImportConfig {
         final Map<String, Object> children = new HashMap<>();
 
         // For QUEUE type nodes, export the queue browser config
-        if (node.getType() == HierarchyNode.NodeType.QUEUE && node.getQueueBrowserConfig() != null) {
-            final QueueBrowserConfig config = node.getQueueBrowserConfig();
+        if (node.getType() == HierarchyNode.NodeType.QUEUE && node.getQueueNode() != null) {
+            final QueueNode config = node.getQueueNode();
             importNode.setQueueMgr(config.getQueueManager());
 
             // Export descriptions as children (queueName -> identifier)
             if (config.getDescriptions() != null) {
-                for (Map.Entry<String, QueueBrowserConfig.QueueDescription> entry : config.getDescriptions().entrySet()) {
+                for (Map.Entry<String, QueueNode.QueueDescription> entry : config.getDescriptions().entrySet()) {
                     final String identifier = entry.getKey();
-                    final QueueBrowserConfig.QueueDescription desc = entry.getValue();
+                    final QueueNode.QueueDescription desc = entry.getValue();
                     children.put(desc.label(), identifier);
                 }
             }
-        } else {
-            // Process regular child nodes for FOLDER and BROWSER types
+        } else if (node.isFolder()) {
+            // Process child nodes for FOLDER type
             for (String childId : node.getChildIds()) {
                 final HierarchyNode childNode = hierarchyConfig.getNode(childId);
                 if (childNode != null) {
-                    if (childNode.isFolder() && !childNode.getChildIds().isEmpty()) {
-                        // Nested folder
-                        children.put(childNode.getName(), convertToImportNode(childNode, hierarchyConfig).toMap());
-                    } else if (childNode.isQueue()) {
-                        // Queue browser - could be simplified to just name or include full structure
-                        if (!childNode.getChildIds().isEmpty()) {
-                            children.put(childNode.getName(), convertToImportNode(childNode, hierarchyConfig).toMap());
-                        } else {
-                            // Leaf browser node - use simple string identifier
-                            children.put(childNode.getName(), childNode.getId());
-                        }
-                    }
+                    // Always recursively convert child nodes (both folders and queues)
+                    children.put(childNode.getName(), convertToImportNode(childNode, hierarchyConfig).toMap());
                 }
             }
         }

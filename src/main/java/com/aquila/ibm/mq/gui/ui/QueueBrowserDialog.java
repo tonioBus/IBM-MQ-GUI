@@ -1,9 +1,9 @@
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
-import com.aquila.ibm.mq.gui.config.ConfigManager;
-import com.aquila.ibm.mq.gui.model.HierarchyNode;
-import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
+import com.aquila.ibm.mq.gui.config.Configuration;
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
@@ -26,11 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class QueueBrowserDialog {
     private final Shell parent;
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private final HierarchyNode hierarchyNode;
     private final boolean edit;
     private Shell shell;
-    private QueueBrowserConfig result;
+    private QueueNode result;
     private Text label;
     private Text queuePattern;
     private Button sequencialQueueRequestCheckbox;
@@ -38,15 +38,19 @@ public class QueueBrowserDialog {
     private Map<String, QueueManagerConfig> connections;
     private InspectedQueueViewer availableQueuesViewer;
     private SelectedQueuesViewer selectedQueuesViewer;
+    private String nodeName;
 
-    public QueueBrowserDialog(Shell parent, ConfigManager configManager, HierarchyNode hierarchyNode, boolean edit) {
+    public QueueBrowserDialog(Shell parent, Configuration configuration, HierarchyNode hierarchyNode, boolean edit) {
         this.parent = parent;
-        this.configManager = configManager;
+        this.configuration = configuration;
         this.hierarchyNode = hierarchyNode;
         this.edit = edit;
     }
 
-    public QueueBrowserConfig open() {
+    public record ReturnQueueBrowserDialog(QueueNode queueNode, String label) {
+    }
+
+    public ReturnQueueBrowserDialog open() {
         shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE);
         shell.setText("Queue Browser");
         shell.setLayout(new GridLayout(1, true));
@@ -73,7 +77,7 @@ public class QueueBrowserDialog {
                 display.sleep();
             }
         }
-        return result;
+        return new ReturnQueueBrowserDialog(result, nodeName);
     }
 
     private void createQueueManagerSection(Composite composite) {
@@ -96,7 +100,7 @@ public class QueueBrowserDialog {
         queueManagerGroup.setLayout(new GridLayout(3, false));
         queueManagerGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        final AlertManager alertManager = new AlertManager(configManager);
+        final AlertManager alertManager = new AlertManager(configuration);
 
         // Available queues viewer (left)
         Composite leftQueueComposite = new Composite(queueManagerGroup, SWT.NONE);
@@ -129,8 +133,8 @@ public class QueueBrowserDialog {
         selectedQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         if (this.hierarchyNode != null) {
             java.util.List<QueueInfo> queues = new ArrayList<>();
-            if (this.hierarchyNode.getQueueBrowserConfig() != null)
-                this.hierarchyNode.getQueueBrowserConfig().getDescriptions().entrySet().forEach(entry -> {
+            if (this.hierarchyNode.getQueueNode() != null)
+                this.hierarchyNode.getQueueNode().getDescriptions().entrySet().forEach(entry -> {
                     queues.add(QueueInfo.builder()
                             .queue(entry.getKey())
                             .label(entry.getValue().label())
@@ -148,10 +152,10 @@ public class QueueBrowserDialog {
         label = new Text(labelGroup, SWT.BORDER);
         label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         final String labelSz;
-        if (edit && hierarchyNode.getQueueBrowserConfig() != null && hierarchyNode.getQueueBrowserConfig().getLabel() != null) {
-            labelSz = hierarchyNode.getQueueBrowserConfig().getLabel();
+        if (edit && hierarchyNode.getQueueNode() != null && hierarchyNode.getName() != null) {
+            labelSz = hierarchyNode.getName();
         } else {
-            labelSz = "DEFAULT";
+            labelSz = "Default";
         }
         label.setText(labelSz);
     }
@@ -163,8 +167,8 @@ public class QueueBrowserDialog {
         queuePatternGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         queuePattern = new Text(queuePatternGroup, SWT.BORDER);
         queuePattern.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        queuePattern.setText(edit && hierarchyNode.getQueueBrowserConfig().getQueuePattern() != null ?
-                hierarchyNode.getQueueBrowserConfig().getQueuePattern() :
+        queuePattern.setText(edit && hierarchyNode.getQueueNode().getQueuePattern() != null ?
+                hierarchyNode.getQueueNode().getQueuePattern() :
                 "*");
     }
 
@@ -180,8 +184,8 @@ public class QueueBrowserDialog {
         sequencialQueueRequestCheckbox.setToolTipText("Request queue information sequentially instead of in parallel");
 
         // Initialize with existing value if in edit mode
-        if (edit && hierarchyNode.getQueueBrowserConfig() != null) {
-            sequencialQueueRequestCheckbox.setSelection(hierarchyNode.getQueueBrowserConfig().isSequencialQueueRequest());
+        if (edit && hierarchyNode.getQueueNode() != null) {
+            sequencialQueueRequestCheckbox.setSelection(hierarchyNode.getQueueNode().isSequencialQueueRequest());
         } else {
             sequencialQueueRequestCheckbox.setSelection(false);
         }
@@ -215,9 +219,7 @@ public class QueueBrowserDialog {
 
         Button fill = new Button(buttonBar, SWT.PUSH);
         fill.setText("Fill");
-        fill.addListener(SWT.Selection, e -> {
-            fill(e);
-        });
+        fill.addListener(SWT.Selection, this::fill);
     }
 
     private void fill(Event e) {
@@ -231,18 +233,19 @@ public class QueueBrowserDialog {
 
         availableQueuesViewer.showProgress(String.format("Connecting to Queue Manager: %s", selection));
         MQConnectionManager connectionManager = new MQConnectionManager();
-        QueueManagerConfig queueManagerConfig = this.connections.get(selection.split(" ")[1]);
+        QueueManagerConfig queueManagerConfig = this.connections.get(selection);
         try {
             log.info("Connecting to Queue Manager:{}", queueManagerConfig);
             connectionManager.connect(queueManagerConfig);
             availableQueuesViewer.updateProgress("Retrieving queues...");
             QueueService queueService = new QueueService(connectionManager);
-            java.util.List<QueueInfo> queues = queueService.getAllQueues();
+            java.util.List<QueueInfo> queues = queueService.getAllQueues(queuePattern.getText());
             log.info("queues:\n{}", queues);
             this.availableQueuesViewer.setQueues(queues);
             availableQueuesViewer.hideProgress();
             connectionManager.disconnect();
         } catch (MQException | IOException | MQDataException ex) {
+            log.error("Error retrieving queues from Queue Manager: {}", selection, ex);
             availableQueuesViewer.hideProgress();
         }
     }
@@ -293,16 +296,17 @@ public class QueueBrowserDialog {
     }
 
     private void createButtomButtons(Composite parent) {
-        Composite buttonBar = new Composite(parent, SWT.NONE);
+        final Composite buttonBar = new Composite(parent, SWT.NONE);
         buttonBar.setLayout(new GridLayout(4, false));
         buttonBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        Button addOrModify = new Button(buttonBar, SWT.PUSH);
+        final Button addOrModify = new Button(buttonBar, SWT.PUSH);
         addOrModify.setText(edit ? "Modify" : "Add");
         addOrModify.addListener(SWT.Selection, e -> {
-            result = getQueueBrowserConfig();
+            result = getQueueNode();
+            this.nodeName = this.label.getText();
             shell.close();
         });
-        Button cancel = new Button(buttonBar, SWT.PUSH);
+        final Button cancel = new Button(buttonBar, SWT.PUSH);
         cancel.setText("Cancel");
         cancel.addListener(SWT.Selection, e -> {
             result = null;
@@ -310,38 +314,33 @@ public class QueueBrowserDialog {
         });
     }
 
-    private QueueBrowserConfig getQueueBrowserConfig() {
+    private QueueNode getQueueNode() {
         final int selectionIndex = this.queueManagerList.getSelectionIndex();
-        final String queueManagerKey = this.queueManagerList.getItem(selectionIndex).split(" ")[1];
+        final String queueManagerKey = this.queueManagerList.getItem(selectionIndex);
 
-        final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
+        final Map<String, QueueNode.QueueDescription> descriptions = new HashMap<>();
         this.selectedQueuesViewer.getQueues().forEach(queueInfo -> {
-            String label = queueInfo.getLabel() == null ? queueInfo.getQueue() : queueInfo.getLabel();
-            descriptions.put(queueInfo.getQueue(), new QueueBrowserConfig.QueueDescription(label));
+            final String label = queueInfo.getLabel() == null ? queueInfo.getQueue() : queueInfo.getLabel();
+            descriptions.put(queueInfo.getQueue(), new QueueNode.QueueDescription(label));
         });
-        final QueueBrowserConfig queueBrowserConfig = QueueBrowserConfig.builder()
-                .label(this.label.getText().trim())
+        final QueueNode queueNode = QueueNode.builder()
                 .queuePattern(this.queuePattern.getText().trim())
                 .sequencialQueueRequest(this.sequencialQueueRequestCheckbox.getSelection())
                 .queueManager(queueManagerKey)
                 .descriptions(descriptions)
                 .build();
-        log.info("getQueueBrowserConfig return:\n{}", queueBrowserConfig);
-        return queueBrowserConfig;
-    }
-
-    private void clear() {
-        log.info("clear");
+        log.info("getQueueNode return:\n{}", queueNode);
+        return queueNode;
     }
 
     private void loadQueueManager(List queueManagerCombo) {
-        this.connections = configManager.loadConnections();
+        this.connections = configuration.loadConnections();
         queueManagerCombo.removeAll();
         final AtomicInteger index = new AtomicInteger(0);
         connections.values().forEach(q -> {
-            final String label = String.format("%s %s", q.getName(), q.getLabel());
+            final String label = q.toString();
             queueManagerCombo.add(label);
-            if (edit && this.hierarchyNode.getQueueBrowserConfig().getQueueManager().equals(q.getLabel()))
+            if (edit && this.hierarchyNode.getQueueNode().getQueueManager().equals(q.toString()))
                 queueManagerCombo.select(index.get());
             index.incrementAndGet();
         });

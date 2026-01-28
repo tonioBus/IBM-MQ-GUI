@@ -1,15 +1,14 @@
 package com.aquila.ibm.mq.gui.model;
 
 import com.aquila.ibm.mq.gui.importation.QueueManagerConfigNode;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Setter
 @Getter
-@ToString
+@EqualsAndHashCode
 public class QueueManagerConfig {
-    private String name;
     private String host;
     private int port;
     private String channel;
@@ -23,9 +22,8 @@ public class QueueManagerConfig {
         this.sslEnabled = false;
     }
 
-    public QueueManagerConfig(String name, String host, int port, String channel,
+    public QueueManagerConfig(String host, int port, String channel,
                               String queueManager, String username, String password) {
-        this.name = name;
         this.host = host;
         this.port = port;
         this.channel = channel;
@@ -36,7 +34,7 @@ public class QueueManagerConfig {
     }
 
     public QueueManagerConfig(QueueManagerConfigNode queueManagerConfigNode) {
-        this(queueManagerConfigNode.getName(),
+        this(
                 queueManagerConfigNode.getHost(),
                 queueManagerConfigNode.getPort(),
                 queueManagerConfigNode.getChannel(),
@@ -45,7 +43,9 @@ public class QueueManagerConfig {
                 queueManagerConfigNode.getPassword());
     }
 
-    public String getLabel() {
-        return String.format("%s(%d)", host, (Integer) port);
+    @Override
+    public String toString() {
+        return String.format("%s@%s(%d)", getQueueManager(), getHost(), getPort());
     }
+
 }

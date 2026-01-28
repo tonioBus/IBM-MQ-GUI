@@ -1,11 +1,12 @@
 package com.aquila.ibm.mq.gui.ui;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.importation.QueuesImportNode;
 import com.aquila.ibm.mq.gui.model.HierarchyConfig;
-import com.aquila.ibm.mq.gui.model.HierarchyNode;
-import com.aquila.ibm.mq.gui.model.QueueBrowserConfig;
+import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
+import lombok.Getter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.*;
 import org.eclipse.swt.events.KeyAdapter;
@@ -32,7 +33,7 @@ public class HierarchyTreeViewer extends Composite {
     private Tree tree;
     private HierarchyConfig hierarchyConfig;
     private final MQConnectionManager connectionManager;
-    private final ConfigManager configManager;
+    private Configuration configuration;
 
     // Map TreeItem to HierarchyNode ID for quick lookup
     private final Map<TreeItem, String> treeItemToNodeId;
@@ -45,6 +46,8 @@ public class HierarchyTreeViewer extends Composite {
     private Image folderIcon;
     private Image connectedIcon;
     private Image errorIcon;
+    @Getter
+    private HierarchyNode lastSelectedNode;
 
     /**
      * Event fired when a tree node is selected.
@@ -67,10 +70,10 @@ public class HierarchyTreeViewer extends Composite {
 
     public HierarchyTreeViewer(Composite parent, int style,
                                MQConnectionManager connectionManager,
-                               ConfigManager configManager) {
+                               Configuration configuration) {
         super(parent, style);
         this.connectionManager = connectionManager;
-        this.configManager = configManager;
+        this.configuration = configuration;
         this.treeItemToNodeId = new HashMap<>();
         this.nodeIdToTreeItem = new HashMap<>();
 
@@ -343,16 +346,13 @@ public class HierarchyTreeViewer extends Composite {
                     }
 
                     newParentId = targetNodeId;
-                } else {
-                    // Drop on empty area - move to root
-                    newParentId = null;
                 }
 
                 // Perform the move
                 boolean success = hierarchyConfig.moveNode(draggedNodeId, newParentId);
 
                 if (success) {
-                    configManager.saveHierarchy(hierarchyConfig);
+                    configuration.saveHierarchy(hierarchyConfig);
                     refresh();
 
                     // Reselect the moved node
@@ -412,7 +412,8 @@ public class HierarchyTreeViewer extends Composite {
     /**
      * Set the hierarchy and render the tree.
      */
-    public void setHierarchyConfig(HierarchyConfig hierarchyConfig) {
+    public void setHierarchyConfig(Configuration configuration, HierarchyConfig hierarchyConfig) {
+        this.configuration = configuration;
         this.hierarchyConfig = hierarchyConfig;
         refresh();
     }
@@ -445,6 +446,12 @@ public class HierarchyTreeViewer extends Composite {
         // Build tree from root nodes
         List<HierarchyNode> rootNodes = hierarchyConfig.getChildren(null);
         for (HierarchyNode node : rootNodes) {
+            if (node.getQueueNode() == null) {
+                if (node.getType() == HierarchyNode.NodeType.QUEUE) {
+                    log.error("QueueNode null for:{}", node);
+                    // node.setQueueBrowserConfig(this.configManager.getQueueBrowserConfigMap().get(node.));
+                }
+            }
             createTreeItem(null, node);
         }
 
@@ -471,12 +478,7 @@ public class HierarchyTreeViewer extends Composite {
             item = new TreeItem(parent, SWT.NONE);
         }
 
-//        if (node.isQueue()) {
-//            final QueueBrowserConfig queueBrowserConfig = node.getQueueBrowserConfig();
-//            final String description = queueBrowserConfig == null || queueBrowserConfig.getQueueManager() == null ? "?" : queueBrowserConfig.getQueueManager();
-//            item.setText(String.format("%s %s", description, node.getName()));
-//        } else
-            item.setText(node.getName());
+        item.setText(node.getName());
         item.setImage(getNodeIcon(node));
 
         // Store mappings
@@ -500,11 +502,9 @@ public class HierarchyTreeViewer extends Composite {
      */
     private Image getNodeIcon(HierarchyNode node) {
         if (node.isFolder()) {
-            // Use folder icon
             return folderIcon;
         } else {
             return connectedIcon;
-            // return errorIcon;
         }
     }
 
@@ -532,6 +532,7 @@ public class HierarchyTreeViewer extends Composite {
             fireSelectionEvent(node, SelectionType.FOLDER);
         } else {
             fireSelectionEvent(node, SelectionType.QUEUE_BROWSER);
+            this.lastSelectedNode = node;
         }
     }
 
@@ -620,7 +621,7 @@ public class HierarchyTreeViewer extends Composite {
         final HierarchyNode newFolder = new HierarchyNode(HierarchyNode.NodeType.FOLDER, folderName);
         hierarchyConfig.addNode(newFolder, parentId);
         // Save and refresh
-        configManager.saveHierarchy(hierarchyConfig);
+        configuration.saveHierarchy(hierarchyConfig);
         refresh();
         // Select the new folder
         TreeItem item = nodeIdToTreeItem.get(newFolder.getId());
@@ -641,16 +642,18 @@ public class HierarchyTreeViewer extends Composite {
                 selectedNode.getId() :
                 null;
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
-                getShell(), configManager, selectedNode, false);
-        final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
-        log.info("addQueueBrowser: {}", queueBrowserConfig);
-        if (queueBrowserConfig != null) {
-            final String displayName = queueBrowserConfig.getLabel();
+                getShell(), configuration, selectedNode, false);
+        QueueBrowserDialog.ReturnQueueBrowserDialog returnQueueBrowserDialog = queueBrowserDialog.open();
+        final QueueNode queueNode = returnQueueBrowserDialog.queueNode();
+        final String queueNodeName =  returnQueueBrowserDialog.label();
+        log.info("addQueueBrowser: {} -> {}", queueNodeName, queueNode);
+        if (queueNode != null) {
+            final String displayName = selectedNode.getName();
             final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, displayName);
-            newNode.setQueueBrowserConfig(queueBrowserConfig);
+            newNode.setQueueNode(queueNode);
             hierarchyConfig.addNode(newNode, parentId);
-            configManager.saveHierarchy(hierarchyConfig);
-            this.configManager.save(newNode.getId(), queueBrowserConfig);
+            configuration.saveHierarchy(hierarchyConfig);
+            this.configuration.save(newNode.getId(), queueNode);
             refresh();
             TreeItem item = nodeIdToTreeItem.get(newNode.getId());
             if (item != null) {
@@ -662,38 +665,42 @@ public class HierarchyTreeViewer extends Composite {
     }
 
     public void addQueues(String key, QueuesImportNode queuesImportNode, String parentId) {
-        final String displayName = key;
-        final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, displayName);
+        final HierarchyNode newNode = new HierarchyNode(HierarchyNode.NodeType.QUEUE, key);
         hierarchyConfig.addNode(newNode, parentId);
-        configManager.saveHierarchy(hierarchyConfig);
-        final Map<String, QueueBrowserConfig.QueueDescription> descriptions = new HashMap<>();
-        queuesImportNode.getChildren().forEach((key1, value) -> {
-            descriptions.put(key1, new QueueBrowserConfig.QueueDescription(value));
+        configuration.saveHierarchy(hierarchyConfig);
+        final Map<String, QueueNode.QueueDescription> descriptions = new HashMap<>();
+        queuesImportNode.getChildren().forEach((key1, label) -> {
+            descriptions.put(key1, new QueueNode.QueueDescription(label));
         });
-        this.configManager.save(newNode.getId(),
-                QueueBrowserConfig.builder()
-                        .queueManager(queuesImportNode.getQueueMgr())
-                        .queuePattern("*")
-                        .descriptions(descriptions)
-                        .build());
+        QueueNode queueNode = QueueNode.builder()
+                .queueManager(queuesImportNode.getQueueMgr())
+                .queuePattern("*")
+                .descriptions(descriptions)
+                .build();
+        newNode.setQueueNode(queueNode);
+        log.info("add queueBrowser:{} to newNode:{}", queueNode.getQueueManager(), newNode.getName());
+        this.configuration.save(newNode.getId(), queueNode);
         refresh();
         TreeItem item = nodeIdToTreeItem.get(newNode.getId());
         if (item != null) {
             tree.setSelection(item);
             tree.showItem(item);
         }
-        log.info("Added queue manager: {}", displayName);
+        log.info("Added queue manager: {}", key);
     }
 
     public void editQueueBrowser(HierarchyNode hierarchyNode) {
         log.info("editQueueBrowser: {}", hierarchyNode);
         final QueueBrowserDialog queueBrowserDialog = new QueueBrowserDialog(
-                getShell(), configManager, hierarchyNode, true);
-        final QueueBrowserConfig queueBrowserConfig = queueBrowserDialog.open();
-        log.info("editQueueBrowser: {}", queueBrowserConfig);
-        if (queueBrowserConfig == null) return;
-        hierarchyNode.setQueueBrowserConfig(queueBrowserConfig);
-        this.configManager.save(hierarchyNode.getId(), queueBrowserConfig);
+                getShell(), configuration, hierarchyNode, true);
+        QueueBrowserDialog.ReturnQueueBrowserDialog returnQueueBrowserDialog = queueBrowserDialog.open();
+        final QueueNode queueNode = returnQueueBrowserDialog.queueNode();
+        final String nodeName = returnQueueBrowserDialog.label();
+        log.info("editQueueBrowser: {} -> {}", nodeName, queueNode);
+        if (queueNode == null) return;
+        hierarchyNode.setQueueNode(queueNode);
+        hierarchyNode.setName(nodeName);
+        this.configuration.save(hierarchyNode.getId(), queueNode);
         refresh();
     }
 
@@ -713,7 +720,7 @@ public class HierarchyTreeViewer extends Composite {
 
             if (newName != null && !newName.equals(node.getName())) {
                 node.setName(newName);
-                configManager.saveHierarchy(hierarchyConfig);
+                configuration.saveHierarchy(hierarchyConfig);
 
                 // Update tree item
                 TreeItem item = nodeIdToTreeItem.get(node.getId());
@@ -765,10 +772,10 @@ public class HierarchyTreeViewer extends Composite {
         if (confirmBox.open() == SWT.YES) {
             // Remove from hierarchy
             hierarchyConfig.removeNode(node.getId());
-            configManager.saveHierarchy(hierarchyConfig);
+            configuration.saveHierarchy(hierarchyConfig);
             refresh();
 
-            log.info("Deleted node: {}", node.getName());
+            log.info("Deleted node: {}/{}", node.getType(), node.getName());
         }
     }
 

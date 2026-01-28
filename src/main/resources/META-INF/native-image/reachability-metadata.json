@@ -305,6 +305,18 @@
       "type": "char[]"
     },
     {
+      "type": "com.aquila.ibm.mq.gui.IBMMQViewer",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "main",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.Main",
       "jniAccessible": true,
       "methods": [
@@ -557,6 +569,55 @@
         },
         {
           "name": "FOLDER"
+        },
+        {
+          "name": "QUEUE"
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.ImportConfig",
+      "fields": [
+        {
+          "name": "Hierarchy"
+        },
+        {
+          "name": "QueueManagers"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.MessageTemplate",
+      "fields": [
+        {
+          "name": "content"
+        },
+        {
+          "name": "delayMs"
+        },
+        {
+          "name": "messageCount"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "persistence"
+        },
+        {
+          "name": "priority"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
         }
       ]
     },
@@ -17619,7 +17680,12 @@
     },
     {
       "type": "com.ibm.mq.constants.MQConstants",
-      "allPublicFields": true
+      "allPublicFields": true,
+      "fields": [
+        {
+          "name": "sccsid"
+        }
+      ]
     },
     {
       "type": "com.ibm.mq.constants.MQPropertyIdentifiers",
@@ -17876,6 +17942,26 @@
             "int",
             "com.ibm.mq.jmqi.JmqiMQ"
           ]
+        }
+      ]
+    },
+    {
+      "type": "com.ibm.mq.headers.MQExceptionWrapper",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Exception"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.ibm.mq.headers.MQRFH2",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
         }
       ]
     },
@@ -18831,7 +18917,76 @@
       "type": "org.eclipse.swt.dnd.DropTarget$3"
     },
     {
+      "type": "org.eclipse.swt.dnd.OleEnumFORMATETC$2"
+    },
+    {
       "type": "org.eclipse.swt.graphics.Device"
+    },
+    {
+      "type": "org.eclipse.swt.internal.gdip.GdiplusStartupInput",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "DebugEventCallback"
+        },
+        {
+          "name": "GdiplusVersion"
+        },
+        {
+          "name": "SuppressBackgroundThread"
+        },
+        {
+          "name": "SuppressExternalCodecs"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.gdip.PointF",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "X"
+        },
+        {
+          "name": "Y"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.gdip.Rect",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "Height"
+        },
+        {
+          "name": "Width"
+        },
+        {
+          "name": "X"
+        },
+        {
+          "name": "Y"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.gdip.RectF",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "Height"
+        },
+        {
+          "name": "Width"
+        },
+        {
+          "name": "X"
+        },
+        {
+          "name": "Y"
+        }
+      ]
     },
     {
       "type": "org.eclipse.swt.internal.image.GIFFileFormat",
@@ -19053,6 +19208,27 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.ole.win32.FORMATETC",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cfFormat"
+        },
+        {
+          "name": "dwAspect"
+        },
+        {
+          "name": "lindex"
+        },
+        {
+          "name": "ptd"
+        },
+        {
+          "name": "tymed"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.ole.win32.GUID",
       "jniAccessible": true,
       "fields": [
@@ -19067,6 +19243,21 @@
         },
         {
           "name": "Data4"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.ole.win32.STGMEDIUM",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "pUnkForRelease"
+        },
+        {
+          "name": "tymed"
+        },
+        {
+          "name": "unionField"
         }
       ]
     },
@@ -19088,6 +19279,21 @@
         },
         {
           "name": "wReserved3"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.ACCEL",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cmd"
+        },
+        {
+          "name": "fVirt"
+        },
+        {
+          "name": "key"
         }
       ]
     },
@@ -19311,6 +19517,81 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.DRAWITEMSTRUCT",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "CtlID"
+        },
+        {
+          "name": "CtlType"
+        },
+        {
+          "name": "bottom"
+        },
+        {
+          "name": "hDC"
+        },
+        {
+          "name": "hwndItem"
+        },
+        {
+          "name": "itemAction"
+        },
+        {
+          "name": "itemData"
+        },
+        {
+          "name": "itemID"
+        },
+        {
+          "name": "itemState"
+        },
+        {
+          "name": "left"
+        },
+        {
+          "name": "right"
+        },
+        {
+          "name": "top"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.GCP_RESULTS",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "lStructSize"
+        },
+        {
+          "name": "lpCaretPos"
+        },
+        {
+          "name": "lpClass"
+        },
+        {
+          "name": "lpDx"
+        },
+        {
+          "name": "lpGlyphs"
+        },
+        {
+          "name": "lpOrder"
+        },
+        {
+          "name": "lpOutString"
+        },
+        {
+          "name": "nGlyphs"
+        },
+        {
+          "name": "nMaxFit"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.GESTURECONFIG",
       "jniAccessible": true,
       "fields": [
@@ -19394,6 +19675,42 @@
         },
         {
           "name": "lpszDefaultScheme"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.ICONINFO",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "fIcon"
+        },
+        {
+          "name": "hbmColor"
+        },
+        {
+          "name": "hbmMask"
+        },
+        {
+          "name": "xHotspot"
+        },
+        {
+          "name": "yHotspot"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.LOGBRUSH",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "lbColor"
+        },
+        {
+          "name": "lbHatch"
+        },
+        {
+          "name": "lbStyle"
         }
       ]
     },
@@ -19965,6 +20282,18 @@
       ]
     },
     {
+      "type": "org.eclipse.swt.internal.win32.NMUPDOWN",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "iDelta"
+        },
+        {
+          "name": "iPos"
+        }
+      ]
+    },
+    {
       "type": "org.eclipse.swt.internal.win32.NONCLIENTMETRICS",
       "jniAccessible": true,
       "fields": [
@@ -20018,6 +20347,81 @@
         },
         {
           "name": "lfStatusFont"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.OPENFILENAME",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "Flags"
+        },
+        {
+          "name": "FlagsEx"
+        },
+        {
+          "name": "dwReserved"
+        },
+        {
+          "name": "hInstance"
+        },
+        {
+          "name": "hwndOwner"
+        },
+        {
+          "name": "lCustData"
+        },
+        {
+          "name": "lStructSize"
+        },
+        {
+          "name": "lpTemplateName"
+        },
+        {
+          "name": "lpfnHook"
+        },
+        {
+          "name": "lpstrCustomFilter"
+        },
+        {
+          "name": "lpstrDefExt"
+        },
+        {
+          "name": "lpstrFile"
+        },
+        {
+          "name": "lpstrFileTitle"
+        },
+        {
+          "name": "lpstrFilter"
+        },
+        {
+          "name": "lpstrInitialDir"
+        },
+        {
+          "name": "lpstrTitle"
+        },
+        {
+          "name": "nFileExtension"
+        },
+        {
+          "name": "nFileOffset"
+        },
+        {
+          "name": "nFilterIndex"
+        },
+        {
+          "name": "nMaxCustFilter"
+        },
+        {
+          "name": "nMaxFile"
+        },
+        {
+          "name": "nMaxFileTitle"
+        },
+        {
+          "name": "pvReserved"
         }
       ]
     },
@@ -20177,6 +20581,36 @@
         },
         {
           "name": "nTrackPos"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.SHDRAGIMAGE",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "crColorKey"
+        },
+        {
+          "name": "hbmpDragImage"
+        },
+        {
+          "name": "ptOffset"
+        },
+        {
+          "name": "sizeDragImage"
+        }
+      ]
+    },
+    {
+      "type": "org.eclipse.swt.internal.win32.SIZE",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "cx"
+        },
+        {
+          "name": "cy"
         }
       ]
     },

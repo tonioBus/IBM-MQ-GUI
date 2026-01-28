@@ -12,8 +12,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -73,23 +72,6 @@ public class QueueListViewer extends Composite {
         // Create filter panel
         createFilterPanel(this);
 
-        // Create progress panel (hidden by default)
-        progressPanel = new Composite(this, SWT.NONE);
-        GridLayout progressLayout = new GridLayout(1, false);
-        progressLayout.marginHeight = 5;
-        progressLayout.marginWidth = 0;
-        progressPanel.setLayout(progressLayout);
-        GridData progressPanelData = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        progressPanelData.exclude = true; // Hidden by default
-        progressPanel.setLayoutData(progressPanelData);
-        progressPanel.setVisible(false);
-
-        progressBar = new ProgressBar(progressPanel, SWT.INDETERMINATE);
-        progressBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
-        progressLabel = new Label(progressPanel, SWT.NONE);
-        progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
         table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION);
         table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         table.setHeaderVisible(true);
@@ -128,6 +110,23 @@ public class QueueListViewer extends Composite {
         });
 
         createContextMenu();
+
+        // Create progress panel at bottom (hidden by default)
+        progressPanel = new Composite(this, SWT.NONE);
+        GridLayout progressLayout = new GridLayout(1, false);
+        progressLayout.marginHeight = 5;
+        progressLayout.marginWidth = 0;
+        progressPanel.setLayout(progressLayout);
+        GridData progressPanelData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        progressPanelData.exclude = true; // Hidden by default
+        progressPanel.setLayoutData(progressPanelData);
+        progressPanel.setVisible(false);
+
+        progressBar = new ProgressBar(progressPanel, SWT.INDETERMINATE);
+        progressBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        progressLabel = new Label(progressPanel, SWT.NONE);
+        progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         addDisposeListener(e -> {
             greenColor.dispose();
@@ -243,11 +242,13 @@ public class QueueListViewer extends Composite {
     }
 
     public QueueInfo getSelectedQueue() {
-        int index = table.getSelectionIndex();
-        if (index >= 0 && index < queues.size()) {
-            return queues.get(index);
+        final Optional<TableItem> tableItem = Arrays.stream(table.getSelection()).findFirst();
+        if(tableItem.isEmpty()) {
+            return null;
         }
-        return null;
+        final String queue = tableItem.get().getText(1);
+        final Optional<QueueInfo> queueInfoOpt = queues.parallelStream().filter(q -> q.getQueue().equals(queue)).findFirst();
+        return queueInfoOpt.orElse(null);
     }
 
     private void createContextMenu() {

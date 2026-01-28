@@ -111,7 +111,7 @@ public class MessageBrowserPanel extends Composite {
             messages = messageService.browseMessages(currentQueue.getQueue());
             refreshTable();
         } catch (Exception e) {
-            logger.error("Failed to browse messages", e);
+            logger.error("Failed to browse messages on queue:{}", currentQueue.getQueue(), e);
             showError("Failed to browse messages: " + e.getMessage());
         }
     }

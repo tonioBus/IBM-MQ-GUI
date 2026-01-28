@@ -1,6 +1,6 @@
 package com.aquila.ibm.mq.gui.ui;
 
-import com.aquila.ibm.mq.gui.config.ConfigManager;
+import com.aquila.ibm.mq.gui.config.Configuration;
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.aquila.ibm.mq.gui.mq.MQConnectionManager;
 import org.eclipse.swt.SWT;
@@ -15,7 +15,7 @@ import java.util.Map;
 public class QueueManagerDialog {
     private static final Logger logger = LoggerFactory.getLogger(QueueManagerDialog.class);
     private final Shell parent;
-    private final ConfigManager configManager;
+    private final Configuration configuration;
     private Shell shell;
     private QueueManagerConfig result;
 
@@ -29,9 +29,9 @@ public class QueueManagerDialog {
     private Text passwordText;
     private Button saveProfileButton;
 
-    public QueueManagerDialog(Shell parent, ConfigManager configManager) {
+    public QueueManagerDialog(Shell parent, Configuration configuration) {
         this.parent = parent;
-        this.configManager = configManager;
+        this.configuration = configuration;
     }
 
     public QueueManagerConfig open() {
@@ -79,10 +79,6 @@ public class QueueManagerDialog {
         connGroup.setText("Connection Details");
         connGroup.setLayout(new GridLayout(2, false));
         connGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
-        new Label(connGroup, SWT.NONE).setText("Profile Name:");
-        nameText = new Text(connGroup, SWT.BORDER);
-        nameText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         new Label(connGroup, SWT.NONE).setText("Host:");
         hostText = new Text(connGroup, SWT.BORDER);
@@ -141,11 +137,11 @@ public class QueueManagerDialog {
     }
 
     private void loadProfiles() {
-        final Map<String, QueueManagerConfig> connections = configManager.loadConnections();
+        final Map<String, QueueManagerConfig> connections = configuration.loadConnections();
         profileCombo.removeAll();
         profileCombo.add("-- New Connection --");
         connections.values().forEach(q -> {
-            final String label = String.format("%s %s", q.getName(), q.getLabel());
+            final String label = q.toString();
             profileCombo.add(label);
         });
         profileCombo.select(0);
@@ -159,11 +155,11 @@ public class QueueManagerDialog {
         }
 
         String profileName = profileCombo.getItem(index);
-        Map<String, QueueManagerConfig> connections = configManager.loadConnections();
+        Map<String, QueueManagerConfig> connections = configuration.loadConnections();
 
         for (QueueManagerConfig config : connections.values()) {
-            if (config.getName().equals(profileName)) {
-                nameText.setText(config.getName());
+            if (config.toString().equals(profileName)) {
+
                 hostText.setText(config.getHost());
                 portText.setText(String.valueOf(config.getPort()));
                 channelText.setText(config.getChannel());
@@ -187,14 +183,10 @@ public class QueueManagerDialog {
 
     private void saveProfile() {
         final QueueManagerConfig config = getConnectionConfig();
-        if (config.getName() == null || config.getName().isEmpty()) {
-            showError("Please enter a profile name");
-            return;
-        }
-        configManager.saveConnection(config);
+        configuration.saveConnection(config);
         loadProfiles();
         for (int i = 0; i < profileCombo.getItemCount(); i++) {
-            if (profileCombo.getItem(i).equals(config.getName())) {
+            if (profileCombo.getItem(i).equals(config.toString())) {
                 profileCombo.select(i);
                 break;
             }
@@ -212,7 +204,7 @@ public class QueueManagerDialog {
         confirm.setText("Confirm Delete");
         confirm.setMessage("Delete profile '" + profileName + "'?");
         if (confirm.open() == SWT.YES) {
-            configManager.deleteConnection(profileName);
+            configuration.deleteConnection(profileName);
             loadProfiles();
             clearFields();
         }
@@ -240,7 +232,6 @@ public class QueueManagerDialog {
 
     private QueueManagerConfig getConnectionConfig() {
         QueueManagerConfig config = new QueueManagerConfig();
-        config.setName(nameText.getText().trim());
         config.setHost(hostText.getText().trim());
 
         try {

@@ -1,4 +1,4 @@
-package com.aquila.ibm.mq.gui.model;
+package com.aquila.ibm.mq.gui.model.node;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -23,12 +23,13 @@ public class HierarchyNode {
     }
 
     private String id;
-    private transient QueueBrowserConfig queueBrowserConfig;
     private NodeType type;
     private String name;
     private String parentId;            // Parent node ID (null for root nodes)
     private List<String> childIds;
     private boolean expanded;           // Tree expansion state
+
+    private transient QueueNode queueNode;
 
     public HierarchyNode() {
         this.id = UUID.randomUUID().toString();
