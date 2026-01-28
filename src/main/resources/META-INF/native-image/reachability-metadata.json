@@ -622,6 +622,23 @@
       ]
     },
     {
+      "type": "com.aquila.ibm.mq.gui.model.ImportConfig",
+      "fields": [
+        {
+          "name": "Hierarchy"
+        },
+        {
+          "name": "QueueManagers"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.model.QueueBrowserConfig",
       "fields": [
         {
