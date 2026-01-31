@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Service for IBM MQ queue operations using PCF (Programmable Command Format).
+ * Retrieves queue lists, queue properties, queue handles, and supports
+ * optimized batch queries with pattern-based filtering.
+ */
 package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.model.QueueHandle;

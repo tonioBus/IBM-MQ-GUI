@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Main application window built with Eclipse SWT.
+ * Coordinates all UI components including hierarchy tree, queue list,
+ * properties panel, message browser, and depth charts.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
@@ -20,7 +33,9 @@ import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
@@ -197,6 +212,22 @@ public class MainWindow {
         hierarchyTreeViewer = new HierarchyTreeViewer(
                 sashForm, SWT.BORDER, connectionManager, configuration);
         hierarchyTreeViewer.addSelectionListener(this::onTreeSelection);
+        hierarchyTreeViewer.setContextMenuActionListener(new HierarchyTreeViewer.ContextMenuActionListener() {
+            @Override
+            public void onImportConfiguration() {
+                importConfiguration();
+            }
+
+            @Override
+            public void onExportConfiguration() {
+                exportConfiguration();
+            }
+
+            @Override
+            public void onExportSelectedConfiguration(HierarchyNode node) {
+                exportSelectedConfiguration();
+            }
+        });
 
         // EXISTING: Queue List (30%)
         queueListViewer = new QueueListViewer(sashForm, SWT.BORDER, alertManager);
@@ -735,10 +766,78 @@ public class MainWindow {
     }
 
     private void showAbout() {
-        MessageBox box = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
-        box.setText("About");
-        box.setMessage("IBM MQ Queue Visualizer GUI\nVersion 1.0\n\n(c) AQUILA 2025");
-        box.open();
+        Shell aboutShell = new Shell(shell, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+        aboutShell.setText("About IBM MQ GUI");
+        aboutShell.setLayout(new GridLayout(2, false));
+
+        // Set the window icon
+        try {
+            Image windowIcon = new Image(display, getClass().getResourceAsStream("/icons/Aquila-32.ico"));
+            aboutShell.setImage(windowIcon);
+            aboutShell.addDisposeListener(e -> windowIcon.dispose());
+        } catch (Exception e) {
+            log.warn("Failed to load about dialog icon", e);
+        }
+
+        // Display the Aquila icon in the dialog (scaled to 1/4 size)
+        Label iconLabel = new Label(aboutShell, SWT.NONE);
+        try {
+            Image originalIcon = new Image(display, getClass().getResourceAsStream("/icons/Aquila-32.ico"));
+            Rectangle bounds = originalIcon.getBounds();
+            int newWidth = bounds.width / 4;
+            int newHeight = bounds.height / 4;
+            Image scaledIcon = new Image(display, newWidth, newHeight);
+            GC gc = new GC(scaledIcon);
+            gc.setAntialias(SWT.ON);
+            gc.setInterpolation(SWT.HIGH);
+            gc.drawImage(originalIcon, 0, 0, bounds.width, bounds.height, 0, 0, newWidth, newHeight);
+            gc.dispose();
+            originalIcon.dispose();
+            iconLabel.setImage(scaledIcon);
+            iconLabel.addDisposeListener(e -> scaledIcon.dispose());
+        } catch (Exception e) {
+            log.warn("Failed to load about icon image", e);
+        }
+        iconLabel.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, false, false));
+
+        // About text
+        Label textLabel = new Label(aboutShell, SWT.NONE);
+        textLabel.setText("""
+                IBM MQ GUI
+                Desktop application for IBM MQ Browsing
+                Version 1.0
+
+                Author: Anthony Bussani
+                GitHub: https://github.com/tonioBus
+
+                Licensed under the MIT License.
+                Copyright (c) 2026 Anthony Bussani
+
+                Permission is hereby granted, free of charge, to any person
+                obtaining a copy of this software to use, copy, modify, merge,
+                publish, distribute, sublicense, and/or sell copies of the Software.
+
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+                """);
+        textLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+
+        // OK button
+        Button okButton = new Button(aboutShell, SWT.PUSH);
+        okButton.setText("OK");
+        GridData buttonData = new GridData(SWT.CENTER, SWT.CENTER, false, false, 2, 1);
+        buttonData.widthHint = 80;
+        okButton.setLayoutData(buttonData);
+        okButton.addListener(SWT.Selection, e -> aboutShell.close());
+
+        aboutShell.setDefaultButton(okButton);
+        aboutShell.pack();
+
+        // Center the dialog on the parent shell
+        int x = shell.getLocation().x + (shell.getSize().x - aboutShell.getSize().x) / 2;
+        int y = shell.getLocation().y + (shell.getSize().y - aboutShell.getSize().y) / 2;
+        aboutShell.setLocation(x, y);
+
+        aboutShell.open();
     }
 
     /**

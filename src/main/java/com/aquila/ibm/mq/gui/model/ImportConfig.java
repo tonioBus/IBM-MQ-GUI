@@ -1,17 +1,28 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * POJO for importing/exporting IBM MQ GUI configuration.
+ * Handles conversion between JSON files and internal HierarchyConfig format,
+ * supporting both full and selective (subtree) exports.
+ */
 package com.aquila.ibm.mq.gui.model;
 
 import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
 import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,9 +37,7 @@ import java.util.Set;
 @ToString
 @Slf4j
 public class ImportConfig {
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    private static final ObjectMapper objectMapper = new ObjectMapper()
-            .enable(SerializationFeature.INDENT_OUTPUT);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private Map<String, QueueManagerConfig> queueManagers = new HashMap<>();
     private Map<String, Object> hierarchy;
@@ -45,8 +54,8 @@ public class ImportConfig {
             return null;
         }
 
-        try (Reader reader = new FileReader(file)) {
-            final ImportConfig config = gson.fromJson(reader, ImportConfig.class);
+        try {
+            final ImportConfig config = objectMapper.readValue(file, ImportConfig.class);
             log.info("Loaded import config with {} queue managers",
                     config.queueManagers != null ? config.queueManagers.size() : 0);
             return config;
@@ -73,8 +82,8 @@ public class ImportConfig {
      * @return true if successful, false otherwise
      */
     public boolean toFile(File file) {
-        try (Writer writer = new FileWriter(file)) {
-            gson.toJson(this, writer);
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, this);
             log.info("Saved import config to: {}", file.getAbsolutePath());
             return true;
         } catch (IOException e) {
@@ -226,8 +235,8 @@ public class ImportConfig {
      * @return ImportConfig object containing only the selected subtree and referenced queue managers
      */
     public static ImportConfig fromSelectedNode(HierarchyNode selectedNode,
-                                                 HierarchyConfig hierarchyConfig,
-                                                 Map<String, QueueManagerConfig> allQueueManagers) {
+                                                HierarchyConfig hierarchyConfig,
+                                                Map<String, QueueManagerConfig> allQueueManagers) {
         final ImportConfig importConfig = new ImportConfig();
 
         if (selectedNode == null) {

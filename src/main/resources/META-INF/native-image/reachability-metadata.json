@@ -343,6 +343,9 @@
       ]
     },
     {
+      "type": "com.aquila.ibm.mq.gui.config.ConfigurationTest"
+    },
+    {
       "type": "com.aquila.ibm.mq.gui.importation.FolderImportNode",
       "methods": [
         {
@@ -509,6 +512,24 @@
         {
           "name": "<init>",
           "parameterTypes": []
+        },
+        {
+          "name": "getNodes",
+          "parameterTypes": []
+        },
+        {
+          "name": "getRootNodeIds",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSelectedNodeId",
+          "parameterTypes": []
+        },
+        {
+          "name": "setSelectedNodeId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
         }
       ]
     },
@@ -589,6 +610,14 @@
         {
           "name": "<init>",
           "parameterTypes": []
+        },
+        {
+          "name": "getHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueueManagers",
+          "parameterTypes": []
         }
       ]
     },
@@ -612,23 +641,6 @@
         },
         {
           "name": "priority"
-        }
-      ],
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.aquila.ibm.mq.gui.model.ImportConfig",
-      "fields": [
-        {
-          "name": "Hierarchy"
-        },
-        {
-          "name": "QueueManagers"
         }
       ],
       "methods": [
@@ -720,6 +732,202 @@
       "methods": [
         {
           "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getChannel",
+          "parameterTypes": []
+        },
+        {
+          "name": "getHost",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPassword",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPort",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueueManager",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUsername",
+          "parameterTypes": []
+        },
+        {
+          "name": "isSslEnabled",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChannel",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setHost",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPassword",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPort",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "name": "setQueueManager",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSslEnabled",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setUsername",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.node.HierarchyNode",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getChildIds",
+          "parameterTypes": []
+        },
+        {
+          "name": "getId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getParentId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getType",
+          "parameterTypes": []
+        },
+        {
+          "name": "isExpanded",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChildIds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setExpanded",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setParentId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setType",
+          "parameterTypes": [
+            "com.aquila.ibm.mq.gui.model.node.HierarchyNode$NodeType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.node.HierarchyNode$NodeType"
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.node.QueueNode",
+      "fields": [
+        {
+          "name": "descriptions"
+        },
+        {
+          "name": "queueManager"
+        },
+        {
+          "name": "queuePattern"
+        },
+        {
+          "name": "sequencialQueueRequest"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDescriptions",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueueManager",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueuePattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "isSequencialQueueRequest",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aquila.ibm.mq.gui.model.node.QueueNode$QueueDescription",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "label",
           "parameterTypes": []
         }
       ]
@@ -18226,6 +18434,15 @@
     },
     {
       "type": "com.ibm.msg.client.wmq.factories.WMQComponent",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.intellij.junit5.JUnit5IdeaTestRunner",
       "methods": [
         {
           "name": "<init>",

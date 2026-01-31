@@ -1,3 +1,17 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Represents a node in the import/export hierarchy structure.
+ * Uses nested maps for JSON serialization, unlike HierarchyNode
+ * which uses ID references.
+ * @deprecated Use HierarchyNode with ImportConfig instead.
+ */
 package com.aquila.ibm.mq.gui.model;
 
 import com.aquila.ibm.mq.gui.model.node.HierarchyNode.NodeType;
@@ -18,7 +32,6 @@ import java.util.Map;
 @Setter
 @ToString
 @Slf4j
-@Deprecated
 public class HierarchyImportNode {
     private String name;
     private NodeType type;
@@ -26,12 +39,6 @@ public class HierarchyImportNode {
     private String queueMgr;
 
     public HierarchyImportNode() {
-    }
-
-    public HierarchyImportNode(String name, NodeType type) {
-        this.name = name;
-        this.type = type;
-        this.children = new HashMap<>();
     }
 
     /**
@@ -94,38 +101,4 @@ public class HierarchyImportNode {
         return map;
     }
 
-    /**
-     * Add a child node to this node.
-     *
-     * @param childName The name of the child
-     * @param child The child node or value (can be HierarchyImportNode, Map, or String)
-     */
-    public void addChild(String childName, Object child) {
-        if (children == null) {
-            children = new HashMap<>();
-        }
-        children.put(childName, child);
-    }
-
-    /**
-     * Add a child node to this node.
-     *
-     * @param childName The name of the child
-     * @param childNode The child node
-     */
-    public void addChild(String childName, HierarchyImportNode childNode) {
-        if (children == null) {
-            children = new HashMap<>();
-        }
-        children.put(childName, childNode.toMap());
-    }
-
-    /**
-     * Check if this node has children.
-     *
-     * @return true if children exist and not empty
-     */
-    public boolean hasChildren() {
-        return children != null && !children.isEmpty();
-    }
 }

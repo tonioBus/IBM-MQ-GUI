@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT tree viewer for queue manager hierarchy navigation.
+ * Supports folder organization, drag-drop reordering,
+ * context menus, and toolbar operations.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.Configuration;
@@ -42,6 +55,9 @@ public class HierarchyTreeViewer extends Composite {
     // Selection listener
     private Consumer<SelectionEvent> selectionListener;
 
+    // Context menu action listener for import/export
+    private ContextMenuActionListener contextMenuActionListener;
+
     // Custom icons
     private Image folderIcon;
     private Image connectedIcon;
@@ -66,6 +82,17 @@ public class HierarchyTreeViewer extends Composite {
         FOLDER,
         QUEUE_BROWSER,
         NONE
+    }
+
+    /**
+     * Listener interface for context menu actions (import/export).
+     */
+    public interface ContextMenuActionListener {
+        void onImportConfiguration();
+
+        void onExportConfiguration();
+
+        void onExportSelectedConfiguration(HierarchyNode node);
     }
 
     public HierarchyTreeViewer(Composite parent, int style,
@@ -222,6 +249,24 @@ public class HierarchyTreeViewer extends Composite {
         MenuItem addFolderItem = new MenuItem(menu, SWT.PUSH);
         addFolderItem.setText("Add Folder...");
         addFolderItem.addListener(SWT.Selection, e -> addFolder());
+
+        new MenuItem(menu, SWT.SEPARATOR);
+
+        MenuItem importItem = new MenuItem(menu, SWT.PUSH);
+        importItem.setText("Import Configuration...");
+        importItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onImportConfiguration();
+            }
+        });
+
+        MenuItem exportItem = new MenuItem(menu, SWT.PUSH);
+        exportItem.setText("Export Configuration...");
+        exportItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onExportConfiguration();
+            }
+        });
     }
 
     private void createFolderContextMenu(Menu menu, HierarchyNode folder) {
@@ -243,11 +288,34 @@ public class HierarchyTreeViewer extends Composite {
         deleteItem.setText("Delete");
         deleteItem.addListener(SWT.Selection, e -> deleteSelected());
 
+        new MenuItem(menu, SWT.SEPARATOR);
+
+        MenuItem importItem = new MenuItem(menu, SWT.PUSH);
+        importItem.setText("Import Configuration...");
+        importItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onImportConfiguration();
+            }
+        });
+
+        MenuItem exportItem = new MenuItem(menu, SWT.PUSH);
+        exportItem.setText("Export Configuration...");
+        exportItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onExportConfiguration();
+            }
+        });
+
+        MenuItem exportSelectedItem = new MenuItem(menu, SWT.PUSH);
+        exportSelectedItem.setText("Export Selected...");
+        exportSelectedItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onExportSelectedConfiguration(folder);
+            }
+        });
     }
 
     private void createQueueBrowserContextMenu(Menu menu, HierarchyNode hierarchyNode) {
-        new MenuItem(menu, SWT.SEPARATOR);
-
         MenuItem editConnItem = new MenuItem(menu, SWT.PUSH);
         editConnItem.setText("Edit Queue Browser");
         editConnItem.addListener(SWT.Selection, e -> editQueueBrowser(hierarchyNode));
@@ -255,6 +323,32 @@ public class HierarchyTreeViewer extends Composite {
         MenuItem removeItem = new MenuItem(menu, SWT.PUSH);
         removeItem.setText("Remove");
         removeItem.addListener(SWT.Selection, e -> deleteSelected());
+
+        new MenuItem(menu, SWT.SEPARATOR);
+
+        MenuItem importItem = new MenuItem(menu, SWT.PUSH);
+        importItem.setText("Import Configuration...");
+        importItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onImportConfiguration();
+            }
+        });
+
+        MenuItem exportItem = new MenuItem(menu, SWT.PUSH);
+        exportItem.setText("Export Configuration...");
+        exportItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onExportConfiguration();
+            }
+        });
+
+        MenuItem exportSelectedItem = new MenuItem(menu, SWT.PUSH);
+        exportSelectedItem.setText("Export Selected...");
+        exportSelectedItem.addListener(SWT.Selection, e -> {
+            if (contextMenuActionListener != null) {
+                contextMenuActionListener.onExportSelectedConfiguration(hierarchyNode);
+            }
+        });
     }
 
     private void setupDragAndDrop() {
@@ -470,7 +564,10 @@ public class HierarchyTreeViewer extends Composite {
     /**
      * Recursively create tree items from hierarchy nodes.
      */
-    private TreeItem createTreeItem(TreeItem parent, HierarchyNode node) {
+    private void createTreeItem(TreeItem parent, HierarchyNode node) {
+        log.info("createTreeItem({}->{})", node.getName(), node.getId());
+        if (node.getId() == null)
+            throw new RuntimeException(String.format("Node:%s should have an id", node.getName()));
         TreeItem item;
         if (parent == null) {
             item = new TreeItem(tree, SWT.NONE);
@@ -478,7 +575,7 @@ public class HierarchyTreeViewer extends Composite {
             item = new TreeItem(parent, SWT.NONE);
         }
 
-        item.setText(node.getName());
+        item.setText(node.getName() != null ? node.getName() : "N / A");
         item.setImage(getNodeIcon(node));
 
         // Store mappings
@@ -491,10 +588,10 @@ public class HierarchyTreeViewer extends Composite {
         // Recursively add children
         List<HierarchyNode> children = hierarchyConfig.getChildren(node.getId());
         for (HierarchyNode child : children) {
+            log.info("child createTreeItem({})", child.getId());
             createTreeItem(item, child);
         }
 
-        return item;
     }
 
     /**
@@ -568,6 +665,13 @@ public class HierarchyTreeViewer extends Composite {
      */
     public void addSelectionListener(Consumer<SelectionEvent> listener) {
         this.selectionListener = listener;
+    }
+
+    /**
+     * Set the context menu action listener for import/export operations.
+     */
+    public void setContextMenuActionListener(ContextMenuActionListener listener) {
+        this.contextMenuActionListener = listener;
     }
 
     /**
@@ -645,7 +749,7 @@ public class HierarchyTreeViewer extends Composite {
                 getShell(), configuration, selectedNode, false);
         QueueBrowserDialog.ReturnQueueBrowserDialog returnQueueBrowserDialog = queueBrowserDialog.open();
         final QueueNode queueNode = returnQueueBrowserDialog.queueNode();
-        final String queueNodeName =  returnQueueBrowserDialog.label();
+        final String queueNodeName = returnQueueBrowserDialog.label();
         log.info("addQueueBrowser: {} -> {}", queueNodeName, queueNode);
         if (queueNode != null) {
             final String displayName = selectedNode.getName();

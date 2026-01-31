@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT dialog for configuring queue depth alert thresholds.
+ * Allows setting warning and critical thresholds (percentage or absolute)
+ * for multiple queues with bulk editing support.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.Configuration;
@@ -121,8 +134,8 @@ public class ThresholdConfigDialog {
                 updateTableItem(item, queueName, config);
                 break;
             case 2:
-                editNumericValue(item, column, value -> {
-                    config.setWarningThreshold(value);
+                editNumericValue(item, column, value1 -> {
+                    config.setWarningThreshold(value1);
                     thresholds.put(queueName, config);
                 });
                 break;
@@ -131,8 +144,8 @@ public class ThresholdConfigDialog {
                 updateTableItem(item, queueName, config);
                 break;
             case 4:
-                editNumericValue(item, column, value -> {
-                    config.setCriticalThreshold(value);
+                editNumericValue(item, column, value1 -> {
+                    config.setCriticalThreshold(value1);
                     thresholds.put(queueName, config);
                 });
                 break;

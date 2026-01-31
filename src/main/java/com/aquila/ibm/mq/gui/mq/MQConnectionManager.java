@@ -1,9 +1,24 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Manages IBM MQ queue manager connections.
+ * Supports multiple simultaneous connections, connection pooling,
+ * MQCSP authentication, and comprehensive error handling with
+ * troubleshooting tips.
+ */
 package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.ibm.mq.MQException;
 import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.MQConstants;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,12 +27,12 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 public class MQConnectionManager {
-    private static final Logger logger = LoggerFactory.getLogger(MQConnectionManager.class);
 
     // Multi-connection support
-    private Map<String, MQQueueManager> activeConnections;
-    private Map<String, QueueManagerConfig> connectionConfigs;
+    private final Map<String, MQQueueManager> activeConnections;
+    private final Map<String, QueueManagerConfig> connectionConfigs;
     private String activeConnectionId;
 
     // Legacy fields (deprecated but maintained for backward compatibility)
@@ -52,11 +67,11 @@ public class MQConnectionManager {
         }
 
         if (isConnected(connectionId)) {
-            logger.info("Already connected to {}, reusing existing connection", connectionId);
+            log.info("Already connected to {}, reusing existing connection", connectionId);
             return;
         }
 
-        logger.info("Connecting to queue manager: {} at {}:{} with ID: {}",
+        log.info("Connecting to queue manager: {} at {}:{} with ID: {}",
                    config.getQueueManager(), config.getHost(), config.getPort(), connectionId);
 
         Hashtable<String, Object> properties = new Hashtable<>();
@@ -71,9 +86,9 @@ public class MQConnectionManager {
         if (config.getUsername() != null && !config.getUsername().isEmpty()) {
             properties.put(MQConstants.USER_ID_PROPERTY, config.getUsername());
             properties.put(MQConstants.PASSWORD_PROPERTY, config.getPassword());
-            logger.info("Using credentials for user: {}", config.getUsername());
+            log.info("Using credentials for user: {}", config.getUsername());
         } else {
-            logger.info("Connecting without credentials");
+            log.info("Connecting without credentials");
         }
 
         try {
@@ -88,11 +103,11 @@ public class MQConnectionManager {
                 connected = true;
             }
 
-            logger.info("Successfully connected to queue manager: {} (ID: {})", config.getQueueManager(), connectionId);
+            log.info("Successfully connected to queue manager: {} (ID: {})", config.getQueueManager(), connectionId);
         } catch (MQException e) {
-            logger.error("Failed to connect to queue manager. Reason code: {} ({})",
+            log.error("Failed to connect to queue manager. Reason code: {} ({})",
                         e.getReason(), getMQErrorDescription(e.getReason()));
-            logger.error("Connection details - Host: {}, Port: {}, Channel: {}, QM: {}",
+            log.error("Connection details - Host: {}, Port: {}, Channel: {}, QM: {}",
                         config.getHost(), config.getPort(), config.getChannel(), config.getQueueManager());
             throw new MQException(e.getCompCode(), e.getReason(),
                                  formatMQError(e, config));
@@ -214,12 +229,12 @@ public class MQConnectionManager {
                 if (qm.isConnected()) {
                     qm.disconnect();
                     QueueManagerConfig config = connectionConfigs.get(connectionId);
-                    logger.info("Disconnected from queue manager: {} (ID: {})",
+                    log.info("Disconnected from queue manager: {} (ID: {})",
                                config != null ? config.getQueueManager() : "unknown",
                                connectionId);
                 }
             } catch (MQException e) {
-                logger.error("Error disconnecting from queue manager (ID: {})", connectionId, e);
+                log.error("Error disconnecting from queue manager (ID: {})", connectionId, e);
             } finally {
                 activeConnections.remove(connectionId);
                 connectionConfigs.remove(connectionId);
@@ -239,7 +254,7 @@ public class MQConnectionManager {
      * Disconnect all active connections.
      */
     public void disconnectAll() {
-        logger.info("Disconnecting all {} active connections", activeConnections.size());
+        log.info("Disconnecting all {} active connections", activeConnections.size());
 
         // Copy key set to avoid concurrent modification
         Set<String> connectionIds = Set.copyOf(activeConnections.keySet());
@@ -284,7 +299,7 @@ public class MQConnectionManager {
      */
     public void setActiveConnection(String connectionId) {
         if (connectionId != null && !isConnected(connectionId)) {
-            logger.warn("Cannot set active connection to {}: not connected", connectionId);
+            log.warn("Cannot set active connection to {}: not connected", connectionId);
             return;
         }
 
@@ -301,7 +316,7 @@ public class MQConnectionManager {
             this.connected = false;
         }
 
-        logger.debug("Active connection set to: {}", connectionId);
+        log.debug("Active connection set to: {}", connectionId);
     }
 
     /**
@@ -385,7 +400,7 @@ public class MQConnectionManager {
     }
 
     public void testConnection(QueueManagerConfig config) throws MQException {
-        logger.info("Testing connection to: {}", config.getQueueManager());
+        log.info("Testing connection to: {}", config.getQueueManager());
         Hashtable<String, Object> properties = new Hashtable<>();
         properties.put(MQConstants.HOST_NAME_PROPERTY, config.getHost());
         properties.put(MQConstants.PORT_PROPERTY, config.getPort());
@@ -401,9 +416,9 @@ public class MQConnectionManager {
         MQQueueManager testQM = null;
         try {
             testQM = new MQQueueManager(config.getQueueManager(), properties);
-            logger.info("Connection test successful");
+            log.info("Connection test successful");
         } catch (MQException e) {
-            logger.error("Connection test failed. Reason code: {} ({})",
+            log.error("Connection test failed. Reason code: {} ({})",
                         e.getReason(), getMQErrorDescription(e.getReason()));
             throw new MQException(e.getCompCode(), e.getReason(),
                                  formatMQError(e, config));

@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT panel for displaying queue properties.
+ * Shows comprehensive queue attributes in a property table format
+ * including type, depth, counts, and configuration settings.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.model.QueueInfo;
@@ -9,7 +22,7 @@ import org.eclipse.swt.widgets.*;
 import java.util.Map;
 
 public class QueuePropertiesPanel extends Composite {
-    private Table propertiesTable;
+    private final Table propertiesTable;
     private QueueInfo currentQueue;
 
     public QueuePropertiesPanel(Composite parent, int style) {

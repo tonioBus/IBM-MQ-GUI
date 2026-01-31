@@ -1,5 +1,19 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Represents a node in the queue manager hierarchy tree.
+ * Can be either a folder (for organization) or a queue browser reference.
+ * Supports parent-child relationships and tree expansion state.
+ */
 package com.aquila.ibm.mq.gui.model.node;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -29,6 +43,7 @@ public class HierarchyNode {
     private List<String> childIds;
     private boolean expanded;           // Tree expansion state
 
+    @JsonIgnore
     private transient QueueNode queueNode;
 
     public HierarchyNode() {
@@ -43,10 +58,12 @@ public class HierarchyNode {
         this.name = name;
     }
 
+    @JsonIgnore
     public boolean isFolder() {
         return type == NodeType.FOLDER;
     }
 
+    @JsonIgnore
     public boolean isQueue() {
         return type == NodeType.QUEUE;
     }
