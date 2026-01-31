@@ -14,22 +14,22 @@
 package com.aquila.ibm.mq.gui.model.node;
 
 import com.aquila.ibm.mq.gui.config.Configuration;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
 @Getter
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class QueueNode {
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public record QueueDescription(String label) {
     }
@@ -41,7 +41,7 @@ public class QueueNode {
      * Default: false (parallel requests)
      */
     @lombok.Builder.Default
-    private boolean sequencialQueueRequest = false;
+    private final boolean sequencialQueueRequest = false;
     /**
      * Queue filter pattern. Supports both:
      * - IBM MQ wildcards: * (any chars), ? (single char) - e.g., "DEV.*"
@@ -54,15 +54,14 @@ public class QueueNode {
     /**
      * Read QueueNode from the file <strong>key.json</strong>
      * @param key
-     * @param label
      * @param queueManager
      * @return
      */
-    public static QueueNode fromFile(String key,  String queueManager) {
+    public static QueueNode fromFile(String key, String queueManager) {
         final File file = new File(Configuration.CONFIG_DIR, String.format("%s.json", key));
-        try (Reader reader = new FileReader(file)) {
-            final QueueNode queueNode = gson.fromJson(reader, QueueNode.class);
-            log.info("QueueNode:\n{}", gson.toJson(queueNode));
+        try {
+            final QueueNode queueNode = objectMapper.readValue(file, QueueNode.class);
+            log.info("QueueNode:\n{}", queueNode);
             return queueNode;
         } catch (IOException e) {
             log.error("Failed to load QueueNode: {}", key, e);
@@ -78,8 +77,8 @@ public class QueueNode {
     public void save(String key) {
         String filename = String.format("%s.json", key);
         final File file = new File(Configuration.CONFIG_DIR, filename);
-        try (Writer writer = new FileWriter(file)) {
-            gson.toJson(this, writer);
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, this);
             log.info("Saved QueueNode: {}", file);
         } catch (IOException e1) {
             log.error("Failed to save QueueNode", e1);

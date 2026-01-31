@@ -31,8 +31,8 @@ import java.util.Set;
 public class MQConnectionManager {
 
     // Multi-connection support
-    private Map<String, MQQueueManager> activeConnections;
-    private Map<String, QueueManagerConfig> connectionConfigs;
+    private final Map<String, MQQueueManager> activeConnections;
+    private final Map<String, QueueManagerConfig> connectionConfigs;
     private String activeConnectionId;
 
     // Legacy fields (deprecated but maintained for backward compatibility)

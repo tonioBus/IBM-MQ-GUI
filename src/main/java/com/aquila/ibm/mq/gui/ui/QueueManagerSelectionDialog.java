@@ -61,8 +61,7 @@ public class QueueManagerSelectionDialog {
 
             if (box.open() == SWT.YES) {
                 QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configuration);
-                QueueManagerConfig newConfig = dialog.open();
-                return newConfig;
+                return dialog.open();
             }
             return null;
         }

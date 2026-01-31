@@ -57,12 +57,6 @@
             <artifactId>org.eclipse.swtchart</artifactId>
             <version>1.1.0</version>
         </dependency>
-        <!-- Gson for JSON configuration -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.10.1</version>
-        </dependency>
 
         <!-- Jackson for JSON processing -->
         <dependency>

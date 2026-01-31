@@ -32,7 +32,6 @@ import java.util.Map;
 @Setter
 @ToString
 @Slf4j
-@Deprecated
 public class HierarchyImportNode {
     private String name;
     private NodeType type;
@@ -40,12 +39,6 @@ public class HierarchyImportNode {
     private String queueMgr;
 
     public HierarchyImportNode() {
-    }
-
-    public HierarchyImportNode(String name, NodeType type) {
-        this.name = name;
-        this.type = type;
-        this.children = new HashMap<>();
     }
 
     /**
@@ -108,38 +101,4 @@ public class HierarchyImportNode {
         return map;
     }
 
-    /**
-     * Add a child node to this node.
-     *
-     * @param childName The name of the child
-     * @param child The child node or value (can be HierarchyImportNode, Map, or String)
-     */
-    public void addChild(String childName, Object child) {
-        if (children == null) {
-            children = new HashMap<>();
-        }
-        children.put(childName, child);
-    }
-
-    /**
-     * Add a child node to this node.
-     *
-     * @param childName The name of the child
-     * @param childNode The child node
-     */
-    public void addChild(String childName, HierarchyImportNode childNode) {
-        if (children == null) {
-            children = new HashMap<>();
-        }
-        children.put(childName, childNode.toMap());
-    }
-
-    /**
-     * Check if this node has children.
-     *
-     * @return true if children exist and not empty
-     */
-    public boolean hasChildren() {
-        return children != null && !children.isEmpty();
-    }
 }

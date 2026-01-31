@@ -22,7 +22,7 @@ import org.eclipse.swt.widgets.*;
 import java.util.Map;
 
 public class QueuePropertiesPanel extends Composite {
-    private Table propertiesTable;
+    private final Table propertiesTable;
     private QueueInfo currentQueue;
 
     public QueuePropertiesPanel(Composite parent, int style) {

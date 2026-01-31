@@ -30,7 +30,6 @@ public class IBMMQViewer {
             display.dispose();
         } catch (Exception e) {
             logger.error("Fatal error in application", e);
-            e.printStackTrace();
         }
 
         logger.info("IBM MQ GUI Application terminated");

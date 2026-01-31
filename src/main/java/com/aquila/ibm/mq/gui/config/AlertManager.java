@@ -38,7 +38,7 @@ public class AlertManager {
         this.alertHistory = Collections.synchronizedList(new ArrayList<>());
     }
 
-    public ThresholdConfig.AlertLevel checkQueue(QueueInfo queueInfo) {
+    public void checkQueue(QueueInfo queueInfo) {
         ThresholdConfig threshold = configuration.getThreshold(queueInfo.getQueue());
         ThresholdConfig.AlertLevel newLevel = threshold.getAlertLevel(queueInfo);
         ThresholdConfig.AlertLevel currentLevel = currentAlertLevels.getOrDefault(
@@ -49,7 +49,6 @@ public class AlertManager {
             currentAlertLevels.put(queueInfo.getQueue(), newLevel);
         }
 
-        return newLevel;
     }
 
     private void handleAlertLevelChange(QueueInfo queueInfo,

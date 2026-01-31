@@ -29,7 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class DepthChartPanel extends Composite {
-    private Chart chart;
+    private final Chart chart;
     private QueueInfo selectedQueue;
     private List<QueueInfo> allQueues;
     private final Map<String, LinkedList<DataPoint>> queueDataHistory;
@@ -149,8 +149,8 @@ public class DepthChartPanel extends Composite {
     }
 
     private static class DataPoint {
-        LocalDateTime timestamp;
-        int depth;
+        final LocalDateTime timestamp;
+        final int depth;
 
         DataPoint(LocalDateTime timestamp, int depth) {
             this.timestamp = timestamp;

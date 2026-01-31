@@ -56,7 +56,7 @@ public class InspectedQueueViewer extends Composite {
     private boolean sortAscending = true;
 
     private final Composite progressPanel;
-    private ProgressBar progressBar;
+    private final ProgressBar progressBar;
     private final Label progressLabel;
 
     private Text regexFilterText;
@@ -139,7 +139,7 @@ public class InspectedQueueViewer extends Composite {
         });
     }
 
-    private Composite createFilterPanel(Composite parent) {
+    private void createFilterPanel(Composite parent) {
         Composite panel = new Composite(parent, SWT.NONE);
         GridLayout layout = new GridLayout(5, false);
         layout.marginHeight = 5;
@@ -175,7 +175,6 @@ public class InspectedQueueViewer extends Composite {
         filterStatusLabel = new Label(panel, SWT.NONE);
         filterStatusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        return panel;
     }
 
     public void setQueues(List<QueueInfo> queues) {

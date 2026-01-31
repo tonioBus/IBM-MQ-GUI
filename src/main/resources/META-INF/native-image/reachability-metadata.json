@@ -610,6 +610,14 @@
         {
           "name": "<init>",
           "parameterTypes": []
+        },
+        {
+          "name": "getHierarchy",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueueManagers",
+          "parameterTypes": []
         }
       ]
     },
@@ -724,6 +732,34 @@
       "methods": [
         {
           "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getChannel",
+          "parameterTypes": []
+        },
+        {
+          "name": "getHost",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPassword",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPort",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueueManager",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUsername",
+          "parameterTypes": []
+        },
+        {
+          "name": "isSslEnabled",
           "parameterTypes": []
         },
         {
@@ -856,6 +892,28 @@
         },
         {
           "name": "sequencialQueueRequest"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDescriptions",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueueManager",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueuePattern",
+          "parameterTypes": []
+        },
+        {
+          "name": "isSequencialQueueRequest",
+          "parameterTypes": []
         }
       ]
     },

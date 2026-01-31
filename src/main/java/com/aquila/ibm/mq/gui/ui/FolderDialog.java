@@ -25,7 +25,7 @@ public class FolderDialog {
     private Shell shell;
     private Text nameText;
     private String folderName;
-    private boolean isRename;
+    private final boolean isRename;
 
     public FolderDialog(Shell parent) {
         this(parent, false, null);

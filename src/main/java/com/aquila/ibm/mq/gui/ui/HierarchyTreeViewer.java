@@ -564,7 +564,7 @@ public class HierarchyTreeViewer extends Composite {
     /**
      * Recursively create tree items from hierarchy nodes.
      */
-    private TreeItem createTreeItem(TreeItem parent, HierarchyNode node) {
+    private void createTreeItem(TreeItem parent, HierarchyNode node) {
         log.info("createTreeItem({}->{})", node.getName(), node.getId());
         if (node.getId() == null)
             throw new RuntimeException(String.format("Node:%s should have an id", node.getName()));
@@ -592,7 +592,6 @@ public class HierarchyTreeViewer extends Composite {
             createTreeItem(item, child);
         }
 
-        return item;
     }
 
     /**

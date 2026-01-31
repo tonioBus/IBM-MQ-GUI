@@ -20,8 +20,6 @@ import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import com.aquila.ibm.mq.gui.model.node.QueueNode;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +43,7 @@ public class Configuration {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, QueueManagerConfig> queueManagers = loadConnections();
     @Getter
-    private Map<String, QueueNode> queueBrowserConfigMap = new HashMap<>();
+    private final Map<String, QueueNode> queueBrowserConfigMap = new HashMap<>();
 
     public Configuration() {
         initConfigDirectory();

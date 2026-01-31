@@ -30,8 +30,8 @@ import java.util.*;
 @Getter
 @Slf4j
 public class HierarchyConfig {
-    private Map<String, HierarchyNode> nodes;
-    private List<String> rootNodeIds;
+    private final Map<String, HierarchyNode> nodes;
+    private final List<String> rootNodeIds;
     @Setter
     private String selectedNodeId;
 

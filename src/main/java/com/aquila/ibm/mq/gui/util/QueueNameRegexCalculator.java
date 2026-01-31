@@ -111,7 +111,7 @@ public class QueueNameRegexCalculator {
         // Find common prefix
         String commonPrefix = findCommonPrefix(queueNames);
 
-        if (commonPrefix.length() > 0) {
+        if (!commonPrefix.isEmpty()) {
             // Remove common prefix from all names
             List<String> suffixes = queueNames.stream()
                     .map(name -> name.substring(commonPrefix.length()))
@@ -120,7 +120,7 @@ public class QueueNameRegexCalculator {
             // Find common suffix
             String commonSuffix = findCommonSuffix(suffixes);
 
-            if (commonSuffix.length() > 0) {
+            if (!commonSuffix.isEmpty()) {
                 // Remove common suffix
                 List<String> middles = suffixes.stream()
                         .map(suffix -> suffix.substring(0, suffix.length() - commonSuffix.length()))
