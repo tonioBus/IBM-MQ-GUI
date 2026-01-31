@@ -1,9 +1,7 @@
 name: Build and Release Native Executable
 
 on:
-  push:
-    tags:
-      - 'v*'  # Déclenché sur les tags v1.0.0, v2.1.0, etc.
+  workflow_dispatch:
 
 jobs:
   build-windows:
