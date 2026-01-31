@@ -89,7 +89,9 @@ public class HierarchyTreeViewer extends Composite {
      */
     public interface ContextMenuActionListener {
         void onImportConfiguration();
+
         void onExportConfiguration();
+
         void onExportSelectedConfiguration(HierarchyNode node);
     }
 
@@ -563,6 +565,9 @@ public class HierarchyTreeViewer extends Composite {
      * Recursively create tree items from hierarchy nodes.
      */
     private TreeItem createTreeItem(TreeItem parent, HierarchyNode node) {
+        log.info("createTreeItem({}->{})", node.getName(), node.getId());
+        if (node.getId() == null)
+            throw new RuntimeException(String.format("Node:%s should have an id", node.getName()));
         TreeItem item;
         if (parent == null) {
             item = new TreeItem(tree, SWT.NONE);
@@ -583,6 +588,7 @@ public class HierarchyTreeViewer extends Composite {
         // Recursively add children
         List<HierarchyNode> children = hierarchyConfig.getChildren(node.getId());
         for (HierarchyNode child : children) {
+            log.info("child createTreeItem({})", child.getId());
             createTreeItem(item, child);
         }
 
@@ -744,7 +750,7 @@ public class HierarchyTreeViewer extends Composite {
                 getShell(), configuration, selectedNode, false);
         QueueBrowserDialog.ReturnQueueBrowserDialog returnQueueBrowserDialog = queueBrowserDialog.open();
         final QueueNode queueNode = returnQueueBrowserDialog.queueNode();
-        final String queueNodeName =  returnQueueBrowserDialog.label();
+        final String queueNodeName = returnQueueBrowserDialog.label();
         log.info("addQueueBrowser: {} -> {}", queueNodeName, queueNode);
         if (queueNode != null) {
             final String displayName = selectedNode.getName();

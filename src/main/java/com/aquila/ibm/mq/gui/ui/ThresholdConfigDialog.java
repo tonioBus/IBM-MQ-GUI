@@ -134,8 +134,8 @@ public class ThresholdConfigDialog {
                 updateTableItem(item, queueName, config);
                 break;
             case 2:
-                editNumericValue(item, column, value -> {
-                    config.setWarningThreshold(value);
+                editNumericValue(item, column, value1 -> {
+                    config.setWarningThreshold(value1);
                     thresholds.put(queueName, config);
                 });
                 break;
@@ -144,8 +144,8 @@ public class ThresholdConfigDialog {
                 updateTableItem(item, queueName, config);
                 break;
             case 4:
-                editNumericValue(item, column, value -> {
-                    config.setCriticalThreshold(value);
+                editNumericValue(item, column, value1 -> {
+                    config.setCriticalThreshold(value1);
                     thresholds.put(queueName, config);
                 });
                 break;
