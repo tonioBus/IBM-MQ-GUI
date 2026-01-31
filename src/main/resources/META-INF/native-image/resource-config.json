@@ -1,1 +1,140 @@
-{"resources":{"includes":[{"pattern":"jdk.jfr:\\Qjdk/jfr/internal/types/metadata.bin\\E"}]},"bundles":[{"name":"com.ibm.mq.headers.internal.HeaderMessages","locales":["fr","und"]},{"name":"com.ibm.mq.jmqi.internal.messages","locales":["fr","und"]},{"name":"mqji","locales":["fr","und"]},{"name":"org.eclipse.swtchart.internal.axis.messages"},{"name":"org.eclipse.swtchart.internal.messages"}],"globs":[{"glob":"META-INF/BuildInfo.properties"},{"glob":"META-INF/ccsid_merged.map"},{"glob":"META-INF/compinfo.properties"},{"glob":"META-INF/jmqiCharsets.dat"},{"glob":"META-INF/jmqiversion.properties"},{"glob":"META-INF/jms.config"},{"glob":"META-INF/product.properties"},{"glob":"META-INF/services/ch.qos.logback.classic.spi.Configurator"},{"glob":"META-INF/services/java.net.spi.InetAddressResolverProvider"},{"glob":"META-INF/services/java.time.zone.ZoneRulesProvider"},{"glob":"META-INF/services/java.util.spi.ResourceBundleControlProvider"},{"glob":"META-INF/services/javax.xml.parsers.SAXParserFactory"},{"glob":"META-INF/services/org.apache.maven.surefire.spi.MasterProcessChannelProcessorFactory"},{"glob":"META-INF/services/org.junit.platform.commons.support.scanning.ClasspathScanner"},{"glob":"META-INF/services/org.junit.platform.engine.TestEngine"},{"glob":"META-INF/services/org.junit.platform.launcher.LauncherDiscoveryListener"},{"glob":"META-INF/services/org.junit.platform.launcher.LauncherSessionListener"},{"glob":"META-INF/services/org.junit.platform.launcher.PostDiscoveryFilter"},{"glob":"META-INF/services/org.junit.platform.launcher.TestExecutionListener"},{"glob":"META-INF/services/org.slf4j.spi.SLF4JServiceProvider"},{"glob":"com/ibm/mq/BuildInfo.properties"},{"glob":"com/ibm/mq/headers/internal/HeaderMessages.properties"},{"glob":"com/ibm/mq/headers/internal/HeaderMessages_fr.properties"},{"glob":"com/ibm/mq/headers/internal/HeaderMessages_fr_FR.properties"},{"glob":"com/ibm/mq/jmqi/internal/messages.properties"},{"glob":"com/ibm/mq/jmqi/internal/messages_fr.properties"},{"glob":"com/ibm/mq/jmqi/internal/messages_fr_FR.properties"},{"glob":"com/ibm/mq/jms/BuildInfo.properties"},{"glob":"com/ibm/mq/jms/version.properties"},{"glob":"com/ibm/mq/version.properties"},{"glob":"com/ibm/msg/client/commonservices/j2se/version.properties"},{"glob":"com/ibm/msg/client/jms/internal/version.properties"},{"glob":"com/ibm/msg/client/wmq/factories/version.properties"},{"glob":"icons/Aquila-16.png"},{"glob":"icons/Aquila-256.png"},{"glob":"icons/Aquila-32.ico"},{"glob":"icons/Aquila-32.png"},{"glob":"icons/Aquila-48.png"},{"glob":"icons/connected.png"},{"glob":"icons/error.png"},{"glob":"icons/folder.png"},{"glob":"icons/tonio.png"},{"glob":"junit-platform.properties"},{"glob":"logback-test.scmo"},{"glob":"logback-test.xml"},{"glob":"logback.scmo"},{"glob":"logback.xml"},{"glob":"mqji.properties"},{"glob":"mqji_en.properties"},{"glob":"mqji_en_US.properties"},{"glob":"mqji_fr.properties"},{"glob":"mqji_fr_FR.properties"},{"glob":"org/eclipse/swtchart/internal/axis/messages.properties"},{"glob":"org/eclipse/swtchart/internal/axis/messages_fr.properties"},{"glob":"org/eclipse/swtchart/internal/axis/messages_fr_FR.properties"},{"glob":"org/eclipse/swtchart/internal/messages.properties"},{"glob":"org/eclipse/swtchart/internal/messages_fr.properties"},{"glob":"org/eclipse/swtchart/internal/messages_fr_FR.properties"},{"module":"java.base","glob":"jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"},{"module":"jdk.jfr","glob":"jdk/jfr/internal/query/view.ini"},{"module":"jdk.jfr","glob":"jdk/jfr/internal/types/metadata.bin"}]}
+{
+  "resources":{
+  "includes":[{
+    "pattern":"\\QMETA-INF/BuildInfo.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/ccsid_merged.map\\E"
+  }, {
+    "pattern":"\\QMETA-INF/compinfo.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/jmqiCharsets.dat\\E"
+  }, {
+    "pattern":"\\QMETA-INF/jmqiversion.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/jms.config\\E"
+  }, {
+    "pattern":"\\QMETA-INF/product.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/ch.qos.logback.classic.spi.Configurator\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/javax.xml.parsers.SAXParserFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.maven.surefire.spi.MasterProcessChannelProcessorFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.commons.support.scanning.ClasspathScanner\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.engine.TestEngine\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.LauncherDiscoveryListener\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.LauncherSessionListener\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.PostDiscoveryFilter\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.TestExecutionListener\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/BuildInfo.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/headers/internal/HeaderMessages.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/headers/internal/HeaderMessages_fr.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/headers/internal/HeaderMessages_fr_FR.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/jmqi/internal/messages.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/jmqi/internal/messages_fr.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/jmqi/internal/messages_fr_FR.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/jms/BuildInfo.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/jms/version.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/mq/version.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/msg/client/commonservices/j2se/version.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/msg/client/jms/internal/version.properties\\E"
+  }, {
+    "pattern":"\\Qcom/ibm/msg/client/wmq/factories/version.properties\\E"
+  }, {
+    "pattern":"\\Qicons/Aquila-16.png\\E"
+  }, {
+    "pattern":"\\Qicons/Aquila-256.png\\E"
+  }, {
+    "pattern":"\\Qicons/Aquila-32.ico\\E"
+  }, {
+    "pattern":"\\Qicons/Aquila-32.png\\E"
+  }, {
+    "pattern":"\\Qicons/Aquila-48.png\\E"
+  }, {
+    "pattern":"\\Qicons/connected.png\\E"
+  }, {
+    "pattern":"\\Qicons/error.png\\E"
+  }, {
+    "pattern":"\\Qicons/folder.png\\E"
+  }, {
+    "pattern":"\\Qicons/tonio.png\\E"
+  }, {
+    "pattern":"\\Qjunit-platform.properties\\E"
+  }, {
+    "pattern":"\\Qlogback-test.scmo\\E"
+  }, {
+    "pattern":"\\Qlogback-test.xml\\E"
+  }, {
+    "pattern":"\\Qlogback.scmo\\E"
+  }, {
+    "pattern":"\\Qlogback.xml\\E"
+  }, {
+    "pattern":"\\Qmqji.properties\\E"
+  }, {
+    "pattern":"\\Qmqji_en.properties\\E"
+  }, {
+    "pattern":"\\Qmqji_en_US.properties\\E"
+  }, {
+    "pattern":"\\Qmqji_fr.properties\\E"
+  }, {
+    "pattern":"\\Qmqji_fr_FR.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/swtchart/internal/axis/messages.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/swtchart/internal/axis/messages_fr.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/swtchart/internal/axis/messages_fr_FR.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/swtchart/internal/messages.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/swtchart/internal/messages_fr.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/swtchart/internal/messages_fr_FR.properties\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt76b/nfkc.nrm\\E"
+  }, {
+    "pattern":"jdk.jfr:\\Qjdk/jfr/internal/query/view.ini\\E"
+  }, {
+    "pattern":"jdk.jfr:\\Qjdk/jfr/internal/types/metadata.bin\\E"
+  }]},
+  "bundles":[{
+    "name":"com.ibm.mq.headers.internal.HeaderMessages",
+    "locales":["fr", "und"]
+  }, {
+    "name":"com.ibm.mq.jmqi.internal.messages",
+    "locales":["fr", "und"]
+  }, {
+    "name":"mqji",
+    "locales":["fr", "und"]
+  }, {
+    "name":"org.eclipse.swtchart.internal.axis.messages"
+  }, {
+    "name":"org.eclipse.swtchart.internal.messages"
+  }]
+}
