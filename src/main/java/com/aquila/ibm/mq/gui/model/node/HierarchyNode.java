@@ -13,6 +13,7 @@
  */
 package com.aquila.ibm.mq.gui.model.node;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -42,6 +43,7 @@ public class HierarchyNode {
     private List<String> childIds;
     private boolean expanded;           // Tree expansion state
 
+    @JsonIgnore
     private transient QueueNode queueNode;
 
     public HierarchyNode() {
@@ -56,10 +58,12 @@ public class HierarchyNode {
         this.name = name;
     }
 
+    @JsonIgnore
     public boolean isFolder() {
         return type == NodeType.FOLDER;
     }
 
+    @JsonIgnore
     public boolean isQueue() {
         return type == NodeType.QUEUE;
     }

@@ -13,16 +13,22 @@
  */
 package com.aquila.ibm.mq.gui.config;
 
-import com.aquila.ibm.mq.gui.model.*;
+import com.aquila.ibm.mq.gui.model.HierarchyConfig;
+import com.aquila.ibm.mq.gui.model.MessageTemplate;
+import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
+import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import com.aquila.ibm.mq.gui.model.node.QueueNode;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
-import java.lang.reflect.Type;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,8 +42,8 @@ public class Configuration {
     private static final String THRESHOLDS_FILE = "thresholds.json";
     private static final String HIERARCHY_FILE = "hierarchy.json";
     private static final String MESSAGE_TEMPLATES_FILE = "message_templates.json";
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    private Map<String, QueueManagerConfig> queueManagers = loadConnections();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final Map<String, QueueManagerConfig> queueManagers = loadConnections();
     @Getter
     private Map<String, QueueNode> queueBrowserConfigMap = new HashMap<>();
 
@@ -63,13 +69,9 @@ public class Configuration {
             log.info("No connections file found, returning empty list");
             return new HashMap<>();
         }
-
-        try (Reader reader = new FileReader(file)) {
-            final Type mapType = new TypeToken<Map<String, QueueManagerConfig>>() {
-            }.getType();
-            queueManagers = gson.fromJson(reader, mapType);
-            log.info("Loaded {} connection(s)", queueManagers != null ? queueManagers.size() : 0);
-            return queueManagers != null ? queueManagers : new HashMap<>();
+        final JavaType javaType = objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, QueueManagerConfig.class);
+        try {
+            return objectMapper.readValue(file, javaType);
         } catch (IOException e) {
             log.error("Failed to load connections", e);
             return new HashMap<>();
@@ -78,8 +80,8 @@ public class Configuration {
 
     public void saveConnections(Map<String, QueueManagerConfig> connections) {
         final File file = new File(CONFIG_DIR, CONNECTIONS_FILE);
-        try (Writer writer = new FileWriter(file)) {
-            gson.toJson(connections, writer);
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, connections);
             log.info("Saved {} connection(s)", connections.size());
         } catch (IOException e) {
             log.error("Failed to save connections", e);
@@ -112,9 +114,8 @@ public class Configuration {
         }
 
         try (Reader reader = new FileReader(file)) {
-            final Type mapType = new TypeToken<Map<String, ThresholdConfig>>() {
-            }.getType();
-            final Map<String, ThresholdConfig> thresholds = gson.fromJson(reader, mapType);
+            final JavaType javaType = objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, ThresholdConfig.class);
+            final Map<String, ThresholdConfig> thresholds = objectMapper.readValue(reader, javaType);
             log.info("Loaded {} threshold(s)", thresholds != null ? thresholds.size() : 0);
             return thresholds != null ? thresholds : new HashMap<>();
         } catch (IOException e) {
@@ -125,8 +126,8 @@ public class Configuration {
 
     public void saveThresholds(Map<String, ThresholdConfig> thresholds) {
         final File file = new File(CONFIG_DIR, THRESHOLDS_FILE);
-        try (Writer writer = new FileWriter(file)) {
-            gson.toJson(thresholds, writer);
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, thresholds);
             log.info("Saved {} threshold(s)", thresholds.size());
         } catch (IOException e) {
             log.error("Failed to save thresholds", e);
@@ -151,8 +152,8 @@ public class Configuration {
             return null;
         }
 
-        try (Reader reader = new FileReader(file)) {
-            final HierarchyConfig hierarchyConfig = gson.fromJson(reader, HierarchyConfig.class);
+        try {
+            final HierarchyConfig hierarchyConfig = objectMapper.readValue(file, HierarchyConfig.class);
             log.info("Loaded hierarchy with {} nodes", hierarchyConfig != null ? hierarchyConfig.getNodes().size() : 0);
             if (!this.queueManagers.isEmpty() && hierarchyConfig != null && hierarchyConfig.getNodes() != null) {
                 hierarchyConfig.getNodes().entrySet().parallelStream()
@@ -161,7 +162,6 @@ public class Configuration {
                             final String key = entry.getKey();
                             final QueueNode queueNode = QueueNode.fromFile(key,
                                     this.queueManagers.values().stream().toList().getFirst().getQueueManager());
-
                             hierarchyConfig.getNode(key).setQueueNode(queueNode);
                             this.queueBrowserConfigMap.put(key, queueNode);
                         });
@@ -194,8 +194,8 @@ public class Configuration {
                 log.warn("Failed to create backup of hierarchy file", e);
             }
         }
-        try (Writer writer = new FileWriter(file)) {
-            gson.toJson(hierarchyConfig, writer);
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, hierarchyConfig);
             log.info("Saved hierarchy with {} nodes", hierarchyConfig.getNodes().size());
         } catch (IOException e) {
             log.error("Failed to save hierarchy", e);
@@ -217,26 +217,7 @@ public class Configuration {
      * @return New HierarchyConfig with all connections at root
      */
     public HierarchyConfig createDefaultHierarchy(Map<String, QueueManagerConfig> connections) {
-        final HierarchyConfig hierarchy = new HierarchyConfig();
-
-//        logger.info("Creating default hierarchy from {} connections", connections.size());
-//
-//        for (ConnectionConfig config : connections) {
-//            final String displayName = config.getName() != null && !config.getName().isEmpty()
-//                    ? config.getName()
-//                    : config.getQueueManager() + "@" + config.getHost();
-//
-//            final HierarchyNode node = new HierarchyNode(
-//                    HierarchyNode.NodeType.BROWSER,
-//                    displayName,
-//                    config.getName()
-//            );
-//
-//            hierarchy.addNode(node, null);  // Add to root level
-//        }
-//
-//        logger.info("Created default hierarchy with {} queue managers", connections.size());
-        return hierarchy;
+        return new HierarchyConfig();
     }
 
     public void save(String id, QueueNode queueNode) {
@@ -251,10 +232,9 @@ public class Configuration {
             return new HashMap<>();
         }
 
-        try (Reader reader = new FileReader(file)) {
-            final Type mapType = new TypeToken<Map<String, MessageTemplate>>() {
-            }.getType();
-            final Map<String, MessageTemplate> templates = gson.fromJson(reader, mapType);
+        try {
+            final JavaType javaType = objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, MessageTemplate.class);
+            final Map<String, MessageTemplate> templates = objectMapper.readValue(file, javaType);
             log.info("Loaded {} message template(s)", templates != null ? templates.size() : 0);
             return templates != null ? templates : new HashMap<>();
         } catch (IOException e) {
@@ -265,8 +245,8 @@ public class Configuration {
 
     public void saveMessageTemplates(Map<String, MessageTemplate> templates) {
         final File file = new File(CONFIG_DIR, MESSAGE_TEMPLATES_FILE);
-        try (Writer writer = new FileWriter(file)) {
-            gson.toJson(templates, writer);
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, templates);
             log.info("Saved {} message template(s)", templates.size());
         } catch (IOException e) {
             log.error("Failed to save message templates", e);

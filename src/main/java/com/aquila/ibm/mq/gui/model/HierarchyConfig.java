@@ -14,6 +14,7 @@
 package com.aquila.ibm.mq.gui.model;
 
 import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -231,6 +232,7 @@ public class HierarchyConfig {
     /**
      * Get all queue manager nodes (not folders).
      */
+    @JsonIgnore
     public List<HierarchyNode> getAllQueueManagers() {
         List<HierarchyNode> queueManagers = new ArrayList<>();
         for (HierarchyNode node : nodes.values()) {
