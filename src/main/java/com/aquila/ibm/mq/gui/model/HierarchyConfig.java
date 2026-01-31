@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Container for the entire hierarchy structure of queue managers and folders.
+ * Maintains a flat map of all nodes with references to root nodes,
+ * supporting tree operations like add, remove, and move.
+ */
 package com.aquila.ibm.mq.gui.model;
 
 import com.aquila.ibm.mq.gui.model.node.HierarchyNode;

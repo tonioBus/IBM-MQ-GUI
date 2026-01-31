@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Background monitoring thread for queue depth updates.
+ * Periodically refreshes queue information, evaluates alert thresholds,
+ * and notifies listeners. Supports pause/resume and configurable intervals.
+ */
 package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;

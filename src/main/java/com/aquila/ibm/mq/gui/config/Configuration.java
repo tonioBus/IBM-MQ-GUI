@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Central configuration manager for the application.
+ * Handles persistence of connection profiles, thresholds, hierarchy,
+ * and message templates to JSON files in the user's home directory.
+ */
 package com.aquila.ibm.mq.gui.config;
 
 import com.aquila.ibm.mq.gui.model.*;

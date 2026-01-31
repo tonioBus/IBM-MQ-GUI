@@ -1,3 +1,15 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT dialog for creating or renaming folders in the queue manager hierarchy.
+ * Simple input dialog with validation for folder name entry.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import org.eclipse.swt.SWT;

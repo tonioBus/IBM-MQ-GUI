@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Configuration model for a queue browser node.
+ * Stores queue manager reference, filter pattern, request mode,
+ * and queue descriptions. Supports JSON persistence.
+ */
 package com.aquila.ibm.mq.gui.model.node;
 
 import com.aquila.ibm.mq.gui.config.Configuration;

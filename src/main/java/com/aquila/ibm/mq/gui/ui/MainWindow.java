@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Main application window built with Eclipse SWT.
+ * Coordinates all UI components including hierarchy tree, queue list,
+ * properties panel, message browser, and depth charts.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
@@ -736,8 +749,24 @@ public class MainWindow {
 
     private void showAbout() {
         MessageBox box = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
-        box.setText("About");
-        box.setMessage("IBM MQ Queue Visualizer GUI\nVersion 1.0\n\n(c) AQUILA 2025");
+        box.setText("About IBM MQ GUI");
+        box.setMessage("""
+                IBM MQ GUI
+                Desktop application for IBM MQ Browsing
+                Version 1.0
+
+                Author: Anthony Bussani
+                GitHub: https://github.com/tonioBus
+
+                Licensed under the MIT License.
+                Copyright (c) 2026 Anthony Bussani
+
+                Permission is hereby granted, free of charge, to any person
+                obtaining a copy of this software to use, copy, modify, merge,
+                publish, distribute, sublicense, and/or sell copies of the Software.
+
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+                """);
         box.open();
     }
 

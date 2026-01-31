@@ -1,3 +1,17 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Manages IBM MQ queue manager connections.
+ * Supports multiple simultaneous connections, connection pooling,
+ * MQCSP authentication, and comprehensive error handling with
+ * troubleshooting tips.
+ */
 package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.model.QueueManagerConfig;

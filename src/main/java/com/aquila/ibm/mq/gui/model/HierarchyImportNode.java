@@ -1,3 +1,17 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Represents a node in the import/export hierarchy structure.
+ * Uses nested maps for JSON serialization, unlike HierarchyNode
+ * which uses ID references.
+ * @deprecated Use HierarchyNode with ImportConfig instead.
+ */
 package com.aquila.ibm.mq.gui.model;
 
 import com.aquila.ibm.mq.gui.model.node.HierarchyNode.NodeType;

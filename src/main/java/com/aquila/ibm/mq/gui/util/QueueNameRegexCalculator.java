@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Utility for generating regex patterns from queue names.
+ * Supports IBM MQ wildcards (* and ?), pattern optimization,
+ * and automatic conversion between MQ wildcards and Java regex.
+ */
 package com.aquila.ibm.mq.gui.util;
 
 import java.util.*;

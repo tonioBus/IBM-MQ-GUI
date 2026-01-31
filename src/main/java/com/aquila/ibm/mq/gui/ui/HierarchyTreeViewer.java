@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT tree viewer for queue manager hierarchy navigation.
+ * Supports folder organization, drag-drop reordering,
+ * context menus, and toolbar operations.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.Configuration;
@@ -478,7 +491,7 @@ public class HierarchyTreeViewer extends Composite {
             item = new TreeItem(parent, SWT.NONE);
         }
 
-        item.setText(node.getName());
+        item.setText(node.getName() != null ? node.getName() : "N / A");
         item.setImage(getNodeIcon(node));
 
         // Store mappings

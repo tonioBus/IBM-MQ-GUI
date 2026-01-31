@@ -1,3 +1,15 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Represents a folder node in the import hierarchy.
+ * Contains child nodes which can be other folders or queue browser nodes.
+ */
 package com.aquila.ibm.mq.gui.importation;
 
 import lombok.Getter;

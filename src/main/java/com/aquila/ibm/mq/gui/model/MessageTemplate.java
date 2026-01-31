@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Data model for reusable message templates.
+ * Stores template name, content, priority, persistence,
+ * and batch sending configuration.
+ */
 package com.aquila.ibm.mq.gui.model;
 
 import lombok.Getter;
