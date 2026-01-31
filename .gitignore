@@ -42,3 +42,5 @@ build/
 logs/
 .ibmmqgui/
 /mqjms.log.0
+/.claude/
+/.idea/
