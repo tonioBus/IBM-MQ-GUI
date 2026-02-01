@@ -177,9 +177,9 @@ public class QueueService {
     }
 
     void multiThreadRequest(MQQueueManager qm, List<QueueInfo> queueInfos, int nbThread) {
-        final int nbParts = queueInfos.size() / nbThread + queueInfos.size() % nbThread;
+        final int nbParts = queueInfos.size() / nbThread;
         final List<List<QueueInfo>> listPerThread = Lists.partition(queueInfos, nbParts);
-        log.info("Creating {} sub-list", listPerThread.size());
+        log.info("Creating {} sub-list -- nbParts:{}", listPerThread.size(), nbParts);
         final PCFMessageAgent agent = connectionManager.getActiveAgent();
         listPerThread.parallelStream().forEach(tmpQueueInfos -> {
             //log.info("multiThreadRequest -> create agent {}", tmpQueueInfos.get(0).getQueue());
