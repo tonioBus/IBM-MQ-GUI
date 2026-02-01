@@ -47,6 +47,7 @@ public class QueueBrowserDialog {
     private Text label;
     private Text queuePattern;
     private Button sequencialQueueRequestCheckbox;
+    private Spinner nbThreadSpinner;
     private List queueManagerList;
     private Map<String, QueueManagerConfig> connections;
     private InspectedQueueViewer availableQueuesViewer;
@@ -188,19 +189,35 @@ public class QueueBrowserDialog {
     private void createSequencialQueueRequestField(Composite parent) {
         final Group sequencialGroup = new Group(parent, SWT.NONE);
         sequencialGroup.setText("Queue Request Options");
-        sequencialGroup.setLayout(new GridLayout(1, false));
+        sequencialGroup.setLayout(new GridLayout(2, false));
         sequencialGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         sequencialQueueRequestCheckbox = new Button(sequencialGroup, SWT.CHECK);
         sequencialQueueRequestCheckbox.setText("Sequential Queue Request");
-        sequencialQueueRequestCheckbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        GridData checkboxGridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        checkboxGridData.horizontalSpan = 2;
+        sequencialQueueRequestCheckbox.setLayoutData(checkboxGridData);
         sequencialQueueRequestCheckbox.setToolTipText("Request queue information sequentially instead of in parallel");
 
-        // Initialize with existing value if in edit mode
+        // Number of threads field
+        Label nbThreadLabel = new Label(sequencialGroup, SWT.NONE);
+        nbThreadLabel.setText("Number of Threads:");
+        nbThreadLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+
+        nbThreadSpinner = new Spinner(sequencialGroup, SWT.BORDER);
+        nbThreadSpinner.setMinimum(1);
+        nbThreadSpinner.setMaximum(32);
+        nbThreadSpinner.setIncrement(1);
+        nbThreadSpinner.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        nbThreadSpinner.setToolTipText("Number of threads to use for parallel queue requests");
+
+        // Initialize with existing values if in edit mode
         if (edit && hierarchyNode.getQueueNode() != null) {
             sequencialQueueRequestCheckbox.setSelection(hierarchyNode.getQueueNode().isSequencialQueueRequest());
+            nbThreadSpinner.setSelection(hierarchyNode.getQueueNode().getNbThread());
         } else {
             sequencialQueueRequestCheckbox.setSelection(false);
+            nbThreadSpinner.setSelection(1);
         }
     }
 
@@ -339,6 +356,7 @@ public class QueueBrowserDialog {
         final QueueNode queueNode = QueueNode.builder()
                 .queuePattern(this.queuePattern.getText().trim())
                 .sequencialQueueRequest(this.sequencialQueueRequestCheckbox.getSelection())
+                .nbThread(this.nbThreadSpinner.getSelection())
                 .queueManager(queueManagerKey)
                 .descriptions(descriptions)
                 .build();

@@ -18,9 +18,10 @@ import com.aquila.ibm.mq.gui.model.QueueManagerConfig;
 import com.ibm.mq.MQException;
 import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.MQConstants;
+import com.ibm.mq.headers.MQDataException;
+import com.ibm.mq.headers.pcf.PCFMessageAgent;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -30,20 +31,19 @@ import java.util.Set;
 @Slf4j
 public class MQConnectionManager {
 
+    record ConnectionInfo(MQQueueManager queueManager, QueueManagerConfig queueManagerConfig, PCFMessageAgent agent) {}
+
     // Multi-connection support
-    private final Map<String, MQQueueManager> activeConnections;
-    private final Map<String, QueueManagerConfig> connectionConfigs;
+    private final Map<String, MQQueueManager> activeConnections = new HashMap<>();;
+    private final Map<String, PCFMessageAgent> activeAgent = new HashMap<>();;
+    private final Map<String, QueueManagerConfig> connectionConfigs = new HashMap<>();;
+    @Getter
     private String activeConnectionId;
 
     // Legacy fields (deprecated but maintained for backward compatibility)
     private MQQueueManager queueManager;
     private QueueManagerConfig currentConfig;
     private boolean connected = false;
-
-    public MQConnectionManager() {
-        this.activeConnections = new HashMap<>();
-        this.connectionConfigs = new HashMap<>();
-    }
 
     /**
      * Legacy connect method for backward compatibility.
@@ -95,6 +95,7 @@ public class MQConnectionManager {
             MQQueueManager qm = new MQQueueManager(config.getQueueManager(), properties);
             activeConnections.put(connectionId, qm);
             connectionConfigs.put(connectionId, config);
+            activeAgent.put(connectionId,new PCFMessageAgent(qm));
 
             // Update legacy fields for backward compatibility
             if (activeConnectionId == null || connectionId.equals(activeConnectionId)) {
@@ -111,7 +112,13 @@ public class MQConnectionManager {
                         config.getHost(), config.getPort(), config.getChannel(), config.getQueueManager());
             throw new MQException(e.getCompCode(), e.getReason(),
                                  formatMQError(e, config));
+        } catch (MQDataException e) {
+            log.error("MQDataException", e);
         }
+    }
+
+    public PCFMessageAgent getActiveAgent() {
+        return activeAgent.get(this.activeConnectionId);
     }
 
     /**
@@ -227,6 +234,7 @@ public class MQConnectionManager {
         if (qm != null) {
             try {
                 if (qm.isConnected()) {
+                    activeAgent.get(connectionId).disconnect();
                     qm.disconnect();
                     QueueManagerConfig config = connectionConfigs.get(connectionId);
                     log.info("Disconnected from queue manager: {} (ID: {})",
@@ -235,7 +243,10 @@ public class MQConnectionManager {
                 }
             } catch (MQException e) {
                 log.error("Error disconnecting from queue manager (ID: {})", connectionId, e);
+            } catch (MQDataException e) {
+                log.error("Error disconnecting Agent from queue manager (ID: {})", connectionId, e);
             } finally {
+                activeAgent.remove(connectionId);
                 activeConnections.remove(connectionId);
                 connectionConfigs.remove(connectionId);
 
@@ -343,33 +354,6 @@ public class MQConnectionManager {
             throw new IllegalStateException("Not connected to queue manager: " + connectionId);
         }
         return activeConnections.get(connectionId);
-    }
-
-    /**
-     * Get the currently active queue manager.
-     * @return The active MQQueueManager, or null if none is active
-     */
-    public MQQueueManager getActiveQueueManager() {
-        if (activeConnectionId == null) {
-            return null;
-        }
-        return activeConnections.get(activeConnectionId);
-    }
-
-    /**
-     * Get all connected connection IDs.
-     * @return Set of connection IDs
-     */
-    public Set<String> getConnectedIds() {
-        return Set.copyOf(activeConnections.keySet());
-    }
-
-    /**
-     * Get the active connection ID.
-     * @return The active connection ID, or null if none is active
-     */
-    public String getActiveConnectionId() {
-        return activeConnectionId;
     }
 
     /**

@@ -885,6 +885,9 @@
           "name": "descriptions"
         },
         {
+          "name": "nbThread"
+        },
+        {
           "name": "queueManager"
         },
         {
@@ -901,6 +904,10 @@
         },
         {
           "name": "getDescriptions",
+          "parameterTypes": []
+        },
+        {
+          "name": "getNbThread",
           "parameterTypes": []
         },
         {
