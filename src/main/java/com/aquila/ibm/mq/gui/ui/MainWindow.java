@@ -531,7 +531,7 @@ public class MainWindow {
 
                     // Set active and load queues (BLOCKING)
                     connectionManager.setActiveConnection(connectionId);
-                    queueService.populateQueueInfos(queueInfos, queueNode.isSequencialQueueRequest());
+                    queueService.populateQueueInfosShort(queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest());
 
                     // Update UI on UI thread
                     display.asyncExec(() -> {
@@ -558,15 +558,15 @@ public class MainWindow {
         }
         // If already connected, just set active and load queues
         connectionManager.setActiveConnection(connectionId);
-        Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueNode.isSequencialQueueRequest()));
+        Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest()));
     }
 
-    private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos, boolean sequentialQueueRequest) {
+    private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos, int nbThread, boolean sequentialQueueRequest) {
         queueListViewer.showProgress("Loading queues from " + queueManagerName + "...");
 
         new Thread(() -> {
             try {
-                queueService.populateQueueInfos(queueInfos, sequentialQueueRequest);
+                queueService.populateQueueInfosShort(queueInfos, nbThread, sequentialQueueRequest);
                 if(queueListViewer.isDisposed()) return;
                 display.asyncExec(() -> {
                    try {

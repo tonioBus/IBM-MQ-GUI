@@ -20,9 +20,8 @@ import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.MQConstants;
 import com.ibm.mq.headers.MQDataException;
 import com.ibm.mq.headers.pcf.PCFMessageAgent;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -38,6 +37,7 @@ public class MQConnectionManager {
     private final Map<String, MQQueueManager> activeConnections = new HashMap<>();;
     private final Map<String, PCFMessageAgent> activeAgent = new HashMap<>();;
     private final Map<String, QueueManagerConfig> connectionConfigs = new HashMap<>();;
+    @Getter
     private String activeConnectionId;
 
     // Legacy fields (deprecated but maintained for backward compatibility)
@@ -117,8 +117,8 @@ public class MQConnectionManager {
         }
     }
 
-    public PCFMessageAgent getActiveAgent(String connectionId) {
-        return activeAgent.get(connectionId);
+    public PCFMessageAgent getActiveAgent() {
+        return activeAgent.get(this.activeConnectionId);
     }
 
     /**
@@ -354,33 +354,6 @@ public class MQConnectionManager {
             throw new IllegalStateException("Not connected to queue manager: " + connectionId);
         }
         return activeConnections.get(connectionId);
-    }
-
-    /**
-     * Get the currently active queue manager.
-     * @return The active MQQueueManager, or null if none is active
-     */
-    public MQQueueManager getActiveQueueManager() {
-        if (activeConnectionId == null) {
-            return null;
-        }
-        return activeConnections.get(activeConnectionId);
-    }
-
-    /**
-     * Get all connected connection IDs.
-     * @return Set of connection IDs
-     */
-    public Set<String> getConnectedIds() {
-        return Set.copyOf(activeConnections.keySet());
-    }
-
-    /**
-     * Get the active connection ID.
-     * @return The active connection ID, or null if none is active
-     */
-    public String getActiveConnectionId() {
-        return activeConnectionId;
     }
 
     /**

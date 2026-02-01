@@ -15,6 +15,7 @@ package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.model.QueueHandle;
 import com.aquila.ibm.mq.gui.mq.QueueService;
+import com.ibm.mq.headers.pcf.PCFException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -156,6 +157,14 @@ public class QueueHandlesPanel extends Composite {
                         statusLabel.setText(handles.size() + " handle(s) found");
                     }
                 });
+            } catch (PCFException e) {
+                if (!(e.completionCode == 2 && e.getReason() == 4091)) {
+                    log.error("Failed to retrieve queue handles", e);
+                    display.asyncExec(() -> {
+                        if (isDisposed()) return;
+                        statusLabel.setText("Error: " + e.getMessage());
+                    });
+                }
             } catch (Exception e) {
                 log.error("Failed to retrieve queue handles", e);
                 display.asyncExec(() -> {

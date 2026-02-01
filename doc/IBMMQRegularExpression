@@ -1,0 +1,30 @@
+ Yes, you can query multiple queues in a single PCF request using wildcard patterns:
+
+  What works:
+  - * - matches all queues                                                                                                                                                                                                                                                                                            - ABC.* - matches all queues starting with "ABC."
+  - *.REQUEST - matches queues ending with ".REQUEST"
+
+  The PCF agent returns multiple response messages, one per matching queue.
+
+  What doesn't work:
+  - You cannot specify a list of unrelated queue names (e.g., "QUEUE.A, QUEUE.B, QUEUE.C") in a single request
+  - Each unrelated queue name requires a separate PCF request
+
+  Example with wildcard:
+  PCFMessageAgent agent = new PCFMessageAgent(queueManager);
+  PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
+  request.addParameter(CMQC.MQCA_Q_NAME, "APP.*");  // wildcard pattern
+  request.addParameter(CMQC.MQIA_Q_TYPE, CMQC.MQQT_LOCAL);
+  request.addParameter(CMQCFC.MQIACF_Q_ATTRS, new int[] {
+      CMQC.MQCA_Q_NAME,
+      CMQC.MQIA_CURRENT_Q_DEPTH,
+      CMQC.MQIA_MAX_Q_DEPTH
+  });
+
+  PCFMessage[] responses = agent.send(request);  // returns array with one entry per queue
+
+  If your queues don't share a common pattern, you'll need to either:
+  1. Send separate PCF requests for each queue
+  2. Use a broad wildcard and filter the results client-side
+
+  Is this related to the sequentialQueueRequest flag I see in your code? That seems to control whether queues are fetched one-by-one or in batch.

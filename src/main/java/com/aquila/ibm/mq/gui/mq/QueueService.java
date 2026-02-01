@@ -71,8 +71,7 @@ public class QueueService {
     private List<QueueInfo> getAllQueuesForManager(MQQueueManager qm, String ibmPattern, boolean includeSystemQueues) throws MQException, IOException, MQDataException {
         final List<QueueInfo> queues = new ArrayList<>();
 
-        // Create PCF Message Agent
-        final PCFMessageAgent agent = new PCFMessageAgent(qm);
+        final PCFMessageAgent agent = connectionManager.getActiveAgent();
 
         // Create PCF request to inquire queues
         final PCFMessage request = new PCFMessage(CMQCFC.MQCMD_INQUIRE_Q);
@@ -105,20 +104,18 @@ public class QueueService {
                     queueInfo.setMaxDepth(maxDepth);
                 }
                 queueInfo.setQueueType(queueType);
-                queueInfo.setQueueType(queueType);
                 queues.add(queueInfo);
             } catch (Exception e) {
                 log.error("Error", e);
             }
         }
-        agent.disconnect();
         return queues;
     }
 
     public QueueInfo getQueueInfo(String queueName) throws IOException, MQDataException {
         final MQQueueManager qm = connectionManager.getQueueManager();
 
-        final PCFMessageAgent agent = new PCFMessageAgent(qm);
+        final PCFMessageAgent agent = connectionManager.getActiveAgent();
         final QueueInfo queueInfo = new QueueInfo(queueName);
         try {
             final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
@@ -136,8 +133,6 @@ public class QueueService {
             log.error("Queue not found: {}", queueName, e);
             queueInfo.setAttribute("Exception", e.getMessage());
             return queueInfo;
-        } finally {
-            agent.disconnect();
         }
     }
 
@@ -147,25 +142,23 @@ public class QueueService {
      * @param queueInfos List of queue names to retrieve information for
      * @return List of QueueInfo objects for the specified queues
      */
-    public void populateQueueInfos(List<QueueInfo> queueInfos, boolean sequentialRequest) throws MQDataException, IOException {
-        int nbThread = 1;
+    public void populateQueueInfosShort(List<QueueInfo> queueInfos, int nbThread, boolean sequentialRequest) {
         if (queueInfos == null || queueInfos.isEmpty()) {
             return;
         }
         final MQQueueManager qm = connectionManager.getQueueManager();
         long startTime = System.currentTimeMillis();
         if (sequentialRequest) {
-            if (nbThread < queueInfos.size() * 2) {
+            if (nbThread > 1 && (nbThread < queueInfos.size() * 2)) {
                 multiThreadRequest(qm, queueInfos, nbThread);
             } else {
-                final PCFMessageAgent agent = new PCFMessageAgent(qm);
-                populateQueueInfos(agent, queueInfos);
-                agent.disconnect();
+                final PCFMessageAgent agent = connectionManager.getActiveAgent();
+                populateQueueInfosShort(agent, queueInfos);
             }
         } else {
             List<String> queueNames = queueInfos.stream().map(QueueInfo::getQueue).toList();
             List<String> optimizedIBMMQPatterns = QueueNameRegexCalculator.createOptimizedIBMMQPatterns(queueNames);
-            final PCFMessageAgent agent = new PCFMessageAgent(qm);
+            final PCFMessageAgent agent = connectionManager.getActiveAgent();
             for (final String optimizedIBMMQPattern : optimizedIBMMQPatterns) {
                 final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
                 request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
@@ -173,12 +166,11 @@ public class QueueService {
                 try {
                     final PCFMessage[] responses = agent.send(request);
                     log.info("After agent.send() optimise responses: {}", responses.length);
-                    populateQueueInfos(queueInfos, responses);
+                    populateQueueInfosShort(queueInfos, responses);
                 } catch (Exception e) {
                     log.error("Error retrieving queues for pattern: {} ", optimizedIBMMQPattern, e);
                 }
             }
-            agent.disconnect();
         }
         long endTime = System.currentTimeMillis();
         log.info("Retrieved information for {} out of {} queues in {} ms", queueInfos.size(), queueInfos.size(), endTime - startTime);
@@ -188,41 +180,34 @@ public class QueueService {
         final int nbParts = queueInfos.size() / nbThread + queueInfos.size() % nbThread;
         final List<List<QueueInfo>> listPerThread = Lists.partition(queueInfos, nbParts);
         log.info("Creating {} sub-list", listPerThread.size());
-        final PCFMessageAgent agent;
-        try {
-            agent = new PCFMessageAgent(qm);
-        } catch (MQDataException e) {
-            log.error("Error creating agent forQManager: {} ", qm, e);
-            return;
-        }
+        final PCFMessageAgent agent = connectionManager.getActiveAgent();
         listPerThread.parallelStream().forEach(tmpQueueInfos -> {
             //log.info("multiThreadRequest -> create agent {}", tmpQueueInfos.get(0).getQueue());
-            populateQueueInfos(agent, tmpQueueInfos);
+            populateQueueInfosShort(agent, tmpQueueInfos);
             //log.info("End multiThreadRequest: {}", tmpQueueInfos.get(0).getQueue());
         });
-        try {
-            agent.disconnect();
-        } catch (MQDataException e) {
-            log.error("Error disconnecting agent forQManager: {} ", qm, e);
-        }
     }
 
-    void populateQueueInfos(final PCFMessageAgent agent, List<QueueInfo> queueInfos) {
+    void populateQueueInfosShort(final PCFMessageAgent agent, List<QueueInfo> queueInfos) {
         for (final QueueInfo queueInfo : queueInfos) {
             final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
             request.addParameter(MQConstants.MQCA_Q_NAME, queueInfo.getQueue());
-            log.info("Before agent.send()");
+            request.addParameter(CMQCFC.MQIACF_Q_ATTRS, new int[]{
+                    CMQC.MQCA_Q_NAME,
+                    CMQC.MQIA_Q_TYPE,
+                    CMQC.MQIA_CURRENT_Q_DEPTH,
+                    CMQC.MQIA_MAX_Q_DEPTH
+            });
             try {
                 final PCFMessage[] responses = agent.send(request);
-                log.info("After agent.send() responses;{}", responses.length);
-                populateQueueInfo(queueInfo, responses[0]);
+                populateQueueInfoShort(queueInfo, responses[0]);
             } catch (Exception e) {
                 log.warn("Error retrieving queues: {} ", queueInfo.getQueue(), e);
             }
         }
     }
 
-    private void populateQueueInfos(List<QueueInfo> queueInfos, PCFMessage[] responses) {
+    private void populateQueueInfosShort(List<QueueInfo> queueInfos, PCFMessage[] responses) {
         final Map<String, QueueInfo> mapQueuesInfos = new HashMap<>();
         queueInfos.forEach(queueInfo -> mapQueuesInfos.put(queueInfo.getQueue(), queueInfo));
         Arrays.stream(responses).parallel().forEach(response -> {
@@ -232,13 +217,21 @@ public class QueueService {
                 final QueueInfo queueInfo = mapQueuesInfos.get(queueName);
                 if (queueInfo != null) {
                     log.info("populateQueueInfo({}) -> {}", queueName, queueInfo);
-                    populateQueueInfo(queueInfo, response);
+                    populateQueueInfoShort(queueInfo, response);
                 } else
                     log.warn("QueueName:{} found on PCF agent response but not part of the list: ignored", queueName);
             } catch (PCFException e) {
                 log.error("Can not retrieve queue name", e);
             }
         });
+    }
+
+    private void populateQueueInfoShort(QueueInfo queueInfo, PCFMessage response) throws PCFException {
+        queueInfo.setQueueType(response.getIntParameterValue(MQConstants.MQIA_Q_TYPE));
+        if (queueInfo.getQueueType() == CMQC.MQQT_LOCAL) {
+            queueInfo.setCurrentDepth(retrieveIntParameter(queueInfo, response, MQConstants.MQIA_CURRENT_Q_DEPTH, "MQIA_CURRENT_Q_DEPTH"));
+            queueInfo.setMaxDepth(retrieveIntParameter(queueInfo, response, MQConstants.MQIA_MAX_Q_DEPTH, "MQIA_MAX_Q_DEPTH"));
+        }
     }
 
     private void populateQueueInfo(QueueInfo queueInfo, PCFMessage response) {

@@ -31,6 +31,7 @@ import java.util.Map;
 public class QueueNode {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+
     public record QueueDescription(String label) {
     }
 
@@ -42,6 +43,10 @@ public class QueueNode {
      */
     @lombok.Builder.Default
     private final boolean sequencialQueueRequest = false;
+
+    @lombok.Builder.Default
+    private final int nbThread = 1;
+
     /**
      * Queue filter pattern. Supports both:
      * - IBM MQ wildcards: * (any chars), ? (single char) - e.g., "DEV.*"
