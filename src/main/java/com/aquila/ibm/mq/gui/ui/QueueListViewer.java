@@ -271,16 +271,6 @@ public class QueueListViewer extends Composite {
         };
     }
 
-    public boolean isAutoRefreshEnabled() {
-        return autoRefreshEnabled;
-    }
-
-    public void setAutoRefreshEnabled(boolean enabled) {
-        this.autoRefreshEnabled = enabled;
-        autoRefreshButton.setSelection(enabled);
-        updateAutoRefreshButtonState();
-    }
-
     public void setQueues(List<QueueInfo> queues) {
         this.queues.clear();
         this.queues.addAll(queues);
@@ -288,6 +278,7 @@ public class QueueListViewer extends Composite {
     }
 
     public void refresh() {
+        final int oldSelection = table.getSelectionIndex();
         table.removeAll();
 
         for (QueueInfo queue : filteredQueues) {
@@ -298,8 +289,11 @@ public class QueueListViewer extends Composite {
 
         if (!filteredQueues.isEmpty() && table.getSelectionIndex() < 0) {
             if (table.getSelectionIndex() == -1) {
-                log.info("Table Selection");
-                table.select(0);
+                log.info("Table Selection: {}", oldSelection);
+                table.select(oldSelection);
+                if (oldSelection >= 0 && oldSelection < filteredQueues.size() && selectionListener != null) {
+                    selectionListener.accept(filteredQueues.get(oldSelection));
+                }
             }
             if (selectionListener != null) {
                 selectionListener.accept(filteredQueues.get(0));
