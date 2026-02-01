@@ -44,6 +44,12 @@ public class QueueListViewer extends Composite {
         void onCopyQueueName(QueueInfo queue);
     }
 
+    public interface AutoRefreshListener {
+        void onAutoRefreshToggled(boolean enabled);
+
+        void onRefreshIntervalChanged(int intervalMs);
+    }
+
     private final Table table;
     private final List<QueueInfo> queues;
     private final List<QueueInfo> filteredQueues;
@@ -66,6 +72,13 @@ public class QueueListViewer extends Composite {
     private Text regexFilterText;
     private Spinner depthFilterSpinner;
     private Label filterStatusLabel;
+
+    // Auto-refresh controls
+    private Button autoRefreshButton;
+    private Combo refreshIntervalCombo;
+    private boolean autoRefreshEnabled = false;
+    @Setter
+    private AutoRefreshListener autoRefreshListener;
 
     public QueueListViewer(Composite parent, int style, AlertManager alertManager) {
         super(parent, style);
@@ -124,6 +137,8 @@ public class QueueListViewer extends Composite {
 
         createContextMenu();
 
+        createRefreshPanel(this);
+
         // Create progress panel at bottom (hidden by default)
         progressPanel = new Composite(this, SWT.NONE);
         GridLayout progressLayout = new GridLayout(1, false);
@@ -131,7 +146,7 @@ public class QueueListViewer extends Composite {
         progressLayout.marginWidth = 0;
         progressPanel.setLayout(progressLayout);
         GridData progressPanelData = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        progressPanelData.exclude = true; // Hidden by default
+        // progressPanelData.exclude = true; // Hidden by default
         progressPanel.setLayoutData(progressPanelData);
         progressPanel.setVisible(false);
 
@@ -150,7 +165,7 @@ public class QueueListViewer extends Composite {
 
     private void createFilterPanel(Composite parent) {
         Composite panel = new Composite(parent, SWT.NONE);
-        GridLayout layout = new GridLayout(5, false);
+        GridLayout layout = new GridLayout(9, false);
         layout.marginHeight = 5;
         layout.marginWidth = 0;
         panel.setLayout(layout);
@@ -184,6 +199,86 @@ public class QueueListViewer extends Composite {
         filterStatusLabel = new Label(panel, SWT.NONE);
         filterStatusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
+    }
+
+    void createRefreshPanel(Composite parent) {
+        Composite panel = new Composite(parent, SWT.NONE);
+        GridLayout layout = new GridLayout(6, false);
+        layout.marginHeight = 2;
+        layout.marginWidth = 2;
+        panel.setLayout(layout);
+        panel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        // Refresh Now button
+        autoRefreshButton = new Button(panel, SWT.PUSH);
+        autoRefreshButton.setText("Refresh Now");
+        autoRefreshButton.setToolTipText("Refresh immediately queues information");
+        autoRefreshButton.addListener(SWT.Selection, e -> {
+            MainWindow.getInstance().refreshQueueList();
+        });
+
+        Label verticalSeparator = new Label(panel, SWT.SEPARATOR | SWT.VERTICAL);
+
+        // Refresh interval combo
+        Label refreshLabel = new Label(panel, SWT.NONE);
+        refreshLabel.setText("Refresh:");
+
+        refreshIntervalCombo = new Combo(panel, SWT.READ_ONLY);
+        refreshIntervalCombo.add("1s");
+        refreshIntervalCombo.add("5s");
+        refreshIntervalCombo.add("10s");
+        refreshIntervalCombo.add("30s");
+        refreshIntervalCombo.add("1min");
+        refreshIntervalCombo.add("5min");
+        refreshIntervalCombo.select(1);
+        refreshIntervalCombo.addListener(SWT.Selection, e -> {
+            if (autoRefreshListener != null) {
+                autoRefreshListener.onRefreshIntervalChanged(getSelectedRefreshInterval());
+            }
+        });
+
+        // Auto-refresh button
+        autoRefreshButton = new Button(panel, SWT.TOGGLE);
+        autoRefreshButton.setText("Auto OFF");
+        autoRefreshButton.setToolTipText("Toggle automatic refresh of queues information");
+        autoRefreshButton.addListener(SWT.Selection, e -> {
+            autoRefreshEnabled = autoRefreshButton.getSelection();
+            updateAutoRefreshButtonState();
+            if (autoRefreshListener != null) {
+                autoRefreshListener.onAutoRefreshToggled(autoRefreshEnabled);
+            }
+        });
+    }
+
+    private void updateAutoRefreshButtonState() {
+        if (autoRefreshEnabled) {
+            autoRefreshButton.setText("Auto ON ");
+        } else {
+            autoRefreshButton.setText("Auto OFF");
+        }
+    }
+
+    public int getSelectedRefreshInterval() {
+        int index = refreshIntervalCombo.getSelectionIndex();
+        return switch (index) {
+            case 0 -> 1000;
+            case 1 -> 5000;
+            case 2 -> 10000;
+            case 3 -> 30000;
+            case 4 -> 60000;
+            case 5 -> 300000;
+            default -> 10000;
+        };
+    }
+
+    public boolean isAutoRefreshEnabled() {
+        return autoRefreshEnabled;
+    }
+
+    public void setAutoRefreshEnabled(boolean enabled) {
+        this.autoRefreshEnabled = enabled;
+        autoRefreshButton.setSelection(enabled);
+        updateAutoRefreshButtonState();
     }
 
     public void setQueues(List<QueueInfo> queues) {
@@ -325,7 +420,7 @@ public class QueueListViewer extends Composite {
 
     public void showProgress(String message) {
         GridData progressPanelData = (GridData) progressPanel.getLayoutData();
-        progressPanelData.exclude = false;
+        // progressPanelData.exclude = false;
         progressPanel.setVisible(true);
         progressLabel.setText(message);
         layout(true);
@@ -333,7 +428,7 @@ public class QueueListViewer extends Composite {
 
     public void hideProgress() {
         GridData progressPanelData = (GridData) progressPanel.getLayoutData();
-        progressPanelData.exclude = true;
+        // progressPanelData.exclude = true;
         progressPanel.setVisible(false);
         progressLabel.setText("");
         layout(true);

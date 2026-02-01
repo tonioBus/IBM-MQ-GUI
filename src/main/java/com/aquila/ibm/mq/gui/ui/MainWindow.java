@@ -48,6 +48,9 @@ import java.util.Map;
 @Slf4j
 public class MainWindow {
 
+    @Getter
+    private static MainWindow instance;
+
     private final Display display;
     @Getter
     private final Shell shell;
@@ -68,13 +71,10 @@ public class MainWindow {
     private QueueHandlesPanel queueHandlesPanel;
     private Label statusLabel;
     private Label alertLabel;
-    private Button autoRefreshButton;
-    private Combo refreshIntervalCombo;
-    private boolean autoRefreshEnabled = false;
-
     private QueueInfo selectedQueue;
 
     public MainWindow(Display display) {
+        instance = this;
         this.display = display;
         this.configuration = new Configuration();
         this.connectionManager = new MQConnectionManager();
@@ -87,7 +87,7 @@ public class MainWindow {
         shell.setSize(1600, 800);
         shell.setLayout(new GridLayout());
         try {
-            shell.setImages(new Image[] {
+            shell.setImages(new Image[]{
                     new Image(display, getClass().getResourceAsStream("/icons/Aquila-16.png")),
                     new Image(display, getClass().getResourceAsStream("/icons/Aquila-32.png")),
                     new Image(display, getClass().getResourceAsStream("/icons/Aquila-48.png")),
@@ -232,6 +232,19 @@ public class MainWindow {
         // EXISTING: Queue List (30%)
         queueListViewer = new QueueListViewer(sashForm, SWT.BORDER, alertManager);
         queueListViewer.addSelectionListener(this::onQueueSelected);
+        queueListViewer.setAutoRefreshListener(new QueueListViewer.AutoRefreshListener() {
+            @Override
+            public void onAutoRefreshToggled(boolean enabled) {
+                toggleAutoRefresh(enabled);
+            }
+
+            @Override
+            public void onRefreshIntervalChanged(int intervalMs) {
+                if (queueMonitor != null && queueMonitor.isRunning()) {
+                    queueMonitor.setRefreshInterval(intervalMs);
+                }
+            }
+        });
         queueListViewer.setContextMenuActionListener(new QueueListViewer.ContextMenuActionListener() {
             @Override
             public void onSendMessage(QueueInfo queue) {
@@ -297,7 +310,7 @@ public class MainWindow {
     private void createStatusBar() {
         Composite statusBar = new Composite(shell, SWT.NONE);
         statusBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        GridLayout layout = new GridLayout(6, false);
+        GridLayout layout = new GridLayout(2, false);
         layout.marginHeight = 2;
         statusBar.setLayout(layout);
 
@@ -308,59 +321,6 @@ public class MainWindow {
         alertLabel = new Label(statusBar, SWT.NONE);
         alertLabel.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
         alertLabel.setText("");
-
-        new Label(statusBar, SWT.SEPARATOR | SWT.VERTICAL)
-                .setLayoutData(new GridData(SWT.CENTER, SWT.FILL, false, false));
-
-        Label refreshLabel = new Label(statusBar, SWT.NONE);
-        refreshLabel.setText("Refresh:");
-
-        refreshIntervalCombo = new Combo(statusBar, SWT.READ_ONLY);
-        refreshIntervalCombo.add("1s");
-        refreshIntervalCombo.add("5s");
-        refreshIntervalCombo.add("10s");
-        refreshIntervalCombo.add("30s");
-        refreshIntervalCombo.add("1min");
-        refreshIntervalCombo.add("5min");
-        refreshIntervalCombo.select(1);
-        refreshIntervalCombo.addListener(SWT.Selection, e -> updateRefreshInterval());
-
-        autoRefreshButton = new Button(statusBar, SWT.TOGGLE);
-        autoRefreshButton.setText("Auto");
-        autoRefreshButton.setToolTipText("Toggle automatic refresh of queue information");
-        autoRefreshButton.addListener(SWT.Selection, e -> {
-            autoRefreshEnabled = autoRefreshButton.getSelection();
-            toggleAutoRefresh(autoRefreshEnabled);
-            updateAutoRefreshButtonState();
-        });
-    }
-
-    private void updateAutoRefreshButtonState() {
-        if (autoRefreshEnabled) {
-            autoRefreshButton.setText("Auto ON");
-        } else {
-            autoRefreshButton.setText("Auto");
-        }
-    }
-
-    private void updateRefreshInterval() {
-        if (queueMonitor != null && queueMonitor.isRunning()) {
-            int intervalMs = getSelectedRefreshInterval();
-            queueMonitor.setRefreshInterval(intervalMs);
-        }
-    }
-
-    private int getSelectedRefreshInterval() {
-        int index = refreshIntervalCombo.getSelectionIndex();
-        return switch (index) {
-            case 0 -> 1000;
-            case 1 -> 5000;
-            case 2 -> 10000;
-            case 3 -> 30000;
-            case 4 -> 60000;
-            case 5 -> 300000;
-            default -> 10000;
-        };
     }
 
     private void showConnectionDialog() {
@@ -449,7 +409,7 @@ public class MainWindow {
     private void startMonitoring() {
         if (queueMonitor == null || !queueMonitor.isRunning()) {
             queueMonitor = new QueueMonitor(this, queueService, alertManager);
-            queueMonitor.setRefreshInterval(getSelectedRefreshInterval());
+            queueMonitor.setRefreshInterval(queueListViewer.getSelectedRefreshInterval());
             queueMonitor.setMonitoredQueues(queueListViewer.getQueues());
             queueMonitor.setListener(new QueueMonitor.QueueMonitorListener() {
                 @Override
@@ -806,17 +766,17 @@ public class MainWindow {
                 IBM MQ GUI
                 Desktop application for IBM MQ Browsing
                 Version 1.0
-
+                
                 Author: Anthony Bussani
                 GitHub: https://github.com/tonioBus
-
+                
                 Licensed under the MIT License.
                 Copyright (c) 2026 Anthony Bussani
-
+                
                 Permission is hereby granted, free of charge, to any person
                 obtaining a copy of this software to use, copy, modify, merge,
                 publish, distribute, sublicense, and/or sell copies of the Software.
-
+                
                 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
                 """);
         textLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
