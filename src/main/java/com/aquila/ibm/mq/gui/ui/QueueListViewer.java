@@ -294,10 +294,9 @@ public class QueueListViewer extends Composite {
                 if (oldSelection >= 0 && oldSelection < filteredQueues.size() && selectionListener != null) {
                     selectionListener.accept(filteredQueues.get(oldSelection));
                 }
-            }
-            if (selectionListener != null) {
-                selectionListener.accept(filteredQueues.get(0));
-            }
+//            if (selectionListener != null) {
+//                selectionListener.accept(filteredQueues.get(0));
+//            }
         }
     }
 

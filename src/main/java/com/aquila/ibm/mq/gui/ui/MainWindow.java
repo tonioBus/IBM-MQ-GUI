@@ -441,6 +441,8 @@ public class MainWindow {
 
     private void onQueueSelected(QueueInfo queue) {
         this.selectedQueue = queue;
+        log.info("onQueueSelected: {}", queue.getQueue());
+
         if (propertiesPanel != null) {
             try {
                 queueService.refreshQueueInfo(queue);
