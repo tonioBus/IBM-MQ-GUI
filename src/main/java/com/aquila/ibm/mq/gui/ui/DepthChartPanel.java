@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT panel for real-time queue depth visualization.
+ * Displays line charts showing queue depth trends over time
+ * using SWT Chart, maintaining the last 60 data points.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.model.QueueInfo;
@@ -16,7 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class DepthChartPanel extends Composite {
-    private Chart chart;
+    private final Chart chart;
     private QueueInfo selectedQueue;
     private List<QueueInfo> allQueues;
     private final Map<String, LinkedList<DataPoint>> queueDataHistory;
@@ -136,8 +149,8 @@ public class DepthChartPanel extends Composite {
     }
 
     private static class DataPoint {
-        LocalDateTime timestamp;
-        int depth;
+        final LocalDateTime timestamp;
+        final int depth;
 
         DataPoint(LocalDateTime timestamp, int depth) {
             this.timestamp = timestamp;

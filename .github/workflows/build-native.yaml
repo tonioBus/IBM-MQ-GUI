@@ -1,0 +1,36 @@
+name: Build and Release Native Executable
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+        type: string
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+      
+      - name: Build Native Executable
+        run: mvn -P native -DskipTests package
+      
+      - name: Rename artifact
+        run: mv target/*.exe ibm-mq-gui-v${{ inputs.version }}-windows-amd64.exe
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ibm-mq-gui-windows-v${{ inputs.version }}
+          path: ibm-mq-gui-v${{ inputs.version }}-windows-amd64.exe

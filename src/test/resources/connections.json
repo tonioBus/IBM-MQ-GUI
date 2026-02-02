@@ -1,0 +1,11 @@
+{
+  "QM1@192.168.1.73(1414)": {
+    "host": "192.168.1.73",
+    "port": 1414,
+    "channel": "DEV.ADMIN.SVRCONN",
+    "queueManager": "QM1",
+    "username": "admin",
+    "password": "passw0rd",
+    "sslEnabled": false
+  }
+}

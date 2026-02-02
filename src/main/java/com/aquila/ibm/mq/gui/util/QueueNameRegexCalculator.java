@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Utility for generating regex patterns from queue names.
+ * Supports IBM MQ wildcards (* and ?), pattern optimization,
+ * and automatic conversion between MQ wildcards and Java regex.
+ */
 package com.aquila.ibm.mq.gui.util;
 
 import java.util.*;
@@ -98,7 +111,7 @@ public class QueueNameRegexCalculator {
         // Find common prefix
         String commonPrefix = findCommonPrefix(queueNames);
 
-        if (commonPrefix.length() > 0) {
+        if (!commonPrefix.isEmpty()) {
             // Remove common prefix from all names
             List<String> suffixes = queueNames.stream()
                     .map(name -> name.substring(commonPrefix.length()))
@@ -107,7 +120,7 @@ public class QueueNameRegexCalculator {
             // Find common suffix
             String commonSuffix = findCommonSuffix(suffixes);
 
-            if (commonSuffix.length() > 0) {
+            if (!commonSuffix.isEmpty()) {
                 // Remove common suffix
                 List<String> middles = suffixes.stream()
                         .map(suffix -> suffix.substring(0, suffix.length() - commonSuffix.length()))

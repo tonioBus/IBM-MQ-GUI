@@ -5,10 +5,7 @@ target/
 .kotlin
 
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+.idea/**
 *.iws
 *.iml
 *.ipr
@@ -42,3 +39,16 @@ build/
 logs/
 .ibmmqgui/
 /mqjms.log.0
+/.claude/
+/.idea/
+/.idea/
+/.idea/dictionaries/
+/.idea/inspectionProfiles/
+/.idea/.gitignore
+/.idea/compiler.xml
+/.idea/copilot.data.migration.agent.xml
+/.idea/encodings.xml
+/.idea/jarRepositories.xml
+/.idea/misc.xml
+/.idea/vcs.xml
+/.idea/workspace.xml

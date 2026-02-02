@@ -1,8 +1,22 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT panel for browsing queue messages.
+ * Displays message list with metadata and provides detailed view
+ * of selected message content and properties.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.model.MessageInfo;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.mq.MessageService;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.layout.GridData;
@@ -13,8 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+@Slf4j
 public class MessageBrowserPanel extends Composite {
-    private static final Logger logger = LoggerFactory.getLogger(MessageBrowserPanel.class);
     private final MessageService messageService;
     private Table messagesTable;
     private Text messageDetailText;
@@ -111,7 +125,7 @@ public class MessageBrowserPanel extends Composite {
             messages = messageService.browseMessages(currentQueue.getQueue());
             refreshTable();
         } catch (Exception e) {
-            logger.error("Failed to browse messages on queue:{}", currentQueue.getQueue(), e);
+            log.error("Failed to browse messages on queue:{}", currentQueue.getQueue(), e);
             showError("Failed to browse messages: " + e.getMessage());
         }
     }

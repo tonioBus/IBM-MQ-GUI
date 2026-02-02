@@ -1,7 +1,21 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT panel for displaying queue handles (active connections).
+ * Shows processes/applications currently using queues with details
+ * like process ID, user ID, and open options.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.model.QueueHandle;
 import com.aquila.ibm.mq.gui.mq.QueueService;
+import com.ibm.mq.headers.pcf.PCFException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -143,6 +157,14 @@ public class QueueHandlesPanel extends Composite {
                         statusLabel.setText(handles.size() + " handle(s) found");
                     }
                 });
+            } catch (PCFException e) {
+                if (!(e.completionCode == 2 && e.getReason() == 4091)) {
+                    log.error("Failed to retrieve queue handles", e);
+                    display.asyncExec(() -> {
+                        if (isDisposed()) return;
+                        statusLabel.setText("Error: " + e.getMessage());
+                    });
+                }
             } catch (Exception e) {
                 log.error("Failed to retrieve queue handles", e);
                 display.asyncExec(() -> {

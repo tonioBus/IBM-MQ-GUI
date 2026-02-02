@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT table viewer for inspecting available queues.
+ * Features regex filtering, depth filtering, color-coded alerts,
+ * sorting, and context menu actions.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.AlertManager;
@@ -43,7 +56,7 @@ public class InspectedQueueViewer extends Composite {
     private boolean sortAscending = true;
 
     private final Composite progressPanel;
-    private ProgressBar progressBar;
+    private final ProgressBar progressBar;
     private final Label progressLabel;
 
     private Text regexFilterText;
@@ -126,7 +139,7 @@ public class InspectedQueueViewer extends Composite {
         });
     }
 
-    private Composite createFilterPanel(Composite parent) {
+    private void createFilterPanel(Composite parent) {
         Composite panel = new Composite(parent, SWT.NONE);
         GridLayout layout = new GridLayout(5, false);
         layout.marginHeight = 5;
@@ -162,7 +175,6 @@ public class InspectedQueueViewer extends Composite {
         filterStatusLabel = new Label(panel, SWT.NONE);
         filterStatusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        return panel;
     }
 
     public void setQueues(List<QueueInfo> queues) {

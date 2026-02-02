@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Audio alert player for threshold notifications.
+ * Generates synthetic tones (600Hz for warning, 800Hz for critical)
+ * using Java Sound API with system beep fallback.
+ */
 package com.aquila.ibm.mq.gui.util;
 
 import org.slf4j.Logger;

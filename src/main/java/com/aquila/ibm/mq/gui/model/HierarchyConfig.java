@@ -1,6 +1,20 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * Container for the entire hierarchy structure of queue managers and folders.
+ * Maintains a flat map of all nodes with references to root nodes,
+ * supporting tree operations like add, remove, and move.
+ */
 package com.aquila.ibm.mq.gui.model;
 
 import com.aquila.ibm.mq.gui.model.node.HierarchyNode;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -16,8 +30,8 @@ import java.util.*;
 @Getter
 @Slf4j
 public class HierarchyConfig {
-    private Map<String, HierarchyNode> nodes;
-    private List<String> rootNodeIds;
+    private final Map<String, HierarchyNode> nodes;
+    private final List<String> rootNodeIds;
     @Setter
     private String selectedNodeId;
 
@@ -218,6 +232,7 @@ public class HierarchyConfig {
     /**
      * Get all queue manager nodes (not folders).
      */
+    @JsonIgnore
     public List<HierarchyNode> getAllQueueManagers() {
         List<HierarchyNode> queueManagers = new ArrayList<>();
         for (HierarchyNode node : nodes.values()) {

@@ -1,3 +1,16 @@
+/*
+ * IBM MQ GUI - Desktop application for IBM MQ Browsing
+ *
+ * Copyright (c) 2026 Anthony Bussani
+ * GitHub: https://github.com/tonioBus
+ *
+ * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
+ *
+ * SWT dialog for selecting a queue manager connection.
+ * Used when adding a new queue browser to the hierarchy,
+ * with option to create new connections if none exist.
+ */
 package com.aquila.ibm.mq.gui.ui;
 
 import com.aquila.ibm.mq.gui.config.Configuration;
@@ -48,8 +61,7 @@ public class QueueManagerSelectionDialog {
 
             if (box.open() == SWT.YES) {
                 QueueManagerDialog dialog = new QueueManagerDialog(parentShell, configuration);
-                QueueManagerConfig newConfig = dialog.open();
-                return newConfig;
+                return dialog.open();
             }
             return null;
         }
