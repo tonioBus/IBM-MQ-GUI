@@ -276,7 +276,7 @@ public class MainWindow {
         createHandlesTab();
 
         // UPDATED: Three-panel weights (was: 30, 70)
-        sashForm.setWeights(new int[]{20, 30, 50});
+        sashForm.setWeights(new int[]{15, 50, 35});
     }
 
     private void createPropertiesTab() {
