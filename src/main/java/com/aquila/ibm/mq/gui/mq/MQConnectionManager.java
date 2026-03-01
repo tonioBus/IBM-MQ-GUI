@@ -96,12 +96,14 @@ public class MQConnectionManager {
             activeConnections.put(connectionId, qm);
             connectionConfigs.put(connectionId, config);
             activeAgent.put(connectionId,new PCFMessageAgent(qm));
+            log.info("Open PCFMessageAgent for connection ID: {}", connectionId, activeAgent.get(connectionId));
 
             // Update legacy fields for backward compatibility
             if (activeConnectionId == null || connectionId.equals(activeConnectionId)) {
                 queueManager = qm;
                 currentConfig = config;
                 connected = true;
+                activeConnectionId = connectionId;
             }
 
             log.info("Successfully connected to queue manager: {} (ID: {})", config.getQueueManager(), connectionId);

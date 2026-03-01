@@ -17,6 +17,7 @@ import com.aquila.ibm.mq.gui.config.AlertManager;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator;
+import com.aquila.ibm.mq.gui.util.SequentialQueueRefreshScheduler;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
@@ -28,11 +29,16 @@ import org.eclipse.swt.widgets.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 @Slf4j
 public class QueueListViewer extends Composite {
+
+    public void refreshSort() {
+        this.sortBy(3);
+    }
 
     public interface ContextMenuActionListener {
         void onSendMessage(QueueInfo queue);
@@ -65,10 +71,6 @@ public class QueueListViewer extends Composite {
     private int sortColumn = 0;
     private boolean sortAscending = true;
 
-    private final Composite progressPanel;
-    private final ProgressBar progressBar;
-    private final Label progressLabel;
-
     private Text regexFilterText;
     private Spinner depthFilterSpinner;
     private Label filterStatusLabel;
@@ -79,6 +81,10 @@ public class QueueListViewer extends Composite {
     private boolean autoRefreshEnabled = false;
     @Setter
     private AutoRefreshListener autoRefreshListener;
+
+    // Sequential refresh scheduler
+    private SequentialQueueRefreshScheduler sequentialScheduler;
+    private Function<String, QueueInfo> singleQueueFetcher;
 
     public QueueListViewer(Composite parent, int style, AlertManager alertManager) {
         super(parent, style);
@@ -139,24 +145,8 @@ public class QueueListViewer extends Composite {
 
         createRefreshPanel(this);
 
-        // Create progress panel at bottom (hidden by default)
-        progressPanel = new Composite(this, SWT.NONE);
-        GridLayout progressLayout = new GridLayout(1, false);
-        progressLayout.marginHeight = 5;
-        progressLayout.marginWidth = 0;
-        progressPanel.setLayout(progressLayout);
-        GridData progressPanelData = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        // progressPanelData.exclude = true; // Hidden by default
-        progressPanel.setLayoutData(progressPanelData);
-        progressPanel.setVisible(false);
-
-        progressBar = new ProgressBar(progressPanel, SWT.INDETERMINATE);
-        progressBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
-        progressLabel = new Label(progressPanel, SWT.NONE);
-        progressLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
         addDisposeListener(e -> {
+            sequentialScheduler.shutdown();
             greenColor.dispose();
             yellowColor.dispose();
             redColor.dispose();
@@ -180,7 +170,7 @@ public class QueueListViewer extends Composite {
         GridData textData = new GridData(SWT.FILL, SWT.CENTER, true, false);
         textData.widthHint = 150;
         regexFilterText.setLayoutData(textData);
-        regexFilterText.addListener(SWT.Modify, e -> applyFilters());
+        regexFilterText.addListener(SWT.Modify, e -> applyFilters(false));
 
         // Depth filter
         Label depthLabel = new Label(panel, SWT.NONE);
@@ -193,7 +183,7 @@ public class QueueListViewer extends Composite {
         depthFilterSpinner.setPageIncrement(10);
         depthFilterSpinner.setSelection(0);
         depthFilterSpinner.setLayoutData(new GridData(50, SWT.DEFAULT));
-        depthFilterSpinner.addListener(SWT.Selection, e -> applyFilters());
+        depthFilterSpinner.addListener(SWT.Selection, e -> applyFilters(false));
 
         // Status label
         filterStatusLabel = new Label(panel, SWT.NONE);
@@ -210,10 +200,10 @@ public class QueueListViewer extends Composite {
         panel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         // Refresh Now button
-        autoRefreshButton = new Button(panel, SWT.PUSH);
-        autoRefreshButton.setText("Refresh Now");
-        autoRefreshButton.setToolTipText("Refresh immediately queues information");
-        autoRefreshButton.addListener(SWT.Selection, e -> {
+        Button refreshNowButton = new Button(panel, SWT.PUSH);
+        refreshNowButton.setText("Refresh Now");
+        refreshNowButton.setToolTipText("Refresh immediately queues information");
+        refreshNowButton.addListener(SWT.Selection, e -> {
             MainWindow.getInstance().refreshQueueList();
         });
 
@@ -232,22 +222,74 @@ public class QueueListViewer extends Composite {
         refreshIntervalCombo.add("5min");
         refreshIntervalCombo.select(1);
         refreshIntervalCombo.addListener(SWT.Selection, e -> {
+            int interval = getSelectedRefreshInterval();
+            if (autoRefreshEnabled) {
+                sequentialScheduler.updateDelay(interval);
+            }
             if (autoRefreshListener != null) {
-                autoRefreshListener.onRefreshIntervalChanged(getSelectedRefreshInterval());
+                autoRefreshListener.onRefreshIntervalChanged(interval);
             }
         });
 
-        // Auto-refresh button
+        // Auto-refresh toggle button
         autoRefreshButton = new Button(panel, SWT.TOGGLE);
         autoRefreshButton.setText("Auto OFF");
         autoRefreshButton.setToolTipText("Toggle automatic refresh of queues information");
         autoRefreshButton.addListener(SWT.Selection, e -> {
             autoRefreshEnabled = autoRefreshButton.getSelection();
             updateAutoRefreshButtonState();
+
+            if (autoRefreshEnabled) {
+                startSequentialRefresh();
+            } else {
+                stopSequentialRefresh();
+            }
+
             if (autoRefreshListener != null) {
                 autoRefreshListener.onAutoRefreshToggled(autoRefreshEnabled);
             }
         });
+    }
+
+    public void refreshDynamicFields(QueueInfo queueInfo) {
+        Display.getDefault().asyncExec(() -> {
+            Arrays.stream(table.getItems()).toList().stream().filter(t -> t.getText(0).equals(queueInfo.getLabel())).findFirst().ifPresent(item -> {
+                updateOneQueue(queueInfo, item);
+            });
+        });
+    }
+
+    private void updateOneQueue(QueueInfo queueInfo, TableItem item) {
+        item.setText(2, String.valueOf(queueInfo.getCurrentDepth()));
+        item.setText(3, String.valueOf(queueInfo.getMaxDepth()));
+        item.setText(4, String.format("%.1f%%", queueInfo.getDepthPercentage()));
+
+        ThresholdConfig.AlertLevel alertLevel = alertManager.getCurrentAlertLevel(queueInfo.getQueue());
+
+        switch (alertLevel) {
+            case CRITICAL -> item.setBackground(redColor);
+            case WARNING -> item.setBackground(yellowColor);
+            default -> {
+                if (queueInfo.getCurrentDepth() == 0) {
+                    item.setBackground(null);
+                } else {
+                    item.setBackground(greenColor);
+                }
+            }
+        }
+    }
+
+    public void refreshSelectedQueue() {
+        final QueueInfo selectedQueue = getSelectedQueue();
+        if (selectedQueue != null) {
+            log.info("Refreshing selected queue: {}", selectedQueue.getQueue());
+            if (singleQueueFetcher != null) {
+                final TableItem[] selectionItem = table.getSelection();
+                if (selectionItem != null && selectionItem.length > 0) {
+                    updateOneQueue(singleQueueFetcher.apply(selectedQueue.getQueue()), selectionItem[0]);
+                }
+            }
+        }
     }
 
     private void updateAutoRefreshButtonState() {
@@ -271,20 +313,25 @@ public class QueueListViewer extends Composite {
         };
     }
 
-    public void setQueues(List<QueueInfo> queues) {
+    public void setQueues(List<QueueInfo> queues, boolean forceRefresh) {
         this.queues.clear();
         this.queues.addAll(queues);
-        applyFilters();
+        Display.getDefault().asyncExec(() -> {
+            applyFilters(forceRefresh);
+        });
     }
 
-    public void refresh() {
+    public void refresh(boolean force) {
+        if( force) log.info("Refresh #######", new RuntimeException());
         final int oldSelection = table.getSelectionIndex();
-        table.removeAll();
-
-        for (QueueInfo queue : filteredQueues) {
-            TableItem item = new TableItem(table, SWT.NONE);
-            updateTableItem(item, queue);
+        if(force) {
+            table.removeAll();
+            for (QueueInfo queue : filteredQueues) {
+                TableItem item = new TableItem(table, SWT.NONE);
+                updateTableItem(item, queue);
+            }
         }
+
         updateFilterStatus();
 
         if (!filteredQueues.isEmpty() && table.getSelectionIndex() < 0) {
@@ -341,7 +388,7 @@ public class QueueListViewer extends Composite {
 
     public QueueInfo getSelectedQueue() {
         final Optional<TableItem> tableItem = Arrays.stream(table.getSelection()).findFirst();
-        if(tableItem.isEmpty()) {
+        if (tableItem.isEmpty()) {
             return null;
         }
         final String queue = tableItem.get().getText(1);
@@ -406,30 +453,10 @@ public class QueueListViewer extends Composite {
         }
 
         // Reapply filters to update display
-        applyFilters();
+        applyFilters(false);
     }
 
-    public void showProgress(String message) {
-        GridData progressPanelData = (GridData) progressPanel.getLayoutData();
-        // progressPanelData.exclude = false;
-        progressPanel.setVisible(true);
-        progressLabel.setText(message);
-        layout(true);
-    }
-
-    public void hideProgress() {
-        GridData progressPanelData = (GridData) progressPanel.getLayoutData();
-        // progressPanelData.exclude = true;
-        progressPanel.setVisible(false);
-        progressLabel.setText("");
-        layout(true);
-    }
-
-    public void updateProgress(String message) {
-        progressLabel.setText(message);
-    }
-
-    private void applyFilters() {
+    private void applyFilters(boolean forceRefresh) {
         filteredQueues.clear();
 
         String regexPattern = regexFilterText.getText().trim();
@@ -447,14 +474,14 @@ public class QueueListViewer extends Composite {
                 regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
                 filteredQueues.addAll(queues);
                 sortQueues();
-                refresh();
+                refresh(true);
                 return;
             } catch (IllegalArgumentException e) {
                 // Empty pattern - shouldn't happen but handle gracefully
                 regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
                 filteredQueues.addAll(queues);
                 sortQueues();
-                refresh();
+                refresh(true);
                 return;
             }
         }
@@ -469,7 +496,7 @@ public class QueueListViewer extends Composite {
         );
 
         sortQueues();
-        refresh();
+        refresh(forceRefresh);
     }
 
     private void updateFilterStatus() {
@@ -503,12 +530,13 @@ public class QueueListViewer extends Composite {
 
         // Apply sorting
         sortQueues();
-        refresh();
+        refresh(false);
     }
 
     private void sortQueues() {
         Comparator<QueueInfo> comparator = switch (sortColumn) {
-            case 0 -> Comparator.comparing(q -> q.getLabel() != null ? q.getLabel() : "", String.CASE_INSENSITIVE_ORDER);
+            case 0 ->
+                    Comparator.comparing(q -> q.getLabel() != null ? q.getLabel() : "", String.CASE_INSENSITIVE_ORDER);
             case 1 -> Comparator.comparing(QueueInfo::getQueue);
             case 2 -> Comparator.comparingInt(QueueInfo::getCurrentDepth);
             case 3 -> Comparator.comparingInt(QueueInfo::getMaxDepth);
@@ -521,5 +549,121 @@ public class QueueListViewer extends Composite {
         }
 
         filteredQueues.sort(comparator);
+    }
+
+    /**
+     * Set the function that fetches a single queue's information via PCF
+     *
+     * @param fetcher Function that takes queue name and returns QueueInfo
+     */
+    public void setSingleQueueFetcher(Function<String, QueueInfo> fetcher) {
+        this.singleQueueFetcher = fetcher;
+        sequentialScheduler.setQueueFetcher(fetcher);
+    }
+
+    /**
+     * Start sequential refresh of queues
+     */
+    private void startSequentialRefresh() {
+        if (singleQueueFetcher == null) {
+            log.warn("Cannot start sequential refresh: queue fetcher not set");
+            return;
+        }
+
+        List<String> queueNames = queues.stream()
+                .map(QueueInfo::getQueue)
+                .toList();
+
+        if (queueNames.isEmpty()) {
+            log.warn("Cannot start sequential refresh: no queues to refresh");
+            return;
+        }
+
+        int delay = getSelectedRefreshInterval();
+        sequentialScheduler.start(queueNames, delay);
+        log.info("Sequential refresh started: {} queues, {}ms delay", queueNames.size(), delay);
+    }
+
+    /**
+     * Stop sequential refresh
+     */
+    private void stopSequentialRefresh() {
+        sequentialScheduler.stop();
+        log.info("Sequential refresh stopped");
+    }
+
+    /**
+     * Update queue list for sequential refresh (called when queues change)
+     */
+    public void updateSequentialRefreshQueueList() {
+        if (autoRefreshEnabled && sequentialScheduler.isRunning()) {
+            List<String> queueNames = queues.stream()
+                    .map(QueueInfo::getQueue)
+                    .toList();
+            sequentialScheduler.updateQueueList(queueNames);
+        }
+    }
+
+    /**
+     * Callback when a queue is updated from the scheduler
+     */
+    private void updateQueueFromScheduler(QueueInfo updatedQueue, String queueName) {
+        if (updatedQueue == null) {
+            return;
+        }
+
+        // Find and update the queue in the master list
+        for (int i = 0; i < queues.size(); i++) {
+            if (queues.get(i).getQueue().equals(queueName)) {
+                queues.set(i, updatedQueue);
+                break;
+            }
+        }
+
+        // Update only the affected row in the table (more efficient than full refresh)
+        for (int i = 0; i < filteredQueues.size(); i++) {
+            if (filteredQueues.get(i).getQueue().equals(queueName)) {
+                filteredQueues.set(i, updatedQueue);
+
+                // Update the table item
+                if (i < table.getItemCount()) {
+                    TableItem item = table.getItem(i);
+                    updateTableItem(item, updatedQueue);
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * Callback when an error occurs during queue refresh
+     */
+    private void handleQueueRefreshError(String queueName, Exception exception) {
+        log.error("Error refreshing queue {}: {}", queueName, exception.getMessage());
+        // Could show a status indicator or notification here if needed
+    }
+
+    /**
+     * Get auto-refresh enabled state
+     */
+    public boolean isAutoRefreshEnabled() {
+        return autoRefreshEnabled;
+    }
+
+    /**
+     * Set auto-refresh state programmatically
+     */
+    public void setAutoRefreshEnabled(boolean enabled) {
+        if (autoRefreshEnabled != enabled) {
+            autoRefreshButton.setSelection(enabled);
+            autoRefreshEnabled = enabled;
+            updateAutoRefreshButtonState();
+
+            if (enabled) {
+                startSequentialRefresh();
+            } else {
+                stopSequentialRefresh();
+            }
+        }
     }
 }

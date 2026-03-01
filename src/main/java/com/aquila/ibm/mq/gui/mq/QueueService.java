@@ -15,8 +15,8 @@ package com.aquila.ibm.mq.gui.mq;
 
 import com.aquila.ibm.mq.gui.model.QueueHandle;
 import com.aquila.ibm.mq.gui.model.QueueInfo;
-import com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator;
-import com.google.common.collect.Lists;
+import com.aquila.ibm.mq.gui.ui.MainWindow;
+import com.aquila.ibm.mq.gui.ui.UpdateQueueInfo;
 import com.ibm.mq.MQException;
 import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.CMQC;
@@ -29,13 +29,16 @@ import com.ibm.mq.headers.pcf.PCFMessageAgent;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class QueueService {
     private final MQConnectionManager connectionManager;
+    private final MainWindow mainWindow;
 
-    public QueueService(MQConnectionManager connectionManager) {
+    public QueueService(MainWindow mainWindow, MQConnectionManager connectionManager) {
+        this.mainWindow = mainWindow;
         this.connectionManager = connectionManager;
     }
 
@@ -142,53 +145,19 @@ public class QueueService {
      * @param queueInfos List of queue names to retrieve information for
      * @return List of QueueInfo objects for the specified queues
      */
-    public void populateQueueInfosShort(List<QueueInfo> queueInfos, int nbThread, boolean sequentialRequest) {
+    public void populateAllQueueInfosShort(List<QueueInfo> queueInfos) {
         if (queueInfos == null || queueInfos.isEmpty()) {
             return;
         }
-        final MQQueueManager qm = connectionManager.getQueueManager();
         long startTime = System.currentTimeMillis();
-        if (sequentialRequest) {
-            if (nbThread > 1 && (nbThread < queueInfos.size() * 2)) {
-                multiThreadRequest(qm, queueInfos, nbThread);
-            } else {
-                final PCFMessageAgent agent = connectionManager.getActiveAgent();
-                populateQueueInfosShort(agent, queueInfos);
-            }
-        } else {
-            List<String> queueNames = queueInfos.stream().map(QueueInfo::getQueue).toList();
-            List<String> optimizedIBMMQPatterns = QueueNameRegexCalculator.createOptimizedIBMMQPatterns(queueNames);
-            final PCFMessageAgent agent = connectionManager.getActiveAgent();
-            for (final String optimizedIBMMQPattern : optimizedIBMMQPatterns) {
-                final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
-                request.addParameter(MQConstants.MQCA_Q_NAME, optimizedIBMMQPattern);
-                log.info("Before agent.send() optimise ({})", optimizedIBMMQPattern);
-                try {
-                    final PCFMessage[] responses = agent.send(request);
-                    log.info("After agent.send() optimise responses: {}", responses.length);
-                    populateQueueInfosShort(queueInfos, responses);
-                } catch (Exception e) {
-                    log.error("Error retrieving queues for pattern: {} ", optimizedIBMMQPattern, e);
-                }
-            }
-        }
+        final PCFMessageAgent agent = connectionManager.getActiveAgent();
+        populateAllQueueInfosShort(agent, queueInfos, this.mainWindow);
         long endTime = System.currentTimeMillis();
         log.info("Retrieved information for {} out of {} queues in {} ms", queueInfos.size(), queueInfos.size(), endTime - startTime);
     }
 
-    void multiThreadRequest(MQQueueManager qm, List<QueueInfo> queueInfos, int nbThread) {
-        final int nbParts = queueInfos.size() / nbThread;
-        final List<List<QueueInfo>> listPerThread = Lists.partition(queueInfos, nbParts);
-        log.info("Creating {} sub-list -- nbParts:{}", listPerThread.size(), nbParts);
-        final PCFMessageAgent agent = connectionManager.getActiveAgent();
-        listPerThread.parallelStream().forEach(tmpQueueInfos -> {
-            //log.info("multiThreadRequest -> create agent {}", tmpQueueInfos.get(0).getQueue());
-            populateQueueInfosShort(agent, tmpQueueInfos);
-            //log.info("End multiThreadRequest: {}", tmpQueueInfos.get(0).getQueue());
-        });
-    }
-
-    void populateQueueInfosShort(final PCFMessageAgent agent, List<QueueInfo> queueInfos) {
+    void populateAllQueueInfosShort(final PCFMessageAgent agent, List<QueueInfo> queueInfos, UpdateQueueInfo updateQueueInfo) {
+        if (agent == null) return;
         for (final QueueInfo queueInfo : queueInfos) {
             final PCFMessage request = new PCFMessage(MQConstants.MQCMD_INQUIRE_Q);
             request.addParameter(MQConstants.MQCA_Q_NAME, queueInfo.getQueue());
@@ -201,29 +170,11 @@ public class QueueService {
             try {
                 final PCFMessage[] responses = agent.send(request);
                 populateQueueInfoShort(queueInfo, responses[0]);
+                updateQueueInfo.update(queueInfo);
             } catch (Exception e) {
                 log.warn("Error retrieving queues: {} ", queueInfo.getQueue(), e);
             }
         }
-    }
-
-    private void populateQueueInfosShort(List<QueueInfo> queueInfos, PCFMessage[] responses) {
-        final Map<String, QueueInfo> mapQueuesInfos = new HashMap<>();
-        queueInfos.forEach(queueInfo -> mapQueuesInfos.put(queueInfo.getQueue(), queueInfo));
-        Arrays.stream(responses).parallel().forEach(response -> {
-            String queueName = null;
-            try {
-                queueName = response.getStringParameterValue(MQConstants.MQCA_Q_NAME).trim();
-                final QueueInfo queueInfo = mapQueuesInfos.get(queueName);
-                if (queueInfo != null) {
-                    log.info("populateQueueInfo({}) -> {}", queueName, queueInfo);
-                    populateQueueInfoShort(queueInfo, response);
-                } else
-                    log.warn("QueueName:{} found on PCF agent response but not part of the list: ignored", queueName);
-            } catch (PCFException e) {
-                log.error("Can not retrieve queue name", e);
-            }
-        });
     }
 
     private void populateQueueInfoShort(QueueInfo queueInfo, PCFMessage response) throws PCFException {

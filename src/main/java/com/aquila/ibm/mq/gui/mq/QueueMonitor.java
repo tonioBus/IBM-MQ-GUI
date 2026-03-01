@@ -135,6 +135,15 @@ public class QueueMonitor extends Thread {
         //interrupt();
     }
 
+    /**
+     * Get queue information for a single queue via PCF
+     * @param queueName Name of the queue
+     * @return QueueInfo with current depth and other attributes
+     */
+    public QueueInfo getQueueInfo(String queueName) throws Exception {
+        return queueService.getQueueInfo(queueName);
+    }
+
     public interface QueueMonitorListener {
         void onQueuesUpdated(List<QueueInfo> queues);
 

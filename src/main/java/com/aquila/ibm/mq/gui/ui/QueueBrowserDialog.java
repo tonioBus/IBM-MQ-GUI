@@ -268,7 +268,7 @@ public class QueueBrowserDialog {
             log.info("Connecting to Queue Manager:{}", queueManagerConfig);
             connectionManager.connect(queueManagerConfig);
             availableQueuesViewer.updateProgress("Retrieving queues...");
-            QueueService queueService = new QueueService(connectionManager);
+            QueueService queueService = new QueueService(null, connectionManager);
             java.util.List<QueueInfo> queues = queueService.getAllQueues(queuePattern.getText());
             log.info("queues:\n{}", queues);
             this.availableQueuesViewer.setQueues(queues);

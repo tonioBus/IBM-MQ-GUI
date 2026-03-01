@@ -29,7 +29,6 @@ import com.ibm.mq.headers.MQDataException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTException;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -47,7 +46,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class MainWindow {
+public class MainWindow implements UpdateQueueInfo {
 
     @Getter
     private static MainWindow instance;
@@ -78,7 +77,7 @@ public class MainWindow {
         this.display = display;
         this.configuration = new Configuration();
         this.connectionManager = new MQConnectionManager();
-        this.queueService = new QueueService(connectionManager);
+        this.queueService = new QueueService(this, connectionManager);
         this.messageService = new MessageService(connectionManager);
         this.alertManager = new AlertManager(configuration);
 
@@ -163,14 +162,6 @@ public class MainWindow {
         Menu viewMenu = new Menu(shell, SWT.DROP_DOWN);
         viewItem.setMenu(viewMenu);
 
-        MenuItem refreshItem = new MenuItem(viewMenu, SWT.PUSH);
-        refreshItem.setText("&Refresh\tF5");
-        refreshItem.setAccelerator(SWT.F5);
-        refreshItem.addListener(SWT.Selection, e -> refreshQueues());
-
-        MenuItem autoRefreshItem = new MenuItem(viewMenu, SWT.CHECK);
-        autoRefreshItem.setText("&Auto-refresh");
-        autoRefreshItem.addListener(SWT.Selection, e -> toggleAutoRefresh(autoRefreshItem.getSelection()));
     }
 
     private void createToolsMenu(Menu menuBar) {
@@ -232,6 +223,7 @@ public class MainWindow {
         // EXISTING: Queue List (30%)
         queueListViewer = new QueueListViewer(sashForm, SWT.BORDER, alertManager);
         queueListViewer.addSelectionListener(this::onQueueSelected);
+
         queueListViewer.setAutoRefreshListener(new QueueListViewer.AutoRefreshListener() {
             @Override
             public void onAutoRefreshToggled(boolean enabled) {
@@ -333,7 +325,6 @@ public class MainWindow {
     }
 
     private void connect(QueueManagerConfig config) {
-        queueListViewer.showProgress("Connecting to " + config.getQueueManager() + "...");
 
         new Thread(() -> {
             try {
@@ -341,14 +332,12 @@ public class MainWindow {
 
                 display.asyncExec(() -> {
                     updateStatus("Connected to " + config.getQueueManager());
-                    queueListViewer.updateProgress("Loading queues...");
                 });
 
                 List<QueueInfo> queues = queueService.getAllQueues("*");
 
                 display.asyncExec(() -> {
-                    queueListViewer.setQueues(queues);
-                    queueListViewer.hideProgress();
+                    queueListViewer.setQueues(queues, true);
                     if (depthChartPanel != null) {
                         depthChartPanel.setQueues(queues);
                     }
@@ -356,7 +345,6 @@ public class MainWindow {
             } catch (Exception e) {
                 log.error("Connection failed", e);
                 display.asyncExec(() -> {
-                    queueListViewer.hideProgress();
                     showError("Connection Failed", "Failed to connect to queue manager: " + e.getMessage());
                 });
             }
@@ -375,15 +363,15 @@ public class MainWindow {
             return;
         }
 
-        queueListViewer.showProgress("Refreshing queues...");
+        // queueListViewer.showProgress("Refreshing queues...");
 
         new Thread(() -> {
             try {
                 List<QueueInfo> queues = queueService.getAllQueues("*");
 
                 display.asyncExec(() -> {
-                    queueListViewer.setQueues(queues);
-                    queueListViewer.hideProgress();
+                    queueListViewer.setQueues(queues, false);
+                    // queueListViewer.hideProgress();
                     if (depthChartPanel != null) {
                         depthChartPanel.setQueues(queues);
                     }
@@ -391,7 +379,7 @@ public class MainWindow {
             } catch (Exception e) {
                 log.error("Failed to refresh queues", e);
                 display.asyncExec(() -> {
-                    queueListViewer.hideProgress();
+                    // queueListViewer.hideProgress();
                     showError("Error", "Failed to refresh queues: " + e.getMessage());
                 });
             }
@@ -415,7 +403,6 @@ public class MainWindow {
                 @Override
                 public void onQueuesUpdated(List<QueueInfo> queues) {
                     display.asyncExec(() -> {
-                        queueListViewer.refresh();
                         if (depthChartPanel != null && selectedQueue != null) {
                             depthChartPanel.updateData(selectedQueue);
                         }
@@ -428,7 +415,7 @@ public class MainWindow {
                     display.asyncExec(() -> showError("Monitor Error", e.getMessage()));
                 }
             });
-            queueMonitor.start();
+            Display.getDefault().asyncExec(() -> queueMonitor.start());
         }
     }
 
@@ -437,6 +424,16 @@ public class MainWindow {
             queueMonitor.stopMonitoring();
             queueMonitor = null;
         }
+    }
+
+    @Override
+    public void update(QueueInfo queueInfo) {
+        if(!queueListViewer.isAutoRefreshEnabled()) return;
+        log.info("update called for queue: {} depth:{}", queueInfo.getQueue(), queueInfo.getCurrentDepth());
+        queueListViewer.refreshDynamicFields(queueInfo);
+        Display.getDefault().asyncExec(() -> {
+            queueListViewer.refreshSort();
+        });
     }
 
     private void onQueueSelected(QueueInfo queue) {
@@ -451,6 +448,7 @@ public class MainWindow {
             }
             propertiesPanel.setQueue(queue);
         }
+        queueListViewer.refreshSelectedQueue();
         if (messageBrowserPanel != null) {
             messageBrowserPanel.setQueue(queue);
         }
@@ -483,23 +481,22 @@ public class MainWindow {
         } else if (event.type == HierarchyTreeViewer.SelectionType.QUEUE_BROWSER) {
             final QueueNode queueNode = event.node.getQueueNode();
             final String connectionId = queueNode.getQueueManager();
-            refreshQueueList(queueNode, connectionId, event.node.getName(), event.node.getId());
+            refreshQueueListPrivate(queueNode, connectionId, true);
         }
     }
 
     public void refreshQueueList() {
-        HierarchyNode node = this.hierarchyTreeViewer.getLastSelectedNode();
+        final HierarchyNode node = this.hierarchyTreeViewer.getLastSelectedNode();
         log.info("refreshQueueList: {}", node);
         if (node != null && node.getQueueNode() != null) {
             final QueueNode queueNode = node.getQueueNode();
-            refreshQueueList(queueNode, queueNode.getQueueManager(), node.getName(), node.getId());
+            refreshQueueListPrivate(queueNode, queueNode.getQueueManager(), true);
         }
     }
 
-    private void refreshQueueList(final QueueNode queueNode,
-                                  final String connectionId,
-                                  final String nodeName,
-                                  final String nodeId) {
+    private void refreshQueueListPrivate(final QueueNode queueNode,
+                                         final String connectionId,
+                                         final boolean forceRefresh) {
         if (queueNode.getDescriptions() == null) {
             log.error("queueBrowserConfig.getDescriptions() null for {}", queueNode);
             return;
@@ -508,6 +505,8 @@ public class MainWindow {
                 .map(e -> new QueueInfo(e.getKey(), e.getValue().label()))
                 .toList();
         log.info("number of queues to retrieve: {}", queueInfos.size());
+        queueListViewer.setQueues(queueInfos, forceRefresh);
+        loadQueuesAsync(queueNode.getQueueManager(), queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest());
         if (!connectionManager.isConnected(connectionId)) {
             QueueManagerConfig config = findConnectionConfig(connectionId);
             if (config == null) {
@@ -515,77 +514,26 @@ public class MainWindow {
                         "Connection configuration not found for: " + connectionId);
                 return;
             }
-
-            // Show progress immediately
-            queueListViewer.showProgress("Connecting to " + nodeName + "...");
-
-            // Run connection in background thread
-            new Thread(() -> {
-                try {
-                    // BLOCKING CALL - but on background thread
-                    connectionManager.connect(connectionId, config);
-
-                    // Update icon on UI thread
-                    display.asyncExec(() -> {
-                        hierarchyTreeViewer.updateNodeIcon(nodeId);
-                        queueListViewer.updateProgress("Loading queues...");
-                    });
-
-                    // Set active and load queues (BLOCKING)
-                    connectionManager.setActiveConnection(connectionId);
-                    queueService.populateQueueInfosShort(queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest());
-
-                    // Update UI on UI thread
-                    display.asyncExec(() -> {
-                        queueListViewer.setQueues(queueInfos);
-                        queueListViewer.hideProgress();
-                        updateStatus("Connected to " + nodeName);
-
-                        // Update panels
-                        if (depthChartPanel != null) {
-                            depthChartPanel.setQueues(queueInfos);
-                        }
-                    });
-
-                } catch (Exception e) {
-                    log.error("Connection failed", e);
-                    display.asyncExec(() -> {
-                        queueListViewer.hideProgress();
-                        showError("Connection Failed", e.getMessage());
-                        hierarchyTreeViewer.updateNodeIcon(nodeId);
-                    });
-                }
-            }).start();
+            try {
+                connectionManager.connect(connectionId, config);
+            } catch (MQException e) {
+                log.error("Connection failed", e);
+            }
             return;
         }
         // If already connected, just set active and load queues
         connectionManager.setActiveConnection(connectionId);
-        Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest()));
+        // Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest()));
     }
 
     private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos, int nbThread, boolean sequentialQueueRequest) {
-        queueListViewer.showProgress("Loading queues from " + queueManagerName + "...");
 
         new Thread(() -> {
             try {
-                queueService.populateQueueInfosShort(queueInfos, nbThread, sequentialQueueRequest);
-                if(queueListViewer.isDisposed()) return;
-                display.asyncExec(() -> {
-                   try {
-                       queueListViewer.setQueues(queueInfos);
-                       queueListViewer.hideProgress();
-                       updateStatus("Loaded queues from " + queueManagerName);
-                       if (depthChartPanel != null) {
-                           depthChartPanel.setQueues(queueInfos);
-                       }
-                   } catch(SWTException e) {
-                       log.warn("Monitoring during quitting ? ", e);
-                   }
-                });
+                queueService.populateAllQueueInfosShort(queueInfos);
             } catch (Exception e) {
                 log.error("Failed to load queues", e);
                 display.asyncExec(() -> {
-                    queueListViewer.hideProgress();
                     showError("Error", "Failed to load queues: " + e.getMessage());
                 });
             }
@@ -641,7 +589,7 @@ public class MainWindow {
     }
 
     private void handleRefreshQueue(QueueInfo queue) {
-        queueListViewer.showProgress("Refreshing " + queue.getQueue() + "...");
+        // queueListViewer.showProgress("Refreshing " + queue.getQueue() + "...");
 
         new Thread(() -> {
             try {
@@ -651,7 +599,7 @@ public class MainWindow {
                 display.asyncExec(() -> {
                     // Update the display
                     queueListViewer.refreshQueue(queue);
-                    queueListViewer.hideProgress();
+                    // queueListViewer.hideProgress();
 
                     // If this is the currently selected queue, update panels
                     if (selectedQueue != null && selectedQueue.getQueue().equals(queue.getQueue())) {
@@ -669,7 +617,7 @@ public class MainWindow {
             } catch (Exception e) {
                 log.error("Failed to refresh queue: " + queue.getQueue(), e);
                 display.asyncExec(() -> {
-                    queueListViewer.hideProgress();
+                    // queueListViewer.hideProgress();
                     showError("Refresh Failed", "Failed to refresh queue: " + e.getMessage());
                 });
             }
@@ -897,136 +845,6 @@ public class MainWindow {
     }
 
     /**
-     * Import configuration from a JSON file and add to selected hierarchy node.
-     */
-    private void importConfiguration1() {
-        // Show file dialog to select import file
-        org.eclipse.swt.widgets.FileDialog dialog = new org.eclipse.swt.widgets.FileDialog(shell, SWT.OPEN);
-        dialog.setText("Import Configuration");
-        dialog.setFilterExtensions(new String[]{"*.json", "*.*"});
-        dialog.setFilterNames(new String[]{"JSON Files (*.json)", "All Files (*.*)"});
-
-        String filePath = dialog.open();
-        if (filePath == null) {
-            return; // User cancelled
-        }
-
-        log.info("Importing configuration from: {}", filePath);
-
-        // Import the configuration
-        ImportConfig importConfig = ImportExportUtil.importFromFile(filePath);
-
-        if (importConfig == null) {
-            showError("Import Failed", "Failed to read import file. Please check the file format.");
-            return;
-        }
-
-        // Import queue managers
-        Map<String, QueueManagerConfig> importedQueueManagers = importConfig.getQueueManagers();
-        if (importedQueueManagers != null && !importedQueueManagers.isEmpty()) {
-            Map<String, QueueManagerConfig> existingQueueManagers = configuration.loadConnections();
-
-            int newCount = 0;
-            for (Map.Entry<String, QueueManagerConfig> entry : importedQueueManagers.entrySet()) {
-                if (!existingQueueManagers.containsKey(entry.getKey())) {
-                    existingQueueManagers.put(entry.getKey(), entry.getValue());
-                    newCount++;
-                }
-            }
-
-            if (newCount > 0) {
-                configuration.saveConnections(existingQueueManagers);
-                log.info("Imported {} new queue manager(s)", newCount);
-            }
-        }
-
-        // Import hierarchy
-        if (importConfig.getHierarchy() != null) {
-            // Ask user where to add the imported hierarchy
-            MessageBox locationBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO | SWT.CANCEL);
-            locationBox.setText("Import Location");
-            locationBox.setMessage("Where would you like to add the imported hierarchy?\n\n" +
-                    "YES - Add under currently selected node\n" +
-                    "NO - Add at root level\n" +
-                    "CANCEL - Skip hierarchy import");
-
-            int choice = locationBox.open();
-
-            if (choice != SWT.CANCEL) {
-                HierarchyConfig currentHierarchy = hierarchyTreeViewer.getHierarchyConfig();
-                if (currentHierarchy == null) {
-                    currentHierarchy = new HierarchyConfig();
-                }
-
-                // Convert imported hierarchy to internal format
-                HierarchyConfig importedHierarchy = importConfig.toHierarchyConfig();
-
-                String parentId = null;
-                if (choice == SWT.YES) {
-                    // Add under selected node
-                    HierarchyNode selectedNode = hierarchyTreeViewer.getSelectedNode();
-                    if (selectedNode != null) {
-                        if (selectedNode.isFolder()) {
-                            parentId = selectedNode.getId();
-                        } else {
-                            MessageBox infoBox = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
-                            infoBox.setText("Invalid Selection");
-                            infoBox.setMessage("Can only add hierarchy under a folder node. Adding at root level instead.");
-                            infoBox.open();
-                        }
-                    }
-                }
-
-                // Add all root nodes from imported hierarchy to current hierarchy
-                for (String rootId : importedHierarchy.getRootNodeIds()) {
-                    HierarchyNode rootNode = importedHierarchy.getNode(rootId);
-                    if (rootNode != null) {
-                        mergeHierarchyNode(rootNode, importedHierarchy, currentHierarchy, parentId);
-                    }
-                }
-
-                // Save and refresh
-                configuration.saveHierarchy(currentHierarchy);
-                hierarchyTreeViewer.setHierarchyConfig(configuration, currentHierarchy);
-
-                log.info("Successfully imported hierarchy");
-            }
-        }
-
-        // Show success message
-        MessageBox successBox = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
-        successBox.setText("Import Complete");
-        successBox.setMessage("Configuration imported successfully!");
-        successBox.open();
-    }
-
-    /**
-     * Recursively merge a hierarchy node and its children into the target hierarchy.
-     */
-    private void mergeHierarchyNode(HierarchyNode sourceNode, HierarchyConfig sourceHierarchy,
-                                    HierarchyConfig targetHierarchy, String targetParentId) {
-        // Create a copy of the node
-        HierarchyNode newNode = new HierarchyNode(sourceNode.getType(), sourceNode.getName());
-        newNode.setQueueNode(sourceNode.getQueueNode());
-
-        // Add to target hierarchy
-        targetHierarchy.addNode(newNode, targetParentId);
-
-        // Copy queue browser config if it exists
-        if (sourceNode.getQueueNode() != null) {
-            configuration.save(newNode.getId(), sourceNode.getQueueNode());
-        }
-
-        // Recursively merge children
-        for (String childId : sourceNode.getChildIds()) {
-            HierarchyNode childNode = sourceHierarchy.getNode(childId);
-            if (childNode != null) {
-                mergeHierarchyNode(childNode, sourceHierarchy, targetHierarchy, newNode.getId());
-            }
-        }
-    }
-
-    /**
      * Export current configuration to a JSON file.
      */
     private void exportConfiguration() {
@@ -1158,6 +976,9 @@ public class MainWindow {
                 display.sleep();
             }
         }
+    }
+
+    public void refreshSingleQueue(String queue) {
     }
 
 }
