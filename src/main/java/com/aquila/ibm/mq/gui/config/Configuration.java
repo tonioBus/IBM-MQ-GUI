@@ -31,7 +31,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class Configuration {
@@ -267,6 +269,78 @@ public class Configuration {
     public MessageTemplate getMessageTemplate(String name) {
         final Map<String, MessageTemplate> templates = loadMessageTemplates();
         return templates.get(name);
+    }
+
+    /**
+     * Clean up orphaned JSON files in the config directory.
+     * Removes any JSON files that are not part of the current hierarchy or known configuration files.
+     *
+     * @param hierarchyConfig The current hierarchy configuration
+     * @return Number of files deleted
+     */
+    public int cleanupOrphanedFiles(HierarchyConfig hierarchyConfig) {
+        if (hierarchyConfig == null) {
+            log.warn("Cannot cleanup: hierarchy is null");
+            return 0;
+        }
+
+        // Get all valid node IDs from hierarchy
+        final Set<String> validNodeIds = new HashSet<>(hierarchyConfig.getNodes().keySet());
+
+        // Known configuration files that should not be deleted
+        final Set<String> knownConfigFiles = Set.of(
+                CONNECTIONS_FILE,
+                THRESHOLDS_FILE,
+                HIERARCHY_FILE,
+                HIERARCHY_FILE + ".bak",
+                MESSAGE_TEMPLATES_FILE
+        );
+
+        int deletedCount = 0;
+        final File configDir = new File(CONFIG_DIR);
+
+        if (!configDir.exists() || !configDir.isDirectory()) {
+            log.warn("Config directory does not exist: {}", CONFIG_DIR);
+            return 0;
+        }
+
+        // List all JSON files in the directory
+        final File[] files = configDir.listFiles((dir, name) -> name.endsWith(".json") || name.endsWith(".json.bak"));
+
+        if (files == null || files.length == 0) {
+            log.info("No JSON files found in config directory");
+            return 0;
+        }
+
+        for (File file : files) {
+            final String fileName = file.getName();
+
+            // Skip known configuration files
+            if (knownConfigFiles.contains(fileName)) {
+                continue;
+            }
+
+            // Extract the node ID from the filename (remove .json extension)
+            final String nodeId = fileName.endsWith(".json") ?
+                    fileName.substring(0, fileName.length() - 5) : fileName;
+
+            // If this file doesn't correspond to a valid node ID, delete it
+            if (!validNodeIds.contains(nodeId)) {
+                try {
+                    if (file.delete()) {
+                        log.info("Deleted orphaned file: {}", fileName);
+                        deletedCount++;
+                    } else {
+                        log.warn("Failed to delete file: {}", fileName);
+                    }
+                } catch (Exception e) {
+                    log.error("Error deleting file: {}", fileName, e);
+                }
+            }
+        }
+
+        log.info("Cleanup completed: {} orphaned file(s) deleted", deletedCount);
+        return deletedCount;
     }
 
 }

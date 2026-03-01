@@ -127,7 +127,7 @@ public class MQConnectionManager {
      * Get a stable connection ID from a ConnectionConfig.
      */
     private String getConnectionId(QueueManagerConfig config) {
-        return config.toString();
+        return config == null ? null : config.toString();
     }
 
     private String formatMQError(MQException e, QueueManagerConfig config) {

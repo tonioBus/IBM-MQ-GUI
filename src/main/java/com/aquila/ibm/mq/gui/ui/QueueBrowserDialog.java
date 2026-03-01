@@ -46,7 +46,6 @@ public class QueueBrowserDialog {
     private QueueNode result;
     private Text label;
     private Text queuePattern;
-    private Button sequencialQueueRequestCheckbox;
     private Spinner nbThreadSpinner;
     private List queueManagerList;
     private Map<String, QueueManagerConfig> connections;
@@ -147,13 +146,12 @@ public class QueueBrowserDialog {
         selectedQueuesViewer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         if (this.hierarchyNode != null) {
             java.util.List<QueueInfo> queues = new ArrayList<>();
-            if (this.hierarchyNode.getQueueNode() != null)
-                this.hierarchyNode.getQueueNode().getDescriptions().entrySet().forEach(entry -> {
-                    queues.add(QueueInfo.builder()
-                            .queue(entry.getKey())
-                            .label(entry.getValue().label())
-                            .build());
-                });
+            if (this.hierarchyNode.getQueueNode() != null && this.hierarchyNode.getQueueNode().getDescriptions() != null) {
+                this.hierarchyNode.getQueueNode().getDescriptions().forEach((key, value) -> queues.add(QueueInfo.builder()
+                        .queue(key)
+                        .label(value.label())
+                        .build()));
+            }
             selectedQueuesViewer.setQueues(queues);
         }
     }
@@ -192,12 +190,8 @@ public class QueueBrowserDialog {
         sequencialGroup.setLayout(new GridLayout(2, false));
         sequencialGroup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        sequencialQueueRequestCheckbox = new Button(sequencialGroup, SWT.CHECK);
-        sequencialQueueRequestCheckbox.setText("Sequential Queue Request");
         GridData checkboxGridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
         checkboxGridData.horizontalSpan = 2;
-        sequencialQueueRequestCheckbox.setLayoutData(checkboxGridData);
-        sequencialQueueRequestCheckbox.setToolTipText("Request queue information sequentially instead of in parallel");
 
         // Number of threads field
         Label nbThreadLabel = new Label(sequencialGroup, SWT.NONE);
@@ -213,10 +207,8 @@ public class QueueBrowserDialog {
 
         // Initialize with existing values if in edit mode
         if (edit && hierarchyNode.getQueueNode() != null) {
-            sequencialQueueRequestCheckbox.setSelection(hierarchyNode.getQueueNode().isSequencialQueueRequest());
-            nbThreadSpinner.setSelection(hierarchyNode.getQueueNode().getNbThread());
+            nbThreadSpinner.setSelection(1);
         } else {
-            sequencialQueueRequestCheckbox.setSelection(false);
             nbThreadSpinner.setSelection(1);
         }
     }
@@ -291,7 +283,7 @@ public class QueueBrowserDialog {
         java.util.List<QueueInfo> currentSelected = new java.util.ArrayList<>(selectedQueuesViewer.getQueues());
         // Add new queues (avoid duplicates)
         for (QueueInfo queue : selectedQueues) {
-            if (!currentSelected.stream().anyMatch(q -> q.getQueue().equals(queue.getQueue()))) {
+            if (currentSelected.stream().noneMatch(q -> q.getQueue().equals(queue.getQueue()))) {
                 currentSelected.add(queue);
             }
         }
@@ -355,8 +347,6 @@ public class QueueBrowserDialog {
         });
         final QueueNode queueNode = QueueNode.builder()
                 .queuePattern(this.queuePattern.getText().trim())
-                .sequencialQueueRequest(this.sequencialQueueRequestCheckbox.getSelection())
-                .nbThread(this.nbThreadSpinner.getSelection())
                 .queueManager(queueManagerKey)
                 .descriptions(descriptions)
                 .build();

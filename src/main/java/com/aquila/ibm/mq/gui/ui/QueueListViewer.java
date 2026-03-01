@@ -18,6 +18,7 @@ import com.aquila.ibm.mq.gui.model.QueueInfo;
 import com.aquila.ibm.mq.gui.model.ThresholdConfig;
 import com.aquila.ibm.mq.gui.util.QueueNameRegexCalculator;
 import com.aquila.ibm.mq.gui.util.SequentialQueueRefreshScheduler;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.swt.SWT;
@@ -78,6 +79,11 @@ public class QueueListViewer extends Composite {
     // Auto-refresh controls
     private Button autoRefreshButton;
     private Combo refreshIntervalCombo;
+    /**
+     * -- GETTER --
+     *  Get auto-refresh enabled state
+     */
+    @Getter
     private boolean autoRefreshEnabled = false;
     @Setter
     private AutoRefreshListener autoRefreshListener;
@@ -318,11 +324,12 @@ public class QueueListViewer extends Composite {
         this.queues.addAll(queues);
         Display.getDefault().asyncExec(() -> {
             applyFilters(forceRefresh);
+            // applyFilters(false);
         });
     }
 
     public void refresh(boolean force) {
-        if( force) log.info("Refresh #######", new RuntimeException());
+        if( force) log.info("Refresh force:{} #######", force, new RuntimeException("DEBUG"));
         final int oldSelection = table.getSelectionIndex();
         if(force) {
             table.removeAll();
@@ -473,7 +480,7 @@ public class QueueListViewer extends Composite {
                 // Invalid regex - show error and display all queues
                 regexFilterText.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
                 filteredQueues.addAll(queues);
-                sortQueues();
+                if(forceRefresh) sortQueues();
                 refresh(true);
                 return;
             } catch (IllegalArgumentException e) {
@@ -588,7 +595,7 @@ public class QueueListViewer extends Composite {
      * Stop sequential refresh
      */
     private void stopSequentialRefresh() {
-        sequentialScheduler.stop();
+        if(sequentialScheduler!=null) sequentialScheduler.stop();
         log.info("Sequential refresh stopped");
     }
 
@@ -641,13 +648,6 @@ public class QueueListViewer extends Composite {
     private void handleQueueRefreshError(String queueName, Exception exception) {
         log.error("Error refreshing queue {}: {}", queueName, exception.getMessage());
         // Could show a status indicator or notification here if needed
-    }
-
-    /**
-     * Get auto-refresh enabled state
-     */
-    public boolean isAutoRefreshEnabled() {
-        return autoRefreshEnabled;
     }
 
     /**

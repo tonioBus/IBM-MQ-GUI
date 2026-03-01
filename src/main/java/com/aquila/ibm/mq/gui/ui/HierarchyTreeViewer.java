@@ -190,14 +190,20 @@ public class HierarchyTreeViewer extends Composite {
         // Separator
         new ToolItem(toolbar, SWT.SEPARATOR);
 
-        // Separator
-        new ToolItem(toolbar, SWT.SEPARATOR);
-
         // Refresh button
         ToolItem refreshItem = new ToolItem(toolbar, SWT.PUSH);
         refreshItem.setText("Refresh");
         refreshItem.setToolTipText("Refresh connection status");
         refreshItem.addListener(SWT.Selection, e -> updateAllConnectionIcons());
+
+        // Separator
+        new ToolItem(toolbar, SWT.SEPARATOR);
+
+        // Cleanup button
+        ToolItem cleanupItem = new ToolItem(toolbar, SWT.PUSH);
+        cleanupItem.setText("Cleanup");
+        cleanupItem.setToolTipText("Remove orphaned JSON files from .ibmmqgui directory");
+        cleanupItem.addListener(SWT.Selection, e -> cleanupOrphanedFiles());
 
         log.debug("Toolbar created");
     }
@@ -267,6 +273,12 @@ public class HierarchyTreeViewer extends Composite {
                 contextMenuActionListener.onExportConfiguration();
             }
         });
+
+        new MenuItem(menu, SWT.SEPARATOR);
+
+        MenuItem cleanupItem = new MenuItem(menu, SWT.PUSH);
+        cleanupItem.setText("Cleanup Orphaned Files...");
+        cleanupItem.addListener(SWT.Selection, e -> cleanupOrphanedFiles());
     }
 
     private void createFolderContextMenu(Menu menu, HierarchyNode folder) {
@@ -313,6 +325,12 @@ public class HierarchyTreeViewer extends Composite {
                 contextMenuActionListener.onExportSelectedConfiguration(folder);
             }
         });
+
+        new MenuItem(menu, SWT.SEPARATOR);
+
+        MenuItem cleanupItem = new MenuItem(menu, SWT.PUSH);
+        cleanupItem.setText("Cleanup Orphaned Files...");
+        cleanupItem.addListener(SWT.Selection, e -> cleanupOrphanedFiles());
     }
 
     private void createQueueBrowserContextMenu(Menu menu, HierarchyNode hierarchyNode) {
@@ -349,6 +367,12 @@ public class HierarchyTreeViewer extends Composite {
                 contextMenuActionListener.onExportSelectedConfiguration(hierarchyNode);
             }
         });
+
+        new MenuItem(menu, SWT.SEPARATOR);
+
+        MenuItem cleanupItem = new MenuItem(menu, SWT.PUSH);
+        cleanupItem.setText("Cleanup Orphaned Files...");
+        cleanupItem.addListener(SWT.Selection, e -> cleanupOrphanedFiles());
     }
 
     private void setupDragAndDrop() {
@@ -703,6 +727,49 @@ public class HierarchyTreeViewer extends Composite {
         for (HierarchyNode node : hierarchyConfig.getAllQueueManagers()) {
             updateNodeIcon(node.getId());
         }
+    }
+
+    /**
+     * Clean up orphaned JSON files from the .ibmmqgui directory.
+     * Shows a confirmation dialog before cleanup and displays results afterward.
+     */
+    public void cleanupOrphanedFiles() {
+        if (hierarchyConfig == null) {
+            MessageBox box = new MessageBox(getShell(), SWT.ICON_WARNING | SWT.OK);
+            box.setText("Cleanup Error");
+            box.setMessage("Cannot perform cleanup: no hierarchy loaded.");
+            box.open();
+            return;
+        }
+
+        // Confirm cleanup
+        MessageBox confirmBox = new MessageBox(getShell(), SWT.ICON_QUESTION | SWT.YES | SWT.NO);
+        confirmBox.setText("Confirm Cleanup");
+        confirmBox.setMessage(
+                "This will remove all JSON files in the .ibmmqgui directory that are not part of the current hierarchy.\n\n" +
+                "Known configuration files (connections.json, hierarchy.json, etc.) will be preserved.\n\n" +
+                "Do you want to continue?");
+
+        if (confirmBox.open() != SWT.YES) {
+            return;
+        }
+
+        // Perform cleanup
+        int deletedCount = configuration.cleanupOrphanedFiles(hierarchyConfig);
+
+        // Show result
+        MessageBox resultBox = new MessageBox(getShell(), SWT.ICON_INFORMATION | SWT.OK);
+        resultBox.setText("Cleanup Complete");
+        if (deletedCount == 0) {
+            resultBox.setMessage("No orphaned files found. The directory is clean.");
+        } else if (deletedCount == 1) {
+            resultBox.setMessage("Successfully deleted 1 orphaned file.");
+        } else {
+            resultBox.setMessage(String.format("Successfully deleted %d orphaned files.", deletedCount));
+        }
+        resultBox.open();
+
+        log.info("Cleanup completed: {} file(s) deleted", deletedCount);
     }
 
     // Tree operation methods

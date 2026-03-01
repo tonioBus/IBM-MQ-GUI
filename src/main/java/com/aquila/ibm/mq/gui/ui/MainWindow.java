@@ -99,7 +99,7 @@ public class MainWindow implements UpdateQueueInfo {
         createMainContent();
         createStatusBar();
 
-        shell.addDisposeListener(e -> cleanup());
+        shell.addDisposeListener(_ -> cleanup());
 
         // Load hierarchy on startup
         loadHierarchy();
@@ -337,6 +337,7 @@ public class MainWindow implements UpdateQueueInfo {
                 List<QueueInfo> queues = queueService.getAllQueues("*");
 
                 display.asyncExec(() -> {
+                    log.error("#### setQueues - {}", queues, new RuntimeException());
                     queueListViewer.setQueues(queues, true);
                     if (depthChartPanel != null) {
                         depthChartPanel.setQueues(queues);
@@ -490,7 +491,8 @@ public class MainWindow implements UpdateQueueInfo {
         log.info("refreshQueueList: {}", node);
         if (node != null && node.getQueueNode() != null) {
             final QueueNode queueNode = node.getQueueNode();
-            refreshQueueListPrivate(queueNode, queueNode.getQueueManager(), true);
+            //refreshQueueListPrivate(queueNode, queueNode.getQueueManager(), true);
+            refreshQueueListPrivate(queueNode, queueNode.getQueueManager(), false);
         }
     }
 
@@ -505,8 +507,9 @@ public class MainWindow implements UpdateQueueInfo {
                 .map(e -> new QueueInfo(e.getKey(), e.getValue().label()))
                 .toList();
         log.info("number of queues to retrieve: {}", queueInfos.size());
+        log.error("#### setQueues", new RuntimeException("DEBUG"));
         queueListViewer.setQueues(queueInfos, forceRefresh);
-        loadQueuesAsync(queueNode.getQueueManager(), queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest());
+        loadQueuesAsync(queueNode, queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest());
         if (!connectionManager.isConnected(connectionId)) {
             QueueManagerConfig config = findConnectionConfig(connectionId);
             if (config == null) {
@@ -526,8 +529,8 @@ public class MainWindow implements UpdateQueueInfo {
         // Display.getDefault().syncExec(() -> loadQueuesAsync(nodeName, queueInfos, queueNode.getNbThread(), queueNode.isSequencialQueueRequest()));
     }
 
-    private void loadQueuesAsync(String queueManagerName, List<QueueInfo> queueInfos, int nbThread, boolean sequentialQueueRequest) {
-
+    private void loadQueuesAsync(QueueNode queueNode, List<QueueInfo> queueInfos, int nbThread, boolean sequentialQueueRequest) {
+        log.info("loadQueuesAsync(FILE: {})", queueNode.getFile());
         new Thread(() -> {
             try {
                 queueService.populateAllQueueInfosShort(queueInfos);

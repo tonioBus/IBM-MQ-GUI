@@ -14,6 +14,7 @@
 package com.aquila.ibm.mq.gui.model.node;
 
 import com.aquila.ibm.mq.gui.config.Configuration;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,10 @@ public class QueueNode {
 
     public record QueueDescription(String label) {
     }
+
+    @JsonIgnore
+    @Setter
+    private File file;
 
     private String queueManager;
     /**
@@ -66,7 +71,8 @@ public class QueueNode {
         final File file = new File(Configuration.CONFIG_DIR, String.format("%s.json", key));
         try {
             final QueueNode queueNode = objectMapper.readValue(file, QueueNode.class);
-            log.info("QueueNode:\n{}", queueNode);
+            queueNode.setFile(file);
+            log.info("{} QueueNode:\n{}", file.getAbsoluteFile(), queueNode);
             return queueNode;
         } catch (IOException e) {
             log.error("Failed to load QueueNode: {}", key, e);
@@ -78,6 +84,7 @@ public class QueueNode {
             return queueNode;
         }
     }
+
 
     public void save(String key) {
         String filename = String.format("%s.json", key);
